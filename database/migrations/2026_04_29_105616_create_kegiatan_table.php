@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('kegiatan', function (Blueprint $table) {
             $table->id('id_kegiatan');
             $table->string('nama_kegiatan', 100)->nullable();
+            $table->text('deskripsi')->nullable();
+            $table->string('gambar')->nullable();
             $table->date('tanggal')->nullable();
             $table->time('waktu_mulai')->nullable();
             $table->time('waktu_selesai')->nullable();

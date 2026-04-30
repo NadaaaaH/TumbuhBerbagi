@@ -13,11 +13,17 @@ return new class extends Migration
     {
         Schema::create('soal', function (Blueprint $table) {
             $table->id('id_soal');
+            $table->unsignedBigInteger('id_paket')->nullable();
             $table->text('konten_soal')->nullable();
+            $table->string('jenis_soal', 30)->default('pilihan_ganda');
             $table->string('kategori', 50)->nullable();
             $table->string('tingkat_kesulitan', 30)->nullable();
-            $table->string('kunci_jawaban', 10)->nullable();
-            $table->integer('bobot_nilai')->nullable();
+            $table->text('kunci_jawaban')->nullable();
+            $table->integer('bobot_nilai')->default(10);
+            $table->boolean('is_case_sensitive')->default(false);
+            $table->string('status', 30)->default('aktif');
+
+            $table->foreign('id_paket')->references('id_paket')->on('paket_latihan')->onDelete('cascade');
         });
     }
 

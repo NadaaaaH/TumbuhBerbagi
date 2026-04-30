@@ -16,6 +16,8 @@ return new class extends Migration
             $table->unsignedBigInteger('id_sesi')->nullable();
             $table->unsignedBigInteger('id_soal')->nullable();
             $table->unsignedBigInteger('id_pilihan')->nullable();
+            $table->text('teks_jawaban')->nullable();
+            $table->boolean('is_benar')->default(false);
 
             $table->foreign('id_sesi')->references('id_sesi')->on('sesi_latihan')->onDelete('cascade');
             $table->foreign('id_soal')->references('id_soal')->on('soal');
