@@ -23,7 +23,12 @@ export default function ResetPassword({ token, email }) {
 
     return (
         <GuestLayout>
-            <Head title="Reset Password" />
+            <Head title="Reset Kata Sandi" />
+
+            <div className="mb-8 text-center">
+                <h2 className="text-2xl font-bold text-slate-900 font-['Poppins'] mb-2">Buat Kata Sandi Baru</h2>
+                <p className="text-slate-500 text-sm">Silakan masukkan kata sandi baru Anda.</p>
+            </div>
 
             <form onSubmit={submit}>
                 <div>
@@ -83,9 +88,9 @@ export default function ResetPassword({ token, email }) {
                     />
                 </div>
 
-                <div className="mt-4 flex items-center justify-end">
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Reset Password
+                <div className="mt-8">
+                    <PrimaryButton className="w-full" disabled={processing}>
+                        Reset Kata Sandi
                     </PrimaryButton>
                 </div>
             </form>

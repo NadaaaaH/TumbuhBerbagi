@@ -11,6 +11,7 @@ Route::get('/', function () {
         'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
+        'kegiatans' => \App\Models\Kegiatan::orderBy('tanggal', 'desc')->take(6)->get(),
     ]);
 });
 

@@ -17,16 +17,18 @@ export default function ForgotPassword({ status }) {
 
     return (
         <GuestLayout>
-            <Head title="Forgot Password" />
+            <Head title="Lupa Kata Sandi" />
 
-            <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                Forgot your password? No problem. Just let us know your email
-                address and we will email you a password reset link that will
-                allow you to choose a new one.
+            <div className="mb-6 text-center">
+                <h2 className="text-2xl font-bold text-slate-900 font-['Poppins'] mb-2">Lupa Kata Sandi?</h2>
+            </div>
+
+            <div className="mb-6 text-sm text-slate-600 leading-relaxed text-center">
+                Tidak masalah. Cukup beri tahu kami alamat email Anda dan kami akan mengirimkan tautan pengaturan ulang kata sandi melalui email.
             </div>
 
             {status && (
-                <div className="mb-4 text-sm font-medium text-green-600 dark:text-green-400">
+                <div className="mb-6 text-sm font-medium text-[#1b5e20] bg-green-50 p-4 rounded-xl border border-green-100 text-center">
                     {status}
                 </div>
             )}
@@ -44,9 +46,9 @@ export default function ForgotPassword({ status }) {
 
                 <InputError message={errors.email} className="mt-2" />
 
-                <div className="mt-4 flex items-center justify-end">
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Email Password Reset Link
+                <div className="mt-8">
+                    <PrimaryButton className="w-full" disabled={processing}>
+                        Kirim Tautan Reset Kata Sandi
                     </PrimaryButton>
                 </div>
             </form>

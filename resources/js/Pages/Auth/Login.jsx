@@ -23,10 +23,15 @@ export default function Login({ status, canResetPassword }) {
 
     return (
         <GuestLayout>
-            <Head title="Log in" />
+            <Head title="Masuk Akun" />
+
+            <div className="mb-8 text-center">
+                <h2 className="text-2xl font-bold text-slate-900 font-['Poppins'] mb-2">Selamat Datang Kembali</h2>
+                <p className="text-slate-500 text-sm">Masuk untuk mengakses portal akademikmu.</p>
+            </div>
 
             {status && (
-                <div className="mb-4 text-sm font-medium text-green-600">
+                <div className="mb-6 text-sm font-medium text-[#1b5e20] bg-green-50 p-4 rounded-xl border border-green-100">
                     {status}
                 </div>
             )}
@@ -65,8 +70,8 @@ export default function Login({ status, canResetPassword }) {
                     <InputError message={errors.password} className="mt-2" />
                 </div>
 
-                <div className="mt-4 block">
-                    <label className="flex items-center">
+                <div className="mt-6 flex items-center justify-between">
+                    <label className="flex items-center cursor-pointer group">
                         <Checkbox
                             name="remember"
                             checked={data.remember}
@@ -74,24 +79,24 @@ export default function Login({ status, canResetPassword }) {
                                 setData('remember', e.target.checked)
                             }
                         />
-                        <span className="ms-2 text-sm text-gray-600 dark:text-gray-400">
-                            Remember me
+                        <span className="ms-3 text-sm text-slate-600 group-hover:text-slate-800 transition-colors">
+                            Ingat saya
                         </span>
                     </label>
-                </div>
 
-                <div className="mt-4 flex items-center justify-end">
                     {canResetPassword && (
                         <Link
                             href={route('password.request')}
-                            className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-gray-100 dark:focus:ring-offset-gray-800"
+                            className="text-sm font-medium text-[#1b5e20] hover:text-[#144718] hover:underline transition-colors focus:outline-none focus:ring-2 focus:ring-[#1b5e20] focus:ring-offset-2 rounded-md"
                         >
-                            Forgot your password?
+                            Lupa kata sandi?
                         </Link>
                     )}
+                </div>
 
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Log in
+                <div className="mt-8">
+                    <PrimaryButton className="w-full" disabled={processing}>
+                        Masuk Akun
                     </PrimaryButton>
                 </div>
             </form>

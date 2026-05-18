@@ -1,39 +1,50 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import SiswaLayout from '@/Layouts/SiswaLayout';
 import { Head } from '@inertiajs/react';
 import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
+import { User, Shield, Trash2 } from 'lucide-react';
 
-export default function Edit({ mustVerifyEmail, status }) {
+export default function Edit({ auth, mustVerifyEmail, status }) {
     return (
-        <AuthenticatedLayout
-            header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                    Profile
-                </h2>
-            }
+        <SiswaLayout
+            user={auth.user}
+            header="Profil Saya"
         >
-            <Head title="Profile" />
+            <Head title="Profil Saya" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800">
+            <div className="max-w-4xl space-y-6">
+                <div className="bg-white p-6 md:p-8 border border-slate-100 shadow-sm sm:rounded-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-8 opacity-5">
+                        <User size={100} />
+                    </div>
+                    <div className="relative z-10">
                         <UpdateProfileInformationForm
                             mustVerifyEmail={mustVerifyEmail}
                             status={status}
                             className="max-w-xl"
                         />
                     </div>
+                </div>
 
-                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800">
+                <div className="bg-white p-6 md:p-8 border border-slate-100 shadow-sm sm:rounded-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-8 opacity-5 text-[#1b5e20]">
+                        <Shield size={100} />
+                    </div>
+                    <div className="relative z-10">
                         <UpdatePasswordForm className="max-w-xl" />
                     </div>
+                </div>
 
-                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800">
+                <div className="bg-red-50/50 p-6 md:p-8 border border-red-100 shadow-sm sm:rounded-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-8 opacity-5 text-red-600">
+                        <Trash2 size={100} />
+                    </div>
+                    <div className="relative z-10">
                         <DeleteUserForm className="max-w-xl" />
                     </div>
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </SiswaLayout>
     );
 }

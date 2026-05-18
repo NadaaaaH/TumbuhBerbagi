@@ -29,9 +29,17 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(SiswaLoginRequest $request): RedirectResponse
     {
-        $request->authenticate();
+        // Pastikan tidak ada sesi ganda
+        Auth::guard('admin')->logout();
+        Auth::guard('siswa')->logout();
+
+        $guard = $request->authenticate();
 
         $request->session()->regenerate();
+
+        if ($guard === 'admin') {
+            return redirect()->intended(route('admin.dashboard', absolute: false));
+        }
 
         return redirect()->intended(route('dashboard', absolute: false));
     }
@@ -41,7 +49,11 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
-        Auth::guard('siswa')->logout();
+        if (Auth::guard('admin')->check()) {
+            Auth::guard('admin')->logout();
+        } elseif (Auth::guard('siswa')->check()) {
+            Auth::guard('siswa')->logout();
+        }
 
         $request->session()->invalidate();
 
