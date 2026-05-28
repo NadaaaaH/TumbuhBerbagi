@@ -3,12 +3,12 @@ import { Head } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Users, BookOpen, Calendar, TrendingUp } from 'lucide-react';
 
-export default function AdminDashboard({ auth }) {
-    const stats = [
-        { name: 'Total Siswa', value: '0', icon: Users, color: 'bg-blue-50 text-blue-600' },
-        { name: 'Jadwal Mentoring', value: '0', icon: Calendar, color: 'bg-green-50 text-green-600' },
-        { name: 'Latihan Soal', value: '0', icon: BookOpen, color: 'bg-orange-50 text-orange-600' },
-        { name: 'Tingkat Aktivitas', value: '0%', icon: TrendingUp, color: 'bg-purple-50 text-purple-600' },
+export default function AdminDashboard({ auth, stats = {} }) {
+    const dashboardStats = [
+        { name: 'Total Siswa', value: stats.totalUsers || 0, icon: Users, color: 'bg-blue-50 text-blue-600' },
+        { name: 'Jadwal Mentoring', value: stats.totalJadwals || 0, icon: Calendar, color: 'bg-green-50 text-green-600' },
+        { name: 'Latihan Soal', value: stats.totalLatihanSoal || 0, icon: BookOpen, color: 'bg-orange-50 text-orange-600' },
+        { name: 'Tingkat Aktivitas', value: `${stats.tingkatAktivitas || 0}%`, icon: TrendingUp, color: 'bg-purple-50 text-purple-600' },
     ];
 
     return (
@@ -19,7 +19,7 @@ export default function AdminDashboard({ auth }) {
             <Head title="Admin Dashboard" />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                {stats.map((stat) => (
+                {dashboardStats.map((stat) => (
                     <div key={stat.name} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
                         <div className={`p-4 rounded-xl ${stat.color}`}>
                             <stat.icon size={24} />

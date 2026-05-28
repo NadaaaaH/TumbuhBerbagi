@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Soal;
 use App\Models\PilihanJawaban;
+use App\Models\PaketLatihan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -13,23 +14,32 @@ class SoalController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Soal::with('pilihan_jawaban')->orderBy('id_soal', 'desc');
+        $query = Soal::with(['pilihan_jawaban', 'paket_latihan'])->orderBy('id_soal', 'desc');
 
         if ($request->has('kategori') && $request->kategori != '') {
             $query->where('kategori', $request->kategori);
         }
 
+        if ($request->has('id_paket') && $request->id_paket != '') {
+            $query->where('id_paket', $request->id_paket);
+        }
+
         $soals = $query->get();
+        $pakets = PaketLatihan::orderBy('nama_paket')->get();
 
         return Inertia::render('Admin/Soal/Index', [
             'soals' => $soals,
-            'filters' => $request->only(['kategori'])
+            'pakets' => $pakets,
+            'filters' => $request->only(['kategori', 'id_paket'])
         ]);
     }
 
     public function create()
     {
-        return Inertia::render('Admin/Soal/Create');
+        $pakets = PaketLatihan::orderBy('nama_paket')->get();
+        return Inertia::render('Admin/Soal/Create', [
+            'pakets' => $pakets,
+        ]);
     }
 
     public function store(Request $request)
@@ -41,6 +51,7 @@ class SoalController extends Controller
             'kategori' => 'required|string|max:50',
             'tingkat_kesulitan' => 'nullable|string|max:30',
             'kunci_jawaban' => 'required|string',
+            'pembahasan' => 'nullable|string',
             'bobot_nilai' => 'required|integer|min:1',
             'is_case_sensitive' => 'boolean',
             'status' => 'required|in:aktif,nonaktif',
@@ -60,9 +71,10 @@ class SoalController extends Controller
                 'kategori' => $validated['kategori'],
                 'tingkat_kesulitan' => $validated['tingkat_kesulitan'] ?? 'medium',
                 'kunci_jawaban' => $validated['kunci_jawaban'],
-                'bobot_nilai' => $validated['bobot_nilai'] ?? 10,
-                'is_case_sensitive' => $validated['is_case_sensitive'] ?? false,
-                'status' => $validated['status'],
+            'pembahasan' => $validated['pembahasan'] ?? null,
+            'bobot_nilai' => $validated['bobot_nilai'] ?? 10,
+            'is_case_sensitive' => $validated['is_case_sensitive'] ?? false,
+            'status' => $validated['status'],
             ]);
 
             if ($validated['jenis_soal'] === 'pilihan_ganda' && !empty($validated['pilihan'])) {
@@ -86,8 +98,10 @@ class SoalController extends Controller
     public function edit(string $id)
     {
         $soal = Soal::with('pilihan_jawaban')->findOrFail($id);
+        $pakets = PaketLatihan::orderBy('nama_paket')->get();
         return Inertia::render('Admin/Soal/Edit', [
-            'soal' => $soal
+            'soal' => $soal,
+            'pakets' => $pakets,
         ]);
     }
 
@@ -96,12 +110,15 @@ class SoalController extends Controller
         $soal = Soal::findOrFail($id);
 
         $validated = $request->validate([
+            'id_paket' => 'required|exists:paket_latihan,id_paket',
             'konten_soal' => 'required|string',
             'jenis_soal' => 'required|in:pilihan_ganda,isian',
             'kategori' => 'required|string|max:50',
             'tingkat_kesulitan' => 'nullable|string|max:30',
             'kunci_jawaban' => 'required|string',
+            'pembahasan' => 'nullable|string',
             'bobot_nilai' => 'required|integer|min:1',
+            'is_case_sensitive' => 'boolean',
             'status' => 'required|in:aktif,nonaktif',
             
             'pilihan' => 'required_if:jenis_soal,pilihan_ganda|array',
@@ -112,12 +129,15 @@ class SoalController extends Controller
         DB::beginTransaction();
         try {
             $soal->update([
+                'id_paket' => $validated['id_paket'],
                 'konten_soal' => $validated['konten_soal'],
                 'jenis_soal' => $validated['jenis_soal'],
                 'kategori' => $validated['kategori'],
                 'tingkat_kesulitan' => $validated['tingkat_kesulitan'] ?? $soal->tingkat_kesulitan,
                 'kunci_jawaban' => $validated['kunci_jawaban'],
+                'pembahasan' => $validated['pembahasan'] ?? null,
                 'bobot_nilai' => $validated['bobot_nilai'],
+                'is_case_sensitive' => $validated['is_case_sensitive'] ?? false,
                 'status' => $validated['status'],
             ]);
 

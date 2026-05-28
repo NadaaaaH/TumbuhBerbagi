@@ -20,6 +20,7 @@ class Soal extends Model
         'kategori',
         'tingkat_kesulitan',
         'kunci_jawaban',
+        'pembahasan',
         'bobot_nilai',
         'is_case_sensitive',
         'status',
@@ -33,5 +34,10 @@ class Soal extends Model
     public function pilihan_jawaban()
     {
         return $this->hasMany(PilihanJawaban::class, 'id_soal', 'id_soal');
+    }
+
+    public function jawaban_siswa()
+    {
+        return $this->hasMany(\App\Models\JawabanSiswa::class, 'id_soal', 'id_soal');
     }
 }

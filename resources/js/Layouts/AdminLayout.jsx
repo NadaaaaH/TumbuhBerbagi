@@ -8,19 +8,23 @@ import {
     X,
     Calendar,
     BookOpen,
-    Newspaper
+    Newspaper,
+    FileQuestion,
+    Award
 } from 'lucide-react';
 
 export default function AdminLayout({ user, header, children }) {
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
     const { url } = usePage();
 
-    const navigation = [
+        const navigation = [
         { name: 'Dashboard', href: route('admin.dashboard'), icon: LayoutDashboard, active: url.startsWith('/admin/dashboard') },
         { name: 'Manajemen Siswa', href: route('siswa.index'), icon: Users, active: url.startsWith('/admin/siswa') },
         { name: 'Kegiatan & Info', href: route('kegiatan.index'), icon: Newspaper, active: url.startsWith('/admin/kegiatan') },
-        { name: 'Jadwal (Segera)', href: '#', icon: Calendar, active: false },
-        { name: 'Soal (Segera)', href: '#', icon: BookOpen, active: false },
+        { name: 'Jadwal', href: route('jadwal.index'), icon: Calendar, active: url.startsWith('/admin/jadwal') },
+        { name: 'Paket Latihan', href: route('paket-latihan.index'), icon: BookOpen, active: url.startsWith('/admin/paket-latihan') },
+        { name: 'Bank Soal', href: route('soal.index'), icon: FileQuestion, active: url.startsWith('/admin/soal') },
+        { name: 'Hasil Latihan', href: route('sesi-latihan.index'), icon: Award, active: url.startsWith('/admin/sesi-latihan') },
     ];
 
     return (

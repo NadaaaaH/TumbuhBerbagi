@@ -15,11 +15,11 @@ export default function SiswaLayout({ user, header, children }) {
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
     const { url } = usePage();
 
-    const navigation = [
+        const navigation = [
         { name: 'Dashboard', href: route('dashboard'), icon: LayoutDashboard, active: url === '/dashboard' },
         { name: 'Kegiatan & Info', href: route('siswa.kegiatan.index'), icon: Newspaper, active: url.startsWith('/kegiatan') },
         { name: 'Jadwal Mentoring', href: route('siswa.jadwal'), icon: Calendar, active: url.startsWith('/jadwal') },
-        { name: 'Latihan Soal (Segera)', href: '#', icon: BookOpen, active: false },
+        { name: 'Latihan Soal', href: route('siswa.latihan.index'), icon: BookOpen, active: url.startsWith('/latihan') },
         { name: 'Profil Saya', href: route('profile.edit'), icon: User, active: url.startsWith('/profile') },
     ];
 
@@ -109,7 +109,7 @@ export default function SiswaLayout({ user, header, children }) {
             </div>
 
             {/* Main Content Area */}
-            <div className="flex-1 md:ml-64 flex flex-col min-h-screen pt-16 md:pt-0">
+            <div className="flex-1 md:ml-64 flex flex-col min-h-screen pt-16 md:pt-20">
                 {/* Topbar for Desktop */}
                 <header className="hidden md:flex h-20 bg-white border-b border-slate-200 items-center justify-between px-8 sticky top-0 z-10">
                     <div className="font-['Poppins'] font-semibold text-xl text-slate-800">
