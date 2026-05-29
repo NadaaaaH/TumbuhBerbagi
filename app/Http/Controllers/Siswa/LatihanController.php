@@ -194,6 +194,25 @@ class LatihanController extends Controller
             return redirect()->route('siswa.latihan.show', $paket->id_paket);
         }
 
+        // Hitung peringkat dan total peserta
+        $scores = HasilLatihan::join('sesi_latihan', 'hasil_latihan.id_sesi', '=', 'sesi_latihan.id_sesi')
+            ->where('sesi_latihan.id_paket', $id)
+            ->select('sesi_latihan.id_siswa', 'hasil_latihan.nilai_akhir')
+            ->orderBy('hasil_latihan.nilai_akhir', 'desc')
+            ->get();
+
+        $totalPeserta = $scores->count();
+        $peringkat = 1;
+        foreach ($scores as $index => $score) {
+            if ($score->id_siswa == $siswa->id_siswa) {
+                $peringkat = $index + 1;
+                break;
+            }
+        }
+
+        $rataRata = round($scores->avg('nilai_akhir') * 10, 0);
+        $nilaiTertinggi = round($scores->max('nilai_akhir') * 10, 0);
+
         $questionStats = $paket->soal->map(function ($soal) {
             return [
                 'id_soal' => $soal->id_soal,
@@ -212,6 +231,10 @@ class LatihanController extends Controller
             'hasil' => $sesi->hasil_latihan,
             'jawabanSiswa' => $sesi->jawaban_siswa,
             'questionStats' => $questionStats,
+            'peringkat' => $peringkat,
+            'totalPeserta' => $totalPeserta,
+            'rataRata' => $rataRata,
+            'nilaiTertinggi' => $nilaiTertinggi,
         ]);
     }
 }

@@ -9,11 +9,16 @@ import { Pagination, Navigation, Autoplay } from 'swiper/modules';
 import {
     BookOpen, Users, Calendar, TrendingUp, Bell, FileText,
     ChevronDown, ArrowRight,
-    GraduationCap, LayoutDashboard
+    GraduationCap, LayoutDashboard, Menu, X
 } from 'lucide-react';
 
 export default function Welcome({ auth, kegiatans }) {
     const [scrolled, setScrolled] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    const dashboardRoute = auth.user
+        ? (auth.role === 'admin' ? route('admin.dashboard') : route('dashboard'))
+        : route('login');
 
     useEffect(() => {
         const handleScroll = () => {
@@ -70,29 +75,97 @@ export default function Welcome({ auth, kegiatans }) {
 
                 {/* Navbar */}
                 <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/80 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`}>
-                    <div className="max-w-2xl mx-auto px-6 md:px-12 flex justify-between items-center">
+                    <div className="max-w-7xl mx-auto px-6 md:px-12 flex justify-between items-center">
                         <Link href="/" className="flex items-center group">
                             <img src="/images/logo.png" alt="Tumbuh Berbagi" className="h-10 w-auto group-hover:scale-105 transition-transform" />
                         </Link>
 
-                        <div>
-                            {auth.user ? (
-                                <Link
-                                    href={route('dashboard')}
-                                    className="inline-flex items-center justify-center px-6 py-2.5 rounded-full text-sm font-semibold bg-[#1b5e20] text-white hover:bg-[#144718] transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
-                                >
-                                    Dashboard
-                                </Link>
-                            ) : (
-                                <Link
-                                    href={route('login')}
-                                    className="inline-flex items-center justify-center px-6 py-2.5 rounded-full text-sm font-semibold bg-[#1b5e20] text-white hover:bg-[#144718] transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
-                                >
-                                    Masuk Akun
-                                </Link>
-                            )}
+                        {/* Desktop Navigation Links */}
+                        <div className="hidden md:flex items-center gap-8">
+                            <a href="#kegiatan" className="text-sm font-medium text-slate-600 hover:text-[#1b5e20] transition-colors">
+                                Kegiatan
+                            </a>
+                            <a href="#fitur" className="text-sm font-medium text-slate-600 hover:text-[#1b5e20] transition-colors">
+                                Fitur
+                            </a>
+                            <a href="#tentang" className="text-sm font-medium text-slate-600 hover:text-[#1b5e20] transition-colors">
+                                Tentang
+                            </a>
+                            <a href="#faq" className="text-sm font-medium text-slate-600 hover:text-[#1b5e20] transition-colors">
+                                FAQ
+                            </a>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                            {/* Action Button */}
+                            <Link
+                                href={dashboardRoute}
+                                className="hidden sm:inline-flex items-center justify-center px-6 py-2.5 rounded-full text-sm font-semibold bg-[#1b5e20] text-white hover:bg-[#144718] transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
+                            >
+                                {auth.user ? 'Buka E-Learning' : 'Masuk Akun'}
+                            </Link>
+
+                            {/* Mobile Hamburger Toggle */}
+                            <button
+                                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                                className="p-2 md:hidden text-slate-600 hover:text-[#1b5e20] transition-colors focus:outline-none"
+                                aria-label="Toggle Menu"
+                            >
+                                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                            </button>
                         </div>
                     </div>
+
+                    {/* Mobile Navigation Drawer/Menu */}
+                    <AnimatePresence>
+                        {isMenuOpen && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.3 }}
+                                className="md:hidden bg-white border-b border-slate-100 shadow-lg overflow-hidden"
+                            >
+                                <div className="px-6 py-4 flex flex-col gap-4">
+                                    <a
+                                        href="#kegiatan"
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className="text-base font-medium text-slate-600 hover:text-[#1b5e20] transition-colors py-2 border-b border-slate-50"
+                                    >
+                                        Kegiatan
+                                    </a>
+                                    <a
+                                        href="#fitur"
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className="text-base font-medium text-slate-600 hover:text-[#1b5e20] transition-colors py-2 border-b border-slate-50"
+                                    >
+                                        Fitur
+                                    </a>
+                                    <a
+                                        href="#tentang"
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className="text-base font-medium text-slate-600 hover:text-[#1b5e20] transition-colors py-2 border-b border-slate-50"
+                                    >
+                                        Tentang
+                                    </a>
+                                    <a
+                                        href="#faq"
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className="text-base font-medium text-slate-600 hover:text-[#1b5e20] transition-colors py-2 border-b border-slate-50"
+                                    >
+                                        FAQ
+                                    </a>
+                                    <Link
+                                        href={dashboardRoute}
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className="inline-flex items-center justify-center w-full px-6 py-3 rounded-full text-sm font-semibold bg-[#1b5e20] text-white hover:bg-[#144718] transition-all shadow-md mt-2"
+                                    >
+                                        {auth.user ? 'Buka E-Learning' : 'Masuk Akun'}
+                                    </Link>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </nav>
 
                 {/* Hero Section */}
@@ -152,9 +225,9 @@ export default function Welcome({ auth, kegiatans }) {
                                         Portal akademik khusus penerima beasiswa untuk mengakses latihan soal, mentoring, dan perkembangan belajarmu.
                                     </motion.p>
                                     <motion.div variants={fadeInUp}>
-                                        <Link href={route('login')}
+                                        <Link href={dashboardRoute}
                                             className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-slate-900 text-white font-semibold text-sm hover:bg-slate-700 transition-all shadow-xl hover:-translate-y-1">
-                                            Masuk ke Sistem <ArrowRight size={16} />
+                                            {auth.user ? 'Buka E-Learning' : 'Masuk ke Sistem'} <ArrowRight size={16} />
                                         </Link>
                                     </motion.div>
                                 </motion.div>
@@ -191,7 +264,7 @@ export default function Welcome({ auth, kegiatans }) {
 
 
                 {/* Kegiatan Section (Moved Up) */}
-                <section className="py-24 bg-white overflow-hidden relative border-t border-slate-100">
+                <section id="kegiatan" className="py-24 bg-white overflow-hidden relative border-t border-slate-100">
                     <div className="max-w-7xl mx-auto px-6 mb-12 text-center">
                         <motion.div
                             initial="hidden"
@@ -276,7 +349,7 @@ export default function Welcome({ auth, kegiatans }) {
                 </section>
 
                 {/* Fitur Sistem (Moved Down) */}
-                <section className="py-24 bg-[#f8f9fa] relative">
+                <section id="fitur" className="py-24 bg-[#f8f9fa] relative">
                     <div className="max-w-7xl mx-auto px-6">
                         <motion.div
                             initial="hidden"
@@ -318,7 +391,7 @@ export default function Welcome({ auth, kegiatans }) {
                 </section>
 
                 {/* Tentang Tumbuh Berbagi */}
-                <section className="py-24 bg-white">
+                <section id="tentang" className="py-24 bg-white">
                     <div className="max-w-7xl mx-auto px-6">
                         <div className="grid lg:grid-cols-2 gap-16 items-center">
                             <motion.div
@@ -381,7 +454,7 @@ export default function Welcome({ auth, kegiatans }) {
                 </section>
 
                 {/* FAQ */}
-                <section className="py-24 bg-slate-50">
+                <section id="faq" className="py-24 bg-slate-50">
                     <div className="max-w-3xl mx-auto px-6">
                         <motion.div
                             initial="hidden"
