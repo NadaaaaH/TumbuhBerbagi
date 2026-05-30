@@ -51,7 +51,10 @@ class LatihanController extends Controller
         $paket = PaketLatihan::where('id_paket', $id)
             ->where('status', 'aktif')
             ->with(['soal' => function ($query) {
-                $query->where('status', 'aktif')->with('pilihan_jawaban');
+                $query->where('status', 'aktif')
+                      ->orderBy('kategori', 'asc')
+                      ->orderBy('id_soal', 'asc')
+                      ->with('pilihan_jawaban');
             }])
             ->firstOrFail();
 
@@ -62,6 +65,10 @@ class LatihanController extends Controller
             'waktu_mulai' => now(),
             'status' => 'aktif',
         ]);
+
+        if ($sesi->wasRecentlyCreated) {
+            \App\Models\AktivitasSiswa::log('mulai_latihan', 'Siswa memulai ' . $paket->nama_paket);
+        }
 
         if ($sesi->hasil_latihan) {
             return redirect()->route('siswa.latihan.hasil', $paket->id_paket);
@@ -98,6 +105,8 @@ class LatihanController extends Controller
         $jawabanData = $validated['jawaban'] ?? [];
         $soals = Soal::where('id_paket', $paket->id_paket)
             ->where('status', 'aktif')
+            ->orderBy('kategori', 'asc')
+            ->orderBy('id_soal', 'asc')
             ->with('pilihan_jawaban')
             ->get();
 
@@ -116,7 +125,9 @@ class LatihanController extends Controller
 
                 if ($soal->jenis_soal === 'pilihan_ganda') {
                     if ($jawaban) {
-                        $pilihan = PilihanJawaban::find($jawaban);
+                        $pilihan = PilihanJawaban::where('id_pilihan', $jawaban)
+                            ->where('id_soal', $soal->id_soal)
+                            ->first();
                         if ($pilihan) {
                             $selectedPilihanId = $pilihan->id_pilihan;
                             $isBenar = strtoupper(trim($pilihan->kode_pilihan)) === strtoupper(trim($soal->kunci_jawaban));
@@ -167,6 +178,8 @@ class LatihanController extends Controller
             ]);
 
             DB::commit();
+
+            \App\Models\AktivitasSiswa::log('selesai_latihan', 'Siswa menyelesaikan ' . $paket->nama_paket . ' (Nilai: ' . $nilaiAkhir . ')');
 
             return redirect()->route('siswa.latihan.hasil', $paket->id_paket);
         } catch (\Throwable $e) {

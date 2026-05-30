@@ -5,6 +5,20 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import { ArrowLeft, Save } from 'lucide-react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+
+// Konfigurasi toolbar untuk React Quill
+const modules = {
+    toolbar: [
+        [{ 'header': [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        [{ 'script': 'sub'}, { 'script': 'super' }],
+        ['image', 'link', 'formula'],
+        ['clean']
+    ],
+};
 
 export default function Edit({ auth, soal, pakets }) {
     // Robustly pre-fill options A-E
@@ -188,15 +202,15 @@ export default function Edit({ auth, soal, pakets }) {
                         {/* Pertanyaan */}
                         <div>
                             <InputLabel htmlFor="konten_soal" value="Pertanyaan (Konten Soal)" />
-                            <textarea
-                                id="konten_soal"
-                                className="border-gray-300 focus:border-[#1b5e20] focus:ring-[#1b5e20] rounded-md shadow-sm mt-1 block w-full font-sans"
-                                rows={4}
-                                value={data.konten_soal}
-                                onChange={(e) => setData('konten_soal', e.target.value)}
-                                placeholder="Masukkan isi pertanyaan di sini..."
-                                required
-                            />
+                            <div className="mt-1 bg-white rounded-md">
+                                <ReactQuill 
+                                    theme="snow" 
+                                    value={data.konten_soal} 
+                                    onChange={(value) => setData('konten_soal', value)} 
+                                    modules={modules}
+                                    placeholder="Masukkan isi pertanyaan di sini (bisa sisipkan gambar)..."
+                                />
+                            </div>
                             <InputError message={errors.konten_soal} className="mt-2" />
                         </div>
 
@@ -274,14 +288,15 @@ export default function Edit({ auth, soal, pakets }) {
                         {/* Pembahasan */}
                         <div>
                             <InputLabel htmlFor="pembahasan" value="Pembahasan Soal" />
-                            <textarea
-                                id="pembahasan"
-                                className="border-gray-300 focus:border-[#1b5e20] focus:ring-[#1b5e20] rounded-md shadow-sm mt-1 block w-full font-sans"
-                                rows={4}
-                                value={data.pembahasan}
-                                onChange={(e) => setData('pembahasan', e.target.value)}
-                                placeholder="Tuliskan penjelasan atau pembahasan soal di sini..."
-                            />
+                            <div className="mt-1 bg-white rounded-md">
+                                <ReactQuill 
+                                    theme="snow" 
+                                    value={data.pembahasan || ''} 
+                                    onChange={(value) => setData('pembahasan', value)} 
+                                    modules={modules}
+                                    placeholder="Tuliskan penjelasan atau pembahasan soal di sini..."
+                                />
+                            </div>
                             <InputError message={errors.pembahasan} className="mt-2" />
                         </div>
 

@@ -6,15 +6,27 @@ use App\Http\Controllers\Controller;
 use App\Models\Kegiatan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class KegiatanController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $kegiatans = Kegiatan::orderBy('tanggal', 'desc')->get();
+        $query = Kegiatan::query();
+
+        if ($request->has('search') && $request->search != '') {
+            $searchTerm = '%' . strtolower($request->search) . '%';
+            $query->where(function($q) use ($searchTerm) {
+                $q->where(DB::raw('LOWER(nama_kegiatan)'), 'like', $searchTerm)
+                  ->orWhere(DB::raw('LOWER(deskripsi)'), 'like', $searchTerm);
+            });
+        }
+
+        $kegiatans = $query->orderBy('tanggal', 'desc')->get();
         return Inertia::render('Admin/Kegiatan/Index', [
-            'kegiatans' => $kegiatans
+            'kegiatans' => $kegiatans,
+            'filters' => $request->only(['search'])
         ]);
     }
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Siswa;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class SiswaController extends Controller
@@ -13,12 +14,23 @@ class SiswaController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $siswas = Siswa::all();
+        $query = Siswa::query();
+
+        if ($request->has('search') && $request->search != '') {
+            $searchTerm = '%' . strtolower($request->search) . '%';
+            $query->where(function($q) use ($searchTerm) {
+                $q->where(DB::raw('LOWER(nama)'), 'like', $searchTerm)
+                  ->orWhere(DB::raw('LOWER(email)'), 'like', $searchTerm);
+            });
+        }
+
+        $siswas = $query->orderBy('id_siswa', 'desc')->get();
         
         return Inertia::render('Admin/Siswa/Index', [
-            'siswas' => $siswas
+            'siswas' => $siswas,
+            'filters' => $request->only(['search'])
         ]);
     }
 
@@ -44,10 +56,19 @@ class SiswaController extends Controller
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
+        $validated['email_verified_at'] = null; // Terisi otomatis ketika tautan verifikasi diklik
+        $validated['force_password_change'] = true; // Paksa ganti password pertama kali setelah verifikasi
 
-        Siswa::create($validated);
+        $siswa = Siswa::create($validated);
 
-        return redirect()->route('siswa.index')->with('success', 'Siswa berhasil ditambahkan.');
+        try {
+            $siswa->sendEmailVerificationNotification();
+        } catch (\Exception $e) {
+            // Log the error but allow registration to complete if mail server has issues locally
+            \Illuminate\Support\Facades\Log::error('Failed to send verification email: ' . $e->getMessage());
+        }
+
+        return redirect()->route('siswa.index')->with('success', 'Siswa berhasil ditambahkan dan email verifikasi telah dikirim.');
     }
 
     /**

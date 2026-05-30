@@ -11,6 +11,7 @@ export default function Edit({ auth, paket }) {
         nama_paket: paket?.nama_paket || '',
         deskripsi: paket?.deskripsi || '',
         status: paket?.status || 'aktif',
+        waktu_ujian: paket?.waktu_ujian || 0,
     });
 
     const submit = (e) => {
@@ -58,6 +59,20 @@ export default function Edit({ auth, paket }) {
                                 onChange={(e) => setData('deskripsi', e.target.value)}
                             />
                             <InputError message={errors.deskripsi} className="mt-2" />
+                        </div>
+
+                        <div>
+                            <InputLabel htmlFor="waktu_ujian" value="Waktu Ujian (Menit)" />
+                            <TextInput
+                                id="waktu_ujian"
+                                type="number"
+                                min="0"
+                                className="mt-1 block w-full"
+                                value={data.waktu_ujian}
+                                onChange={(e) => setData('waktu_ujian', e.target.value)}
+                            />
+                            <p className="text-xs text-slate-500 mt-1">Biarkan 0 jika waktu ujian tidak dibatasi.</p>
+                            <InputError message={errors.waktu_ujian} className="mt-2" />
                         </div>
 
                         <div>

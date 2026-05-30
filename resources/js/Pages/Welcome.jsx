@@ -9,12 +9,14 @@ import { Pagination, Navigation, Autoplay } from 'swiper/modules';
 import {
     BookOpen, Users, Calendar, TrendingUp, Bell, FileText,
     ChevronDown, ArrowRight,
-    GraduationCap, LayoutDashboard, Menu, X
+    GraduationCap, LayoutDashboard, Menu, X,
+    Clock, MapPin, ExternalLink
 } from 'lucide-react';
 
 export default function Welcome({ auth, kegiatans }) {
     const [scrolled, setScrolled] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [selectedKegiatan, setSelectedKegiatan] = useState(null);
 
     const dashboardRoute = auth.user
         ? (auth.role === 'admin' ? route('admin.dashboard') : route('dashboard'))
@@ -300,7 +302,10 @@ export default function Welcome({ auth, kegiatans }) {
                                     {kegiatans.map((kegiatan) => (
                                         <SwiperSlide key={kegiatan.id_kegiatan}>
                                             {({ isActive }) => (
-                                                <div className={`transition-all duration-500 mx-auto bg-white rounded-[2rem] overflow-hidden border border-slate-100 shadow-sm flex flex-col group cursor-pointer h-full ${isActive ? 'opacity-100 scale-100 shadow-2xl' : 'opacity-40 scale-[0.85] blur-[2px]'}`}>
+                                                <button
+                                                    onClick={() => isActive && setSelectedKegiatan(kegiatan)}
+                                                    className={`text-left w-full transition-all duration-500 mx-auto bg-white rounded-[2rem] overflow-hidden border border-slate-100 shadow-sm flex flex-col group h-full ${isActive ? 'opacity-100 scale-100 shadow-2xl cursor-pointer' : 'opacity-40 scale-[0.85] blur-[2px] cursor-default'}`}
+                                                >
                                                     <div className="h-64 sm:h-80 bg-slate-200 relative overflow-hidden">
                                                         {kegiatan.gambar_url ? (
                                                             <img src={kegiatan.gambar_url} alt={kegiatan.nama_kegiatan} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -324,7 +329,7 @@ export default function Welcome({ auth, kegiatans }) {
                                                             Baca selengkapnya <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                                                         </div>
                                                     </div>
-                                                </div>
+                                                </button>
                                             )}
                                         </SwiperSlide>
                                     ))}
@@ -528,7 +533,176 @@ export default function Welcome({ auth, kegiatans }) {
                     </div>
                 </footer>
             </div>
+
+            {/* ── Kegiatan Detail Modal ── */}
+            <AnimatePresence>
+                {selectedKegiatan && (
+                    <KegiatanModal
+                        kegiatan={selectedKegiatan}
+                        auth={auth}
+                        onClose={() => setSelectedKegiatan(null)}
+                    />
+                )}
+            </AnimatePresence>
         </>
+    );
+}
+
+// ── Kegiatan Modal Component ──
+function KegiatanModal({ kegiatan, auth, onClose }) {
+    const formattedDate = kegiatan.tanggal
+        ? new Date(kegiatan.tanggal).toLocaleDateString('id-ID', {
+            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+          })
+        : '-';
+
+    // Close on Escape key
+    React.useEffect(() => {
+        const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
+        document.addEventListener('keydown', handleKey);
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.removeEventListener('keydown', handleKey);
+            document.body.style.overflow = '';
+        };
+    }, [onClose]);
+
+    return (
+        // Backdrop
+        <motion.div
+            key="modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-6"
+            onClick={onClose}
+        >
+            {/* Blurred overlay */}
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+
+            {/* Modal Panel */}
+            <motion.div
+                key="modal-panel"
+                initial={{ opacity: 0, y: 60, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 40, scale: 0.97 }}
+                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                className="relative bg-white rounded-t-[2rem] sm:rounded-[2rem] w-full sm:max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Close Button */}
+                <button
+                    onClick={onClose}
+                    id="modal-close-btn"
+                    className="absolute top-4 right-4 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm shadow-md border border-slate-100 text-slate-500 hover:text-slate-900 hover:bg-white transition-all"
+                    aria-label="Tutup"
+                >
+                    <X size={18} />
+                </button>
+
+                {/* Image */}
+                <div className="w-full h-56 sm:h-72 bg-slate-100 rounded-t-[2rem] sm:rounded-t-[2rem] overflow-hidden relative flex-shrink-0">
+                    {kegiatan.gambar_url ? (
+                        <img
+                            src={kegiatan.gambar_url}
+                            alt={kegiatan.nama_kegiatan}
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-300">
+                            <Calendar size={64} opacity={0.3} />
+                        </div>
+                    )}
+                    {/* Date badge on image */}
+                    <div className="absolute top-4 left-4">
+                        <span className="px-4 py-1.5 bg-white/90 backdrop-blur-sm rounded-full text-xs font-semibold text-[#1b5e20] shadow-sm">
+                            {new Date(kegiatan.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                    </div>
+                    {/* Status badge */}
+                    {kegiatan.status && (
+                        <div className="absolute top-4 right-14">
+                            <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
+                                kegiatan.status === 'aktif'
+                                    ? 'bg-green-500/90 text-white'
+                                    : 'bg-slate-500/80 text-white'
+                            }`}>
+                                {kegiatan.status === 'aktif' ? 'Aktif' : kegiatan.status}
+                            </span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Content */}
+                <div className="p-6 sm:p-8">
+                    {/* Meta row */}
+                    <div className="flex flex-wrap gap-3 mb-5">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-xs font-medium text-slate-600">
+                            <Calendar size={12} className="text-[#1b5e20]" />
+                            {formattedDate}
+                        </span>
+                        {(kegiatan.waktu_mulai || kegiatan.waktu_selesai) && (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-xs font-medium text-slate-600">
+                                <Clock size={12} className="text-[#1b5e20]" />
+                                {kegiatan.waktu_mulai || '00:00'} – {kegiatan.waktu_selesai || 'Selesai'} WIB
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Title */}
+                    <h2 className="font-['Poppins'] text-2xl sm:text-3xl font-bold text-slate-900 leading-tight mb-4">
+                        {kegiatan.nama_kegiatan}
+                    </h2>
+
+                    <div className="w-12 h-1 rounded-full bg-[#1b5e20] mb-5" />
+
+                    {/* Description */}
+                    <div className="text-slate-600 leading-relaxed text-base whitespace-pre-wrap mb-6">
+                        {kegiatan.deskripsi || 'Tidak ada deskripsi untuk kegiatan ini.'}
+                    </div>
+
+                    {/* Link ke halaman lengkap */}
+                    <a
+                        href={`/kegiatan/${kegiatan.id_kegiatan}`}
+                        className="inline-flex items-center gap-2 text-sm font-medium text-[#1b5e20] hover:underline mb-6"
+                    >
+                        <ExternalLink size={14} />
+                        Lihat halaman kegiatan lengkap
+                    </a>
+
+                    {/* CTA for non-logged users */}
+                    {!auth?.user && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="mt-2 p-5 rounded-2xl bg-gradient-to-br from-[#1b5e20]/5 to-[#508953]/10 border border-[#508953]/20"
+                        >
+                            <div className="flex items-start gap-4">
+                                <div className="w-9 h-9 rounded-xl bg-[#1b5e20] flex items-center justify-center text-white flex-shrink-0 mt-0.5">
+                                    <GraduationCap size={18} />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="font-semibold text-slate-800 mb-1 text-sm">
+                                        Ikut Tumbuh Bersama Kami
+                                    </p>
+                                    <p className="text-xs text-slate-500 mb-3 leading-relaxed">
+                                        Login ke portal untuk mengakses latihan soal, jadwal mentoring, dan kegiatan eksklusif lainnya.
+                                    </p>
+                                    <Link
+                                        href={route('login')}
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#1b5e20] text-white text-sm font-semibold hover:bg-[#144718] transition-all shadow-md hover:-translate-y-0.5"
+                                    >
+                                        Masuk ke E-Learning <ArrowRight size={14} />
+                                    </Link>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </div>
+            </motion.div>
+        </motion.div>
     );
 }
 

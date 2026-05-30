@@ -18,6 +18,7 @@ class PaketLatihan extends Model
         'nama_paket',
         'deskripsi',
         'status',
+        'waktu_ujian',
     ];
 
     public function soal()

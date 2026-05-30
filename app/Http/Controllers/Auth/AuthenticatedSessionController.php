@@ -41,6 +41,8 @@ class AuthenticatedSessionController extends Controller
             return redirect()->intended(route('admin.dashboard', absolute: false));
         }
 
+        \App\Models\AktivitasSiswa::log('login', 'Siswa berhasil login ke dalam sistem.');
+
         return redirect()->intended(route('dashboard', absolute: false));
     }
 

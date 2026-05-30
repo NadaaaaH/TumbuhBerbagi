@@ -1,11 +1,12 @@
-import React from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
+import React, { useState } from 'react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Plus, Pencil, Trash2, Calendar, Clock } from 'lucide-react';
+import { Plus, Pencil, Trash2, Calendar, Clock, Search } from 'lucide-react';
 import Swal from 'sweetalert2';
 
-export default function Index({ auth, jadwals }) {
+export default function Index({ auth, jadwals, filters }) {
     const { delete: destroy } = useForm();
+    const [searchQuery, setSearchQuery] = useState(filters?.search || '');
 
     const handleDelete = (id) => {
         Swal.fire({
@@ -27,6 +28,11 @@ export default function Index({ auth, jadwals }) {
                 });
             }
         });
+    };
+
+    const handleSearch = (e) => {
+        e.preventDefault();
+        router.get(route('jadwal.index'), { search: searchQuery }, { preserveState: true });
     };
 
     const formatDate = (date) => {
@@ -76,18 +82,32 @@ export default function Index({ auth, jadwals }) {
         >
             <Head title="Manajemen Jadwal" />
 
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div>
                     <h2 className="text-xl font-semibold text-slate-800 font-['Poppins']">Daftar Jadwal</h2>
                     <p className="text-slate-500 text-sm">Kelola jadwal mentoring dan kegiatan untuk siswa.</p>
                 </div>
-                <Link
-                    href={route('jadwal.create')}
-                    className="bg-[#1b5e20] hover:bg-[#508953] text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
-                >
-                    <Plus size={18} />
-                    Tambah Jadwal
-                </Link>
+                <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+                    {/* Search Bar */}
+                    <form onSubmit={handleSearch} className="relative w-full sm:w-64">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                        <input 
+                            type="text" 
+                            placeholder="Cari jadwal..." 
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border-slate-200 focus:border-[#1b5e20] focus:ring-[#1b5e20] text-sm"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </form>
+
+                    <Link
+                        href={route('jadwal.create')}
+                        className="w-full sm:w-auto shrink-0 justify-center bg-[#1b5e20] hover:bg-[#508953] text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
+                    >
+                        <Plus size={18} />
+                        Tambah Jadwal
+                    </Link>
+                </div>
             </div>
 
             {jadwals && jadwals.length > 0 ? (

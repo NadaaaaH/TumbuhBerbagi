@@ -1,24 +1,31 @@
 import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Plus, Edit2, Trash2, Check, X, Filter, BookOpen, AlertCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, Check, X, Filter, BookOpen, AlertCircle, Search } from 'lucide-react';
 
 export default function Index({ auth, soals, pakets = [], filters }) {
     const [selectedKategori, setSelectedKategori] = useState(filters?.kategori || '');
     const [selectedPaket, setSelectedPaket] = useState(filters?.id_paket || '');
+    const [searchQuery, setSearchQuery] = useState(filters?.search || '');
     
     // Available categories
     const categories = ['PPU', 'PK', 'PBM', 'Literasi Bahasa Indonesia', 'Literasi Bahasa Inggris', 'Penalaran Matematika'];
 
-    const handleFilterChange = (kategori, id_paket) => {
+    const handleFilterChange = (kategori, id_paket, search = searchQuery) => {
         setSelectedKategori(kategori);
         setSelectedPaket(id_paket);
         
         const params = {};
         if (kategori) params.kategori = kategori;
         if (id_paket) params.id_paket = id_paket;
+        if (search) params.search = search;
         
         router.get(route('soal.index'), params, { preserveState: true });
+    };
+
+    const handleSearch = (e) => {
+        e.preventDefault();
+        handleFilterChange(selectedKategori, selectedPaket, searchQuery);
     };
 
     const toggleStatus = (id) => {
@@ -35,12 +42,13 @@ export default function Index({ auth, soals, pakets = [], filters }) {
         <AdminLayout user={auth.user} header="Bank Soal Latsol UTBK">
             <Head title="Bank Soal" />
 
-            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 mb-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-1">
+            <div className="flex flex-col gap-4 mb-6">
+                {/* Baris Atas: Kategori & Tombol Tambah */}
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     {/* Category Filter */}
-                    <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 w-full sm:w-auto">
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 w-full md:w-auto flex-1 scrollbar-hide">
                         <button
-                            onClick={() => handleFilterChange('', selectedPaket)}
+                            onClick={() => handleFilterChange('', selectedPaket, searchQuery)}
                             className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors whitespace-nowrap ${
                                 selectedKategori === ''
                                     ? 'bg-[#1b5e20] text-white'
@@ -52,7 +60,7 @@ export default function Index({ auth, soals, pakets = [], filters }) {
                         {categories.map((cat) => (
                             <button
                                 key={cat}
-                                onClick={() => handleFilterChange(cat, selectedPaket)}
+                                onClick={() => handleFilterChange(cat, selectedPaket, searchQuery)}
                                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors whitespace-nowrap ${
                                     selectedKategori === cat
                                         ? 'bg-[#1b5e20] text-white'
@@ -64,11 +72,35 @@ export default function Index({ auth, soals, pakets = [], filters }) {
                         ))}
                     </div>
 
+                    {/* Add Button */}
+                    <Link
+                        href={route('soal.create')}
+                        className="inline-flex items-center justify-center gap-2 bg-[#1b5e20] text-white px-5 py-3 rounded-2xl text-sm font-semibold hover:bg-[#144718] transition-colors shadow-sm shrink-0"
+                    >
+                        <Plus size={18} />
+                        Tambah Soal Baru
+                    </Link>
+                </div>
+
+                {/* Baris Bawah: Search & Filter Paket */}
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                    {/* Search Bar */}
+                    <form onSubmit={handleSearch} className="w-full sm:w-1/2 flex items-center bg-white border border-slate-200 rounded-xl px-3 py-2 focus-within:border-[#1b5e20] focus-within:ring-[#1b5e20] focus-within:ring-1 transition-colors">
+                        <Search size={18} className="text-slate-400 mr-2 shrink-0" />
+                        <input
+                            type="text"
+                            placeholder="Cari soal..."
+                            className="bg-transparent border-none p-0 focus:ring-0 text-sm font-semibold text-slate-600 w-full placeholder-slate-400"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </form>
+
                     {/* Paket Filter Dropdown */}
-                    <div className="w-full sm:w-64">
+                    <div className="w-full sm:w-1/2">
                         <select
                             value={selectedPaket}
-                            onChange={(e) => handleFilterChange(selectedKategori, e.target.value)}
+                            onChange={(e) => handleFilterChange(selectedKategori, e.target.value, searchQuery)}
                             className="w-full bg-white border border-slate-200 text-slate-600 rounded-xl px-4 py-2 text-sm font-semibold focus:border-[#1b5e20] focus:ring-[#1b5e20] focus:ring-1 focus:outline-none transition-colors"
                         >
                             <option value="">Semua Paket Latihan</option>
@@ -80,15 +112,6 @@ export default function Index({ auth, soals, pakets = [], filters }) {
                         </select>
                     </div>
                 </div>
-
-                {/* Add Button */}
-                <Link
-                    href={route('soal.create')}
-                    className="inline-flex items-center justify-center gap-2 bg-[#1b5e20] text-white px-5 py-3 rounded-2xl text-sm font-semibold hover:bg-[#144718] transition-colors shadow-sm"
-                >
-                    <Plus size={18} />
-                    Tambah Soal Baru
-                </Link>
             </div>
 
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">

@@ -29,11 +29,17 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $siswa = $request->user('siswa');
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user('siswa') ?? $request->user('admin') ?? $request->user('web'),
-                'role' => $request->user('admin') ? 'admin' : ($request->user('siswa') ? 'siswa' : null),
+                'user' => $siswa ?? $request->user('admin') ?? $request->user('web'),
+                'role' => $request->user('admin') ? 'admin' : ($siswa ? 'siswa' : null),
+                'notifications' => $siswa
+                    ? \App\Models\Notifikasi::where('id_siswa', $siswa->id_siswa)
+                        ->orderBy('created_at', 'desc')
+                        ->get()
+                    : [],
             ],
         ];
     }

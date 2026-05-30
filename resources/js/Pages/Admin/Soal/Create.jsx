@@ -5,10 +5,24 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
-export default function Create({ auth, pakets }) {
+// Konfigurasi toolbar untuk React Quill
+const modules = {
+    toolbar: [
+        [{ 'header': [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        [{ 'script': 'sub'}, { 'script': 'super' }],
+        ['image', 'link', 'formula'],
+        ['clean']
+    ],
+};
+
+export default function Create({ auth, pakets, defaultPaketId }) {
     const { data, setData, post, transform, processing, errors } = useForm({
-        id_paket: pakets[0]?.id_paket || '',
+        id_paket: defaultPaketId || (pakets[0]?.id_paket || ''),
         konten_soal: '',
         jenis_soal: 'pilihan_ganda',
         kategori: 'PPU',
@@ -63,13 +77,23 @@ export default function Create({ auth, pakets }) {
             <Head title="Tambah Soal" />
 
             <div className="mb-6">
-                <Link
-                    href={route('soal.index')}
-                    className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 transition-colors font-medium text-sm"
-                >
-                    <ArrowLeft size={16} />
-                    Kembali ke Daftar Soal
-                </Link>
+                {defaultPaketId ? (
+                    <Link
+                        href={route('paket-latihan.show', defaultPaketId)}
+                        className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 transition-colors font-medium text-sm"
+                    >
+                        <ArrowLeft size={16} />
+                        Kembali ke Detail Paket
+                    </Link>
+                ) : (
+                    <Link
+                        href={route('soal.index')}
+                        className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 transition-colors font-medium text-sm"
+                    >
+                        <ArrowLeft size={16} />
+                        Kembali ke Daftar Semua Soal
+                    </Link>
+                )}
             </div>
 
             <div className="max-w-4xl">
@@ -81,9 +105,10 @@ export default function Create({ auth, pakets }) {
                                 <InputLabel htmlFor="id_paket" value="Paket Latihan" />
                                 <select
                                     id="id_paket"
-                                    className="border-gray-300 focus:border-[#1b5e20] focus:ring-[#1b5e20] rounded-md shadow-sm mt-1 block w-full"
+                                    className="border-gray-300 focus:border-[#1b5e20] focus:ring-[#1b5e20] rounded-md shadow-sm mt-1 block w-full disabled:bg-slate-100 disabled:text-slate-500"
                                     value={data.id_paket}
                                     onChange={(e) => setData('id_paket', e.target.value)}
+                                    disabled={!!defaultPaketId}
                                     required
                                 >
                                     <option value="" disabled>Pilih Paket Latihan</option>
@@ -181,15 +206,15 @@ export default function Create({ auth, pakets }) {
                         {/* Pertanyaan */}
                         <div>
                             <InputLabel htmlFor="konten_soal" value="Pertanyaan (Konten Soal)" />
-                            <textarea
-                                id="konten_soal"
-                                className="border-gray-300 focus:border-[#1b5e20] focus:ring-[#1b5e20] rounded-md shadow-sm mt-1 block w-full font-sans"
-                                rows={4}
-                                value={data.konten_soal}
-                                onChange={(e) => setData('konten_soal', e.target.value)}
-                                placeholder="Masukkan isi pertanyaan di sini..."
-                                required
-                            />
+                            <div className="mt-1 bg-white rounded-md">
+                                <ReactQuill 
+                                    theme="snow" 
+                                    value={data.konten_soal} 
+                                    onChange={(value) => setData('konten_soal', value)} 
+                                    modules={modules}
+                                    placeholder="Masukkan isi pertanyaan di sini (bisa sisipkan gambar)..."
+                                />
+                            </div>
                             <InputError message={errors.konten_soal} className="mt-2" />
                         </div>
 
@@ -267,25 +292,35 @@ export default function Create({ auth, pakets }) {
                         {/* Pembahasan */}
                         <div>
                             <InputLabel htmlFor="pembahasan" value="Pembahasan Soal" />
-                            <textarea
-                                id="pembahasan"
-                                className="border-gray-300 focus:border-[#1b5e20] focus:ring-[#1b5e20] rounded-md shadow-sm mt-1 block w-full font-sans"
-                                rows={4}
-                                value={data.pembahasan}
-                                onChange={(e) => setData('pembahasan', e.target.value)}
-                                placeholder="Tuliskan penjelasan atau pembahasan soal di sini..."
-                            />
+                            <div className="mt-1 bg-white rounded-md">
+                                <ReactQuill 
+                                    theme="snow" 
+                                    value={data.pembahasan || ''} 
+                                    onChange={(value) => setData('pembahasan', value)} 
+                                    modules={modules}
+                                    placeholder="Tuliskan penjelasan atau pembahasan soal di sini..."
+                                />
+                            </div>
                             <InputError message={errors.pembahasan} className="mt-2" />
                         </div>
 
                         {/* Submit Actions */}
                         <div className="flex items-center justify-end gap-4 pt-6">
-                            <Link
-                                href={route('soal.index')}
-                                className="px-6 py-2.5 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-                            >
-                                Batal
-                            </Link>
+                            {defaultPaketId ? (
+                                <Link
+                                    href={route('paket-latihan.show', defaultPaketId)}
+                                    className="px-6 py-2.5 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                                >
+                                    Batal
+                                </Link>
+                            ) : (
+                                <Link
+                                    href={route('soal.index')}
+                                    className="px-6 py-2.5 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                                >
+                                    Batal
+                                </Link>
+                            )}
                             <button
                                 type="submit"
                                 disabled={processing}

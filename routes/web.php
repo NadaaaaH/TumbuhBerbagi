@@ -1,9 +1,13 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\KegiatanPublikController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+// Public route — accessible without login
+Route::get('/kegiatan/{id}', [KegiatanPublikController::class, 'show'])->name('kegiatan.publik.show');
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -15,9 +19,9 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth:siswa', 'verified'])->name('dashboard');
+Route::get('/dashboard', [App\Http\Controllers\Siswa\DashboardController::class, 'index'])
+    ->middleware(['auth:siswa', 'siswa.verified', 'siswa.password_changed'])
+    ->name('dashboard');
 
 Route::middleware('auth:admin')->group(function () {
     Route::get('/admin/dashboard', [App\Http\Controllers\Admin\DashboardController::class, 'index'])
@@ -32,9 +36,11 @@ Route::middleware('auth:admin')->group(function () {
     Route::resource('admin/sesi-latihan', App\Http\Controllers\Admin\SesiLatihanController::class)->only(['index','show'])->names('sesi-latihan');
     Route::get('admin/sesi-latihan/{id}/export-all', [App\Http\Controllers\Admin\SesiLatihanController::class, 'exportAll'])->name('sesi-latihan.export-all');
     Route::get('admin/sesi-latihan/{id_sesi}/export-siswa', [App\Http\Controllers\Admin\SesiLatihanController::class, 'exportSiswa'])->name('sesi-latihan.export-siswa');
+    Route::get('admin/sesi-latihan/{id}/preview-all', [App\Http\Controllers\Admin\SesiLatihanController::class, 'previewAll'])->name('sesi-latihan.preview-all');
+    Route::get('admin/sesi-latihan/{id_sesi}/preview-siswa', [App\Http\Controllers\Admin\SesiLatihanController::class, 'previewSiswa'])->name('sesi-latihan.preview-siswa');
 });
 
-Route::middleware('auth:siswa')->group(function () {
+Route::middleware(['auth:siswa', 'siswa.verified', 'siswa.password_changed'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -46,6 +52,10 @@ Route::middleware('auth:siswa')->group(function () {
     Route::get('/latihan/{id}', [App\Http\Controllers\Siswa\LatihanController::class, 'show'])->name('siswa.latihan.show');
     Route::post('/latihan/{id}/submit', [App\Http\Controllers\Siswa\LatihanController::class, 'submit'])->name('siswa.latihan.submit');
     Route::get('/latihan/{id}/hasil', [App\Http\Controllers\Siswa\LatihanController::class, 'hasil'])->name('siswa.latihan.hasil');
+
+    // Notifikasi (siswa)
+    Route::post('/notifications/read-all', [App\Http\Controllers\Siswa\NotificationController::class, 'markAllAsRead'])->name('siswa.notifications.read-all');
+    Route::post('/notifications/{id}/read', [App\Http\Controllers\Siswa\NotificationController::class, 'markAsRead'])->name('siswa.notifications.read');
 });
 
 require __DIR__ . '/auth.php';

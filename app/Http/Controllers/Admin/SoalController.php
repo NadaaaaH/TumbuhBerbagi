@@ -24,21 +24,26 @@ class SoalController extends Controller
             $query->where('id_paket', $request->id_paket);
         }
 
+        if ($request->has('search') && $request->search != '') {
+            $query->where(DB::raw('LOWER(konten_soal)'), 'like', '%' . strtolower($request->search) . '%');
+        }
+
         $soals = $query->get();
         $pakets = PaketLatihan::orderBy('nama_paket')->get();
 
         return Inertia::render('Admin/Soal/Index', [
             'soals' => $soals,
             'pakets' => $pakets,
-            'filters' => $request->only(['kategori', 'id_paket'])
+            'filters' => $request->only(['kategori', 'id_paket', 'search'])
         ]);
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $pakets = PaketLatihan::orderBy('nama_paket')->get();
         return Inertia::render('Admin/Soal/Create', [
             'pakets' => $pakets,
+            'defaultPaketId' => $request->query('paket_id', '')
         ]);
     }
 
@@ -88,7 +93,7 @@ class SoalController extends Controller
             }
 
             DB::commit();
-            return redirect()->route('soal.index')->with('success', 'Soal berhasil ditambahkan.');
+            return redirect()->route('paket-latihan.show', $validated['id_paket'])->with('success', 'Soal berhasil ditambahkan ke paket ini.');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['error' => 'Gagal menyimpan soal: ' . $e->getMessage()]);
@@ -156,7 +161,7 @@ class SoalController extends Controller
             }
 
             DB::commit();
-            return redirect()->route('soal.index')->with('success', 'Soal berhasil diperbarui.');
+            return redirect()->route('paket-latihan.show', $soal->id_paket)->with('success', 'Soal berhasil diperbarui.');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['error' => 'Gagal memperbarui soal: ' . $e->getMessage()]);
@@ -168,10 +173,11 @@ class SoalController extends Controller
         $soal = Soal::findOrFail($id);
         // Karena di migrasi belum ada onDelete('cascade') untuk pilihan_jawaban,
         // kita hapus manual untuk aman.
+        $id_paket = $soal->id_paket;
         PilihanJawaban::where('id_soal', $soal->id_soal)->delete();
         $soal->delete();
 
-        return redirect()->route('soal.index')->with('success', 'Soal berhasil dihapus.');
+        return redirect()->route('paket-latihan.show', $id_paket)->with('success', 'Soal berhasil dihapus dari paket.');
     }
 
     public function toggleStatus(string $id)

@@ -33,6 +33,12 @@ export default function Index({ auth, pakets, ongoingPackages = [], completedPac
                                             <span className="font-semibold text-slate-900">{paket.soal_count}</span>
                                         </div>
                                         <div className="flex items-center gap-2">
+                                            <span className="text-slate-500">Waktu:</span>
+                                            <span className="font-semibold text-slate-900">
+                                                {paket.waktu_ujian > 0 ? `${paket.waktu_ujian} Menit` : 'Tidak Dibatasi'}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
                                             <span className="text-slate-500">Status Pengerjaan:</span>
                                             {isCompleted ? (
                                                 <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">

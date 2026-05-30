@@ -5,15 +5,24 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Jadwal;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class JadwalController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $jadwals = Jadwal::orderBy('tanggal', 'desc')->orderBy('waktu_mulai', 'desc')->get();
+        $query = Jadwal::query();
+
+        if ($request->has('search') && $request->search != '') {
+            $searchTerm = '%' . strtolower($request->search) . '%';
+            $query->where(DB::raw('LOWER(nama_jadwal)'), 'like', $searchTerm);
+        }
+
+        $jadwals = $query->orderBy('tanggal', 'desc')->orderBy('waktu_mulai', 'desc')->get();
         return Inertia::render('Admin/Jadwal/Index', [
-            'jadwals' => $jadwals
+            'jadwals' => $jadwals,
+            'filters' => $request->only(['search'])
         ]);
     }
 
@@ -32,7 +41,21 @@ class JadwalController extends Controller
             'status' => 'nullable|in:aktif,nonaktif',
         ]);
 
-        Jadwal::create($validated);
+        $jadwal = Jadwal::create($validated);
+
+        if ($jadwal->status === 'aktif') {
+            $siswas = \App\Models\Siswa::all();
+            foreach ($siswas as $siswa) {
+                \App\Models\Notifikasi::create([
+                    'id_siswa' => $siswa->id_siswa,
+                    'judul' => 'Jadwal Mentoring Baru',
+                    'pesan' => 'Jadwal mentoring baru "' . $jadwal->nama_jadwal . '" telah ditambahkan untuk tanggal ' . \Carbon\Carbon::parse($jadwal->tanggal)->translatedFormat('d F Y') . '.',
+                    'tipe' => 'jadwal',
+                    'id_referensi' => $jadwal->id_jadwal,
+                    'is_dibaca' => false,
+                ]);
+            }
+        }
 
         return redirect()->route('jadwal.index')->with('success', 'Jadwal berhasil ditambahkan.');
     }

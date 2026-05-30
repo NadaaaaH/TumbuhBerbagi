@@ -12,7 +12,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('guest')->group(function () {
+Route::middleware('guest:admin,siswa,web')->group(function () {
     // Registration disabled, users are registered by admin
     // Route::get('register', [RegisteredUserController::class, 'create'])->name('register');
     // Route::post('register', [RegisteredUserController::class, 'store']);
@@ -38,7 +38,12 @@ Route::middleware('guest')->group(function () {
         ->name('password.store');
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware('auth:siswa,admin')->group(function () {
+    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
+        ->name('logout');
+});
+
+Route::middleware('auth:siswa')->group(function () {
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
 
@@ -57,11 +62,10 @@ Route::middleware('auth')->group(function () {
 
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
 
-    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
-        ->name('logout');
+    // Forced password change routes
+    Route::get('change-password', [PasswordController::class, 'changeView'])
+        ->name('password.change');
+    Route::put('change-password', [PasswordController::class, 'changeSave'])
+        ->name('password.change.save');
 });
 
-// Route::middleware('auth:admin')->group(function () {
-//     Route::post('admin/logout', [AdminAuthenticatedSessionController::class, 'destroy'])
-//         ->name('admin.logout');
-// });

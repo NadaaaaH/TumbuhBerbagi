@@ -1,11 +1,12 @@
-import React from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
+import React, { useState } from 'react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Plus, Pencil, Trash2, Calendar, Clock, Newspaper, Image as ImageIcon } from 'lucide-react';
+import { Plus, Pencil, Trash2, Calendar, Clock, Newspaper, Image as ImageIcon, Search } from 'lucide-react';
 import Swal from 'sweetalert2';
 
-export default function Index({ auth, kegiatans }) {
+export default function Index({ auth, kegiatans, filters }) {
     const { delete: destroy } = useForm();
+    const [searchQuery, setSearchQuery] = useState(filters?.search || '');
 
     const handleDelete = (id) => {
         Swal.fire({
@@ -29,6 +30,11 @@ export default function Index({ auth, kegiatans }) {
         });
     };
 
+    const handleSearch = (e) => {
+        e.preventDefault();
+        router.get(route('kegiatan.index'), { search: searchQuery }, { preserveState: true });
+    };
+
     return (
         <AdminLayout
             user={auth.user}
@@ -36,18 +42,32 @@ export default function Index({ auth, kegiatans }) {
         >
             <Head title="Manajemen Kegiatan" />
 
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div>
                     <h2 className="text-xl font-semibold text-slate-800 font-['Poppins']">Daftar Kegiatan</h2>
                     <p className="text-slate-500 text-sm">Kelola informasi dan kegiatan untuk siswa.</p>
                 </div>
-                <Link
-                    href={route('kegiatan.create')}
-                    className="bg-[#1b5e20] hover:bg-[#508953] text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
-                >
-                    <Plus size={18} />
-                    Tambah Kegiatan
-                </Link>
+                <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+                    {/* Search Bar */}
+                    <form onSubmit={handleSearch} className="relative w-full sm:w-64">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                        <input 
+                            type="text" 
+                            placeholder="Cari kegiatan..." 
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border-slate-200 focus:border-[#1b5e20] focus:ring-[#1b5e20] text-sm"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </form>
+                    
+                    <Link
+                        href={route('kegiatan.create')}
+                        className="w-full sm:w-auto shrink-0 justify-center bg-[#1b5e20] hover:bg-[#508953] text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
+                    >
+                        <Plus size={18} />
+                        Tambah Kegiatan
+                    </Link>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
