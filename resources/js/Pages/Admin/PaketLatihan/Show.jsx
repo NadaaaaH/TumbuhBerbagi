@@ -2,15 +2,45 @@ import React, { useState } from 'react';
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { ArrowLeft, Plus, Edit, Trash2, CheckCircle, XCircle, Search } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 export default function Show({ auth, paket, soals = [], filters }) {
     const { delete: destroy } = useForm();
     const [searchQuery, setSearchQuery] = useState(filters?.search || '');
 
     const handleDelete = (id) => {
-        if (confirm('Apakah Anda yakin ingin menghapus soal ini?')) {
-            destroy(route('soal.destroy', id));
-        }
+        Swal.fire({
+            title: 'Hapus Soal Latihan?',
+            text: 'Soal ini akan dihapus secara permanen dari paket latihan ini.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, hapus!',
+            cancelButtonText: 'Batal',
+            customClass: {
+                popup: 'rounded-3xl p-6 shadow-xl',
+                confirmButton: 'rounded-xl px-5 py-3 font-medium text-sm',
+                cancelButton: 'rounded-xl px-5 py-3 font-medium text-sm'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                destroy(route('soal.destroy', id), {
+                    onSuccess: () => {
+                        Swal.fire({
+                            title: 'Terhapus!',
+                            text: 'Soal berhasil dihapus.',
+                            icon: 'success',
+                            confirmButtonColor: '#1b5e20',
+                            customClass: {
+                                popup: 'rounded-3xl p-6 shadow-xl',
+                                confirmButton: 'rounded-xl px-5 py-3 font-medium text-sm'
+                            }
+                        });
+                    }
+                });
+            }
+        });
     };
 
     const handleSearch = (e) => {

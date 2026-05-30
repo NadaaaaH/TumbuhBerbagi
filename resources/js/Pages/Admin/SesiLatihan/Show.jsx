@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { ArrowLeft, Download, FileSpreadsheet, CheckCircle2, XCircle, Clock, Award, Users, Search, Eye, X, Loader2, FileText } from 'lucide-react';
@@ -9,6 +9,17 @@ import { motion } from 'framer-motion';
 // ============================================================
 function PdfPreviewModal({ isOpen, onClose, previewUrl, downloadUrl, title }) {
     const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (isOpen) {
+            setLoading(true);
+            // Fallback timeout to hide spinner if iframe onLoad does not fire (common in PDF iframe previews)
+            const timer = setTimeout(() => {
+                setLoading(false);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen, previewUrl]);
 
     if (!isOpen) return null;
 

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Plus, Edit2, Trash2, Check, X, Filter, BookOpen, AlertCircle, Search } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 export default function Index({ auth, soals, pakets = [], filters }) {
     const [selectedKategori, setSelectedKategori] = useState(filters?.kategori || '');
@@ -33,9 +34,39 @@ export default function Index({ auth, soals, pakets = [], filters }) {
     };
 
     const deleteSoal = (id) => {
-        if (confirm('Apakah Anda yakin ingin menghapus soal ini?')) {
-            router.delete(route('soal.destroy', id), { preserveScroll: true });
-        }
+        Swal.fire({
+            title: 'Hapus Soal Latihan?',
+            text: 'Soal ini akan dihapus secara permanen dari sistem.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, hapus!',
+            cancelButtonText: 'Batal',
+            customClass: {
+                popup: 'rounded-3xl p-6 shadow-xl',
+                confirmButton: 'rounded-xl px-5 py-3 font-medium text-sm',
+                cancelButton: 'rounded-xl px-5 py-3 font-medium text-sm'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.delete(route('soal.destroy', id), {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        Swal.fire({
+                            title: 'Terhapus!',
+                            text: 'Soal berhasil dihapus.',
+                            icon: 'success',
+                            confirmButtonColor: '#1b5e20',
+                            customClass: {
+                                popup: 'rounded-3xl p-6 shadow-xl',
+                                confirmButton: 'rounded-xl px-5 py-3 font-medium text-sm'
+                            }
+                        });
+                    }
+                });
+            }
+        });
     };
 
     return (

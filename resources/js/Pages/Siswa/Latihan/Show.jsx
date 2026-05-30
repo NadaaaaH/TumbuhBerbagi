@@ -142,11 +142,18 @@ export default function Show({ auth, paket, soals = [], sesi, errors }) {
                     </div>
                 </div>
 
-                {/* Layout 2 kolom: kiri (timer + navigasi) | kanan (soal) */}
+                {/* Layout adaptif: pada mobile (Timer -> Soal -> Navigasi), pada desktop (Kiri: Timer + Navigasi, Kanan: Soal) */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-                    {/* Kolom kiri */}
-                    <div className="lg:col-span-4 space-y-6">
+                    {/* MOBILE ONLY: Timer (Paling atas di mobile) */}
+                    {paket.waktu_ujian > 0 && (
+                        <div className="block lg:hidden">
+                            <TimerCard timeLeft={timeLeft} />
+                        </div>
+                    )}
+
+                    {/* DESKTOP ONLY: Kolom kiri (Timer + Navigasi) */}
+                    <div className="hidden lg:block lg:col-span-4 space-y-6">
                         {paket.waktu_ujian > 0 && <TimerCard timeLeft={timeLeft} />}
                         <NavigasiSoal
                             soals={soals}
@@ -159,7 +166,7 @@ export default function Show({ auth, paket, soals = [], sesi, errors }) {
                         />
                     </div>
 
-                    {/* Kolom kanan */}
+                    {/* ALWAYS: Kolom kanan / tengah (Soal) */}
                     <div className="lg:col-span-8">
                         <SoalCard
                             soal={soals[activeIndex]}
@@ -173,6 +180,19 @@ export default function Show({ auth, paket, soals = [], sesi, errors }) {
                             onRagu={toggleRaguRagu}
                             onPrev={() => setActiveIndex((i) => i - 1)}
                             onNext={() => setActiveIndex((i) => i + 1)}
+                            onKirim={() => setShowConfirmModal(true)}
+                        />
+                    </div>
+
+                    {/* MOBILE ONLY: NavigasiSoal (Paling bawah di mobile) */}
+                    <div className="block lg:hidden">
+                        <NavigasiSoal
+                            soals={soals}
+                            activeIndex={activeIndex}
+                            jawaban={data.jawaban}
+                            raguRagu={raguRagu}
+                            processing={processing}
+                            onNavigate={setActiveIndex}
                             onKirim={() => setShowConfirmModal(true)}
                         />
                     </div>

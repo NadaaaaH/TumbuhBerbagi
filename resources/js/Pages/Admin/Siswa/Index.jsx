@@ -2,15 +2,45 @@ import React, { useState } from 'react';
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Plus, Edit, Trash2, Search, MoreVertical } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 export default function Index({ auth, siswas, filters }) {
     const { delete: destroy } = useForm();
     const [searchQuery, setSearchQuery] = useState(filters?.search || '');
 
     const handleDelete = (id) => {
-        if (confirm('Apakah Anda yakin ingin menghapus siswa ini?')) {
-            destroy(route('siswa.destroy', id));
-        }
+        Swal.fire({
+            title: 'Hapus Akun Siswa?',
+            text: 'Semua riwayat latihan, nilai, dan data siswa ini akan dihapus secara permanen. Tindakan ini tidak bisa dibatalkan ya!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, hapus aja!',
+            cancelButtonText: 'Batal',
+            customClass: {
+                popup: 'rounded-3xl p-6 shadow-xl',
+                confirmButton: 'rounded-xl px-5 py-3 font-medium text-sm',
+                cancelButton: 'rounded-xl px-5 py-3 font-medium text-sm'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                destroy(route('siswa.destroy', id), {
+                    onSuccess: () => {
+                        Swal.fire({
+                            title: 'Terhapus!',
+                            text: 'Akun siswa berhasil dihapus dengan aman.',
+                            icon: 'success',
+                            confirmButtonColor: '#1b5e20',
+                            customClass: {
+                                popup: 'rounded-3xl p-6 shadow-xl',
+                                confirmButton: 'rounded-xl px-5 py-3 font-medium text-sm'
+                            }
+                        });
+                    }
+                });
+            }
+        });
     };
 
     const handleSearch = (e) => {

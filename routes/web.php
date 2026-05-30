@@ -45,6 +45,7 @@ Route::middleware(['auth:siswa', 'siswa.verified', 'siswa.password_changed'])->g
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/jadwal', [App\Http\Controllers\Siswa\JadwalController::class, 'index'])->name('siswa.jadwal');
+    Route::post('/jadwal/{id}/alarm', [App\Http\Controllers\Siswa\JadwalController::class, 'toggleAlarm'])->name('siswa.jadwal.alarm');
     Route::get('/kegiatan', [App\Http\Controllers\Siswa\KegiatanController::class, 'index'])->name('siswa.kegiatan.index');
     Route::get('/kegiatan/{id}', [App\Http\Controllers\Siswa\KegiatanController::class, 'show'])->name('siswa.kegiatan.show');
     // Latihan soal (siswa)

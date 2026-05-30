@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { Head } from '@inertiajs/react';
 import SiswaLayout from '@/Layouts/SiswaLayout';
 import { Calendar, Clock, MapPin, Bell, CheckCircle2 } from 'lucide-react';
+import axios from 'axios';
+import Swal from 'sweetalert2';
 
-export default function Index({ auth, jadwals }) {
-    const [alarms, setAlarms] = useState({});
+export default function Index({ auth, jadwals, activeAlarms }) {
+    const [alarms, setAlarms] = useState(activeAlarms || {});
 
     const formatDate = (date) => {
         if (!date) return '-';
@@ -21,12 +23,39 @@ export default function Index({ auth, jadwals }) {
     };
 
     const toggleAlarm = (id) => {
-        setAlarms(prev => ({
-            ...prev,
-            [id]: !prev[id]
-        }));
-        // Di sini nantinya bisa disambungkan ke backend API untuk mengirim email
-        // axios.post(route('siswa.jadwal.alarm', id))
+        axios.post(route('siswa.jadwal.alarm', id))
+            .then(response => {
+                if (response.data.success) {
+                    setAlarms(prev => ({
+                        ...prev,
+                        [id]: response.data.active
+                    }));
+
+                    Swal.fire({
+                        title: response.data.active ? 'Alarm Diaktifkan! ⏰' : 'Alarm Dinonaktifkan 🔕',
+                        text: response.data.message,
+                        icon: response.data.active ? 'success' : 'info',
+                        confirmButtonColor: '#1b5e20',
+                        customClass: {
+                            popup: 'rounded-3xl p-6 shadow-xl',
+                            confirmButton: 'rounded-xl px-5 py-3 font-medium text-sm'
+                        }
+                    });
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                Swal.fire({
+                    title: 'Gagal',
+                    text: 'Terjadi kesalahan saat mengatur alarm.',
+                    icon: 'error',
+                    confirmButtonColor: '#1b5e20',
+                    customClass: {
+                        popup: 'rounded-3xl p-6 shadow-xl',
+                        confirmButton: 'rounded-xl px-5 py-3 font-medium text-sm'
+                    }
+                });
+            });
     };
 
     return (
@@ -64,10 +93,10 @@ export default function Index({ auth, jadwals }) {
                                     <span className="text-sm line-clamp-2">{jadwal.lokasi || 'Online / Zoom'}</span>
                                 </div>
 
-                                <div className="mt-auto pt-4 border-t border-slate-100">
+                                <div className="mt-auto pt-4 border-t border-slate-100 flex flex-col gap-2">
                                     <button 
                                         onClick={() => toggleAlarm(jadwal.id_jadwal)}
-                                        className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium transition-colors ${
+                                        className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-xs transition-colors ${
                                             alarms[jadwal.id_jadwal] 
                                             ? 'bg-green-50 text-green-700 border border-green-200' 
                                             : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
@@ -75,16 +104,26 @@ export default function Index({ auth, jadwals }) {
                                     >
                                         {alarms[jadwal.id_jadwal] ? (
                                             <>
-                                                <CheckCircle2 size={18} />
+                                                <CheckCircle2 size={16} />
                                                 Pengingat Email Aktif
                                             </>
                                         ) : (
                                             <>
-                                                <Bell size={18} />
+                                                <Bell size={16} />
                                                 Set Alarm ke Email
                                             </>
                                         )}
                                     </button>
+
+                                    <a 
+                                        href={jadwal.google_calendar_url || '#'}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-100 transition-colors"
+                                    >
+                                        <Calendar size={16} />
+                                        Tambahkan ke Google Calendar
+                                    </a>
                                 </div>
                             </div>
                         </div>

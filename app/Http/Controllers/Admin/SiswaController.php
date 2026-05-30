@@ -109,13 +109,33 @@ class SiswaController extends Controller
         return redirect()->route('siswa.index')->with('success', 'Data siswa berhasil diperbarui.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
         $siswa = Siswa::findOrFail($id);
-        $siswa->delete();
+
+        DB::transaction(function () use ($siswa) {
+            // Dapatkan semua ID sesi latihan siswa tersebut
+            $sesiIds = DB::table('sesi_latihan')
+                ->where('id_siswa', $siswa->id_siswa)
+                ->pluck('id_sesi');
+
+            if ($sesiIds->isNotEmpty()) {
+                // Hapus laporan yang merujuk ke sesi latihan siswa
+                DB::table('laporan')->whereIn('id_sesi', $sesiIds)->delete();
+
+                // Hapus hasil_latihan yang merujuk ke sesi latihan siswa
+                DB::table('hasil_latihan')->whereIn('id_sesi', $sesiIds)->delete();
+
+                // Hapus jawaban_siswa yang merujuk ke sesi latihan siswa
+                DB::table('jawaban_siswa')->whereIn('id_sesi', $sesiIds)->delete();
+
+                // Hapus sesi_latihan siswa
+                DB::table('sesi_latihan')->whereIn('id_sesi', $sesiIds)->delete();
+            }
+
+            // Hapus siswa (aktivitas_siswa dan notifikasi terhapus otomatis via foreign key cascade di database)
+            $siswa->delete();
+        });
 
         return redirect()->route('siswa.index')->with('success', 'Siswa berhasil dihapus.');
     }
