@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Kegiatan extends Model
 {
@@ -28,7 +29,10 @@ class Kegiatan extends Model
     public function getGambarUrlAttribute()
     {
         if ($this->gambar) {
-            return asset('storage/' . $this->gambar);
+            if (filter_var($this->gambar, FILTER_VALIDATE_URL)) {
+                return $this->gambar;
+            }
+            return Storage::disk(config('filesystems.default'))->url($this->gambar);
         }
         
         return null; // Bisa juga return URL default/placeholder jika diinginkan

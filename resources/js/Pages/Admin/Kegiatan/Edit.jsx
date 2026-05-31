@@ -138,10 +138,10 @@ export default function Edit({ auth, kegiatan }) {
                                 <div>
                                     <InputLabel htmlFor="gambar" value="Ganti Poster / Foto (Opsional)" />
                                     
-                                    {kegiatan.gambar && (
+                                    {(kegiatan.gambar_url || kegiatan.gambar) && (
                                         <div className="mb-2">
                                             <p className="text-xs text-slate-500 mb-1">Gambar saat ini:</p>
-                                            <img src={`/storage/${kegiatan.gambar}`} alt="Current" className="h-20 rounded-md object-cover border border-slate-200" />
+                                            <img src={kegiatan.gambar_url || `/storage/${kegiatan.gambar}`} alt="Current" className="h-20 rounded-md object-cover border border-slate-200" />
                                         </div>
                                     )}
 

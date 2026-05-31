@@ -48,7 +48,8 @@ class KegiatanController extends Controller
         ]);
 
         if ($request->hasFile('gambar')) {
-            $path = $request->file('gambar')->store('kegiatan', 'public');
+            $disk = config('filesystems.default');
+            $path = $request->file('gambar')->store('kegiatan', $disk);
             $validated['gambar'] = $path;
         }
 
@@ -80,11 +81,12 @@ class KegiatanController extends Controller
         ]);
 
         if ($request->hasFile('gambar')) {
+            $disk = config('filesystems.default');
             // Hapus gambar lama jika ada
-            if ($kegiatan->gambar && Storage::disk('public')->exists($kegiatan->gambar)) {
-                Storage::disk('public')->delete($kegiatan->gambar);
+            if ($kegiatan->gambar && Storage::disk($disk)->exists($kegiatan->gambar)) {
+                Storage::disk($disk)->delete($kegiatan->gambar);
             }
-            $path = $request->file('gambar')->store('kegiatan', 'public');
+            $path = $request->file('gambar')->store('kegiatan', $disk);
             $validated['gambar'] = $path;
         }
 
@@ -98,8 +100,9 @@ class KegiatanController extends Controller
         $kegiatan = Kegiatan::findOrFail($id);
         
         // Hapus file gambar jika ada
-        if ($kegiatan->gambar && Storage::disk('public')->exists($kegiatan->gambar)) {
-            Storage::disk('public')->delete($kegiatan->gambar);
+        $disk = config('filesystems.default');
+        if ($kegiatan->gambar && Storage::disk($disk)->exists($kegiatan->gambar)) {
+            Storage::disk($disk)->delete($kegiatan->gambar);
         }
         
         $kegiatan->delete();

@@ -76,9 +76,9 @@ export default function Index({ auth, kegiatans, filters }) {
                         <div key={kegiatan.id_kegiatan} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
                             {/* Image Placeholder */}
                             <div className="h-48 bg-slate-100 relative overflow-hidden group">
-                                {kegiatan.gambar ? (
+                                {kegiatan.gambar_url || kegiatan.gambar ? (
                                     <img 
-                                        src={`/storage/${kegiatan.gambar}`} 
+                                        src={kegiatan.gambar_url || `/storage/${kegiatan.gambar}`} 
                                         alt={kegiatan.nama_kegiatan} 
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                     />
