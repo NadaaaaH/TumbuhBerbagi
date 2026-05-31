@@ -9,6 +9,9 @@ if [ "$DB_CONNECTION" = "sqlite" ] || [ -z "$DB_CONNECTION" ]; then
 fi
 
 # Optimization: Cache config, routes, and views
+echo "Clearing old cache..."
+php artisan config:clear
+php artisan cache:clear
 echo "Caching configurations..."
 php artisan config:cache
 php artisan route:cache
