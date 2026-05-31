@@ -11,6 +11,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Trust all proxies (Render + Cloudflare) so HTTPS is detected correctly
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'siswa.verified' => \App\Http\Middleware\EnsureEmailIsVerifiedCustom::class,
             'siswa.password_changed' => \App\Http\Middleware\EnsurePasswordIsChanged::class,
