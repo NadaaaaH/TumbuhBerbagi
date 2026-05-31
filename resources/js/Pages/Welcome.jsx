@@ -397,64 +397,39 @@ export default function Welcome({ auth, kegiatans }) {
 
                 {/* Tentang Tumbuh Berbagi */}
                 <section id="tentang" className="py-24 bg-white">
-                    <div className="max-w-7xl mx-auto px-6">
-                        <div className="grid lg:grid-cols-2 gap-16 items-center">
-                            <motion.div
-                                initial="hidden"
-                                whileInView="visible"
-                                viewport={{ once: true }}
-                                variants={fadeInUp}
-                                className="order-2 lg:order-1 relative"
-                            >
-                                <div className="absolute inset-0 bg-[#ffde59] rounded-3xl -rotate-6 scale-[0.95] -z-10"></div>
-                                <div className="bg-slate-100 rounded-3xl overflow-hidden aspect-[4/3] shadow-lg relative">
-                                    <div className="absolute inset-0 flex items-center justify-center text-slate-400">
-                                        {/* Placeholder if no image */}
-                                        <Users size={64} opacity={0.2} />
-                                    </div>
-                                    {/* Ideally an image of the community here */}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent"></div>
-                                    <div className="absolute bottom-6 left-6 right-6 text-white">
-                                        <p className="font-medium">Bersama menggapai mimpi.</p>
-                                    </div>
+                    <div className="max-w-4xl mx-auto px-6 text-center">
+                        <motion.div
+                            initial="hidden"
+                            whileInView="visible"
+                            viewport={{ once: true }}
+                            variants={fadeInUp}
+                        >
+                            <h2 className="font-['Poppins'] text-3xl lg:text-4xl font-bold text-slate-900 mb-6 leading-tight">
+                                Misi Kami Mengantarkan <span className="text-[#1b5e20]">Langkahmu.</span>
+                            </h2>
+                            <p className="text-slate-600 mb-8 leading-relaxed max-w-2xl mx-auto">
+                                Tumbuh Berbagi bukan sekadar program beasiswa, melainkan komunitas supportif yang berfokus pada pendidikan dan pertumbuhan karakter. Kami hadir untuk membimbing siswa berpotensi meraih kampus impian mereka melalui mentoring intensif, akses fasilitas akademik, dan dukungan moral.
+                            </p>
+
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-slate-100">
+                                <div>
+                                    <p className="text-3xl font-bold text-slate-900 mb-1">500+</p>
+                                    <p className="text-sm text-slate-500">Peserta Aktif</p>
                                 </div>
-                                {/* Floating Stat */}
-                                <div className="absolute -bottom-6 -right-6 bg-white p-6 rounded-2xl shadow-xl border border-slate-100">
+                                <div>
+                                    <p className="text-3xl font-bold text-slate-900 mb-1">50+</p>
+                                    <p className="text-sm text-slate-500">Mentor Ahli</p>
+                                </div>
+                                <div>
+                                    <p className="text-3xl font-bold text-slate-900 mb-1">3</p>
+                                    <p className="text-sm text-slate-500">Tahun Berdiri</p>
+                                </div>
+                                <div>
                                     <p className="text-3xl font-bold text-[#1b5e20] mb-1">98%</p>
-                                    <p className="text-xs font-medium text-slate-500">Alumni lulus PTN impian</p>
+                                    <p className="text-sm text-slate-500">Alumni Lulus PTN</p>
                                 </div>
-                            </motion.div>
-
-                            <motion.div
-                                initial="hidden"
-                                whileInView="visible"
-                                viewport={{ once: true }}
-                                variants={fadeInUp}
-                                className="order-1 lg:order-2"
-                            >
-                                <h2 className="font-['Poppins'] text-3xl lg:text-4xl font-bold text-slate-900 mb-6 leading-tight">
-                                    Misi Kami Mengantarkan <span className="text-[#1b5e20]">Langkahmu.</span>
-                                </h2>
-                                <p className="text-slate-600 mb-8 leading-relaxed">
-                                    Tumbuh Berbagi bukan sekadar program beasiswa, melainkan komunitas supportif yang berfokus pada pendidikan dan pertumbuhan karakter. Kami hadir untuk membimbing siswa berpotensi meraih kampus impian mereka melalui mentoring intensif, akses fasilitas akademik, dan dukungan moral.
-                                </p>
-
-                                <div className="grid grid-cols-3 gap-6 pt-8 border-t border-slate-100">
-                                    <div>
-                                        <p className="text-3xl font-bold text-slate-900 mb-1">500+</p>
-                                        <p className="text-sm text-slate-500">Peserta Aktif</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-3xl font-bold text-slate-900 mb-1">50+</p>
-                                        <p className="text-sm text-slate-500">Mentor Ahli</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-3xl font-bold text-slate-900 mb-1">3</p>
-                                        <p className="text-sm text-slate-500">Tahun Berdiri</p>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        </div>
+                            </div>
+                        </motion.div>
                     </div>
                 </section>
 
