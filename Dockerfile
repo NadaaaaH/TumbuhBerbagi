@@ -9,7 +9,7 @@ COPY public/ ./public/
 RUN npm run build
 
 # --- Stage 2: PHP & Nginx Runtime ---
-FROM richarvey/nginx-php-fpm:php82
+FROM richarvey/nginx-php-fpm:latest
 
 # Copy repository files
 COPY . .
