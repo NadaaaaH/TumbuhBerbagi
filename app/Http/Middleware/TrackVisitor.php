@@ -22,17 +22,39 @@ class TrackVisitor
             return $next($request);
         }
 
-        if (!$request->session()->has('visited_today')) {
-            $request->session()->put('visited_today', true);
-            
-            $stat = StatistikPengunjung::firstOrCreate(
-                ['tanggal' => now()->toDateString()],
-                ['jumlah_siswa' => 0, 'jumlah_tamu' => 0]
-            );
-            
-            if (Auth::guard('siswa')->check()) {
+        $today = now()->toDateString();
+        $isSiswa = Auth::guard('siswa')->check();
+
+        // Kunci session pakai tanggal supaya auto-reset tiap hari
+        $sessionKeyTamu  = 'visited_tamu_'  . $today;
+        $sessionKeySiswa = 'visited_siswa_' . $today;
+
+        if ($isSiswa) {
+            // Siswa login: catat sebagai siswa (hanya sekali per hari)
+            if (!$request->session()->has($sessionKeySiswa)) {
+                $request->session()->put($sessionKeySiswa, true);
+
+                $stat = StatistikPengunjung::firstOrCreate(
+                    ['tanggal' => $today],
+                    ['jumlah_siswa' => 0, 'jumlah_tamu' => 0]
+                );
                 $stat->increment('jumlah_siswa');
-            } else {
+
+                // Jika sebelumnya sudah terhitung sebagai tamu hari ini, kurangi
+                if ($request->session()->has($sessionKeyTamu)) {
+                    $stat->decrement('jumlah_tamu');
+                    $request->session()->forget($sessionKeyTamu);
+                }
+            }
+        } else {
+            // Tamu: catat sebagai tamu (hanya sekali per hari, dan belum pernah tercatat sebagai siswa)
+            if (!$request->session()->has($sessionKeyTamu) && !$request->session()->has($sessionKeySiswa)) {
+                $request->session()->put($sessionKeyTamu, true);
+
+                $stat = StatistikPengunjung::firstOrCreate(
+                    ['tanggal' => $today],
+                    ['jumlah_siswa' => 0, 'jumlah_tamu' => 0]
+                );
                 $stat->increment('jumlah_tamu');
             }
         }
