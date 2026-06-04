@@ -87,17 +87,38 @@ export default function Edit({ auth, siswa }) {
                                 </div>
 
                                 <div>
-                                    <InputLabel htmlFor="status_akun" value="Status Akun" />
-                                    <select
-                                        id="status_akun"
-                                        className="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-[#1b5e20] focus:ring-[#1b5e20] py-2.5"
-                                        value={data.status_akun}
-                                        onChange={(e) => setData('status_akun', e.target.value)}
-                                        required
-                                    >
-                                        <option value="aktif">Aktif</option>
-                                        <option value="nonaktif">Nonaktif</option>
-                                    </select>
+                                    <InputLabel value="Status Akun" />
+                                    <div className="mt-2 flex items-center gap-4">
+                                        {/* Toggle Track */}
+                                        <button
+                                            type="button"
+                                            role="switch"
+                                            aria-checked={data.status_akun === 'aktif' || data.status_akun === 'Aktif'}
+                                            onClick={() => setData('status_akun', (data.status_akun === 'aktif' || data.status_akun === 'Aktif') ? 'nonaktif' : 'aktif')}
+                                            className={`relative inline-flex h-8 w-[72px] shrink-0 cursor-pointer items-center rounded-full border-2 transition-colors duration-300 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1b5e20] focus-visible:ring-offset-2 ${
+                                                (data.status_akun === 'aktif' || data.status_akun === 'Aktif')
+                                                    ? 'bg-[#1b5e20] border-[#1b5e20]'
+                                                    : 'bg-slate-200 border-slate-200'
+                                            }`}
+                                        >
+                                            {/* Thumb */}
+                                            <span
+                                                className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition-transform duration-300 ease-in-out ${
+                                                    (data.status_akun === 'aktif' || data.status_akun === 'Aktif')
+                                                        ? 'translate-x-[40px]'
+                                                        : 'translate-x-0.5'
+                                                }`}
+                                            />
+                                        </button>
+                                        {/* Label */}
+                                        <span className={`text-sm font-semibold transition-colors duration-200 ${
+                                            (data.status_akun === 'aktif' || data.status_akun === 'Aktif')
+                                                ? 'text-[#1b5e20]'
+                                                : 'text-slate-400'
+                                        }`}>
+                                            {(data.status_akun === 'aktif' || data.status_akun === 'Aktif') ? 'Aktif' : 'Nonaktif'}
+                                        </span>
+                                    </div>
                                     <InputError message={errors.status_akun} className="mt-2" />
                                 </div>
                             </div>

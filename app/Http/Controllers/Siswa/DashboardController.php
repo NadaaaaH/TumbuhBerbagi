@@ -72,9 +72,6 @@ class DashboardController extends Controller
         });
 
         return Inertia::render('Dashboard', [
-            'auth' => [
-                'user' => $siswa,
-            ],
             'jadwalTerdekat' => $jadwalTerdekat,
             'kegiatanTerbaru' => $kegiatanTerbaru,
             'latihanAktif' => $latihanAktif,

@@ -22,3 +22,13 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# File debug & temp lokal
+hash_admin.php
+query_temp.php
+tmp_auth_test.php
+
+# Dokumen laporan
+source_code_laporan.md
+*.docx
+*.pdf

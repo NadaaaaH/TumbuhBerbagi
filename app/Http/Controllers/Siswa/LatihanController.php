@@ -37,7 +37,6 @@ class LatihanController extends Controller
             ->toArray();
 
         return Inertia::render('Siswa/Latihan/Index', [
-            'auth' => ['user' => $siswa],
             'pakets' => $pakets,
             'ongoingPackages' => $ongoingPackages,
             'completedPackages' => $completedPackages,
@@ -75,7 +74,6 @@ class LatihanController extends Controller
         }
 
         return Inertia::render('Siswa/Latihan/Show', [
-            'auth' => ['user' => $siswa],
             'paket' => $paket,
             'sesi' => $sesi,
             'soals' => $paket->soal,
@@ -238,7 +236,6 @@ class LatihanController extends Controller
         });
 
         return Inertia::render('Siswa/Latihan/Hasil', [
-            'auth' => ['user' => $siswa],
             'paket' => $paket,
             'sesi' => $sesi,
             'hasil' => $sesi->hasil_latihan,

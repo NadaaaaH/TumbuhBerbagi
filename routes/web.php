@@ -43,7 +43,6 @@ Route::middleware('auth:admin')->group(function () {
 Route::middleware(['auth:siswa', 'siswa.verified', 'siswa.password_changed'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/jadwal', [App\Http\Controllers\Siswa\JadwalController::class, 'index'])->name('siswa.jadwal');
     Route::post('/jadwal/{id}/alarm', [App\Http\Controllers\Siswa\JadwalController::class, 'toggleAlarm'])->name('siswa.jadwal.alarm');
     Route::get('/kegiatan', [App\Http\Controllers\Siswa\KegiatanController::class, 'index'])->name('siswa.kegiatan.index');
