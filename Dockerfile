@@ -34,4 +34,5 @@ ENV COMPOSER_ALLOW_SUPERUSER 1
 RUN composer install --no-dev --optimize-autoloader
 
 # Set permissions
+RUN chmod +x /var/www/html/scripts/00-laravel-setup.sh
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
