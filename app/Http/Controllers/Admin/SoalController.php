@@ -171,13 +171,25 @@ class SoalController extends Controller
     public function destroy(string $id)
     {
         $soal = Soal::findOrFail($id);
-        // Karena di migrasi belum ada onDelete('cascade') untuk pilihan_jawaban,
-        // kita hapus manual untuk aman.
         $id_paket = $soal->id_paket;
-        PilihanJawaban::where('id_soal', $soal->id_soal)->delete();
-        $soal->delete();
 
-        return redirect()->route('paket-latihan.show', $id_paket)->with('success', 'Soal berhasil dihapus dari paket.');
+        DB::beginTransaction();
+        try {
+            // Hapus jawaban siswa yang merujuk ke soal ini
+            DB::table('jawaban_siswa')->where('id_soal', $soal->id_soal)->delete();
+
+            // Hapus pilihan jawaban yang merujuk ke soal ini
+            PilihanJawaban::where('id_soal', $soal->id_soal)->delete();
+
+            // Hapus soal
+            $soal->delete();
+
+            DB::commit();
+            return redirect()->route('paket-latihan.show', $id_paket)->with('success', 'Soal berhasil dihapus dari paket.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Gagal menghapus soal: ' . $e->getMessage()]);
+        }
     }
 
     public function toggleStatus(string $id)

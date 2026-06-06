@@ -132,8 +132,47 @@ class PaketLatihanController extends Controller
     public function destroy(string $id)
     {
         $paket = PaketLatihan::findOrFail($id);
-        $paket->delete();
 
-        return redirect()->route('paket-latihan.index')->with('success', 'Paket Latihan berhasil dihapus.');
+        DB::beginTransaction();
+        try {
+            // Cari semua soal di dalam paket ini
+            $soalIds = DB::table('soal')->where('id_paket', $paket->id_paket)->pluck('id_soal')->toArray();
+
+            // Cari semua sesi latihan untuk paket ini
+            $sesiIds = DB::table('sesi_latihan')->where('id_paket', $paket->id_paket)->pluck('id_sesi')->toArray();
+
+            if (!empty($sesiIds)) {
+                // Hapus laporan, hasil_latihan, dan jawaban_siswa yang terhubung dengan sesi latihan ini
+                DB::table('laporan')->whereIn('id_sesi', $sesiIds)->delete();
+                DB::table('hasil_latihan')->whereIn('id_sesi', $sesiIds)->delete();
+                DB::table('jawaban_siswa')->whereIn('id_sesi', $sesiIds)->delete();
+
+                // Hapus sesi_latihan
+                DB::table('sesi_latihan')->whereIn('id_sesi', $sesiIds)->delete();
+            }
+
+            if (!empty($soalIds)) {
+                // Hapus jawaban siswa yang terhubung dengan soal-soal ini
+                DB::table('jawaban_siswa')->whereIn('id_soal', $soalIds)->delete();
+
+                // Hapus pilihan jawaban untuk soal-soal ini
+                DB::table('pilihan_jawaban')->whereIn('id_soal', $soalIds)->delete();
+
+                // Hapus soal-soal ini
+                DB::table('soal')->whereIn('id_soal', $soalIds)->delete();
+            }
+
+            // Hapus notifikasi yang merujuk ke paket latihan ini
+            DB::table('notifikasi')->where('tipe', 'latihan')->where('id_referensi', $paket->id_paket)->delete();
+
+            // Hapus paket latihan
+            $paket->delete();
+
+            DB::commit();
+            return redirect()->route('paket-latihan.index')->with('success', 'Paket Latihan berhasil dihapus.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Gagal menghapus paket latihan: ' . $e->getMessage()]);
+        }
     }
 }
