@@ -35,7 +35,7 @@ export default function Welcome({ auth, kegiatans }) {
                 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
             </Head>
 
-            <div className="min-h-screen bg-[#fafbfc] text-[#2c3e50] font-['Inter',sans-serif] selection:bg-[#1b5e20] selection:text-white overflow-x-hidden">
+            <div className="relative min-h-screen bg-[#fafbfc] text-[#2c3e50] font-['Inter',sans-serif] selection:bg-[#1b5e20] selection:text-white overflow-x-hidden">
 
                 {/* Decorative Background Blobs */}
                 <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-emerald-100/30 rounded-full blur-3xl pointer-events-none -z-20" />
