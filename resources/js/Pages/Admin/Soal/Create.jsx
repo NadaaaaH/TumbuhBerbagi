@@ -171,21 +171,6 @@ export default function Create({ auth, pakets, defaultPaketId }) {
                                 <InputError message={errors.tingkat_kesulitan} className="mt-2" />
                             </div>
 
-                            {/* Bobot Nilai */}
-                            <div>
-                                <InputLabel htmlFor="bobot_nilai" value="Bobot Nilai" />
-                                <TextInput
-                                    id="bobot_nilai"
-                                    type="number"
-                                    className="mt-1 block w-full"
-                                    value={data.bobot_nilai}
-                                    onChange={(e) => setData('bobot_nilai', parseInt(e.target.value) || 0)}
-                                    min="1"
-                                    required
-                                />
-                                <InputError message={errors.bobot_nilai} className="mt-2" />
-                            </div>
-
                             {/* Status */}
                             <div>
                                 <InputLabel value="Status" />

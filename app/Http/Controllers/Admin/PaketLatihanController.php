@@ -45,12 +45,16 @@ class PaketLatihanController extends Controller
             $query->where(DB::raw('LOWER(konten_soal)'), 'like', '%' . strtolower($request->search) . '%');
         }
 
+        if ($request->has('kategori') && $request->kategori != '') {
+            $query->where('kategori', $request->kategori);
+        }
+
         $soals = $query->get();
 
         return Inertia::render('Admin/PaketLatihan/Show', [
             'paket' => $paket,
             'soals' => $soals,
-            'filters' => $request->only(['search'])
+            'filters' => $request->only(['search', 'kategori'])
         ]);
     }
 

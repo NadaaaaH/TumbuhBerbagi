@@ -345,7 +345,10 @@ export default function Hasil({ auth, paket, sesi, hasil, jawabanSiswa, question
                                         <span className="inline-block px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold mb-3">
                                             Soal #{idx + 1} - Kategori: {soal?.kategori || 'Umum'}
                                         </span>
-                                        <div className="text-base font-semibold text-slate-800 leading-relaxed">{soal?.konten_soal}</div>
+                                        <div 
+                                            className="text-base font-semibold text-slate-800 leading-relaxed prose prose-slate max-w-none prose-img:rounded-xl prose-img:shadow-sm"
+                                            dangerouslySetInnerHTML={{ __html: soal?.konten_soal }}
+                                        />
                                     </div>
                                     <div className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold shadow-sm whitespace-nowrap self-start ${benar ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
                                         {benar ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
@@ -408,7 +411,14 @@ export default function Hasil({ auth, paket, sesi, hasil, jawabanSiswa, question
                                         <Info size={16} className="text-slate-500" />
                                         Pembahasan
                                     </div>
-                                    <p className="text-slate-600 whitespace-pre-wrap">{soal?.pembahasan || 'Pembahasan belum disediakan.'}</p>
+                                    {soal?.pembahasan ? (
+                                        <div 
+                                            className="text-slate-600 prose prose-slate max-w-none prose-img:rounded-xl prose-img:shadow-sm"
+                                            dangerouslySetInnerHTML={{ __html: soal.pembahasan }}
+                                        />
+                                    ) : (
+                                        <p className="text-slate-500 italic">Pembahasan belum disediakan.</p>
+                                    )}
                                 </div>
                             </div>
                         );

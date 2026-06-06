@@ -7,6 +7,9 @@ import Swal from 'sweetalert2';
 export default function Show({ auth, paket, soals = [], filters }) {
     const { delete: destroy } = useForm();
     const [searchQuery, setSearchQuery] = useState(filters?.search || '');
+    const [selectedKategori, setSelectedKategori] = useState(filters?.kategori || '');
+
+    const categories = ['PU', 'PPU', 'PK', 'PBM', 'Literasi Bahasa Indonesia', 'Literasi Bahasa Inggris', 'Penalaran Matematika'];
 
     const handleDelete = (id) => {
         Swal.fire({
@@ -43,9 +46,19 @@ export default function Show({ auth, paket, soals = [], filters }) {
         });
     };
 
+    const handleFilterChange = (kategori, search = searchQuery) => {
+        setSelectedKategori(kategori);
+        
+        const params = {};
+        if (kategori) params.kategori = kategori;
+        if (search) params.search = search;
+        
+        router.get(route('paket-latihan.show', paket.id_paket), params, { preserveState: true });
+    };
+
     const handleSearch = (e) => {
         e.preventDefault();
-        router.get(route('paket-latihan.show', paket.id_paket), { search: searchQuery }, { preserveState: true });
+        handleFilterChange(selectedKategori, searchQuery);
     };
 
     return (
@@ -102,6 +115,20 @@ export default function Show({ auth, paket, soals = [], filters }) {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <h3 className="text-xl font-bold text-slate-800">Daftar Soal</h3>
                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                    {/* Filter Kategori */}
+                    <select
+                        value={selectedKategori}
+                        onChange={(e) => handleFilterChange(e.target.value, searchQuery)}
+                        className="w-full sm:w-auto bg-white border border-slate-200 text-slate-600 rounded-xl px-4 py-2.5 text-sm font-semibold focus:border-[#1b5e20] focus:ring-[#1b5e20] focus:ring-1 focus:outline-none transition-colors"
+                    >
+                        <option value="">Semua Kategori</option>
+                        {categories.map((cat) => (
+                            <option key={cat} value={cat}>
+                                {cat}
+                            </option>
+                        ))}
+                    </select>
+
                     {/* Search Bar */}
                     <form onSubmit={handleSearch} className="w-full sm:w-auto flex items-center bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus-within:border-[#1b5e20] focus-within:ring-[#1b5e20] focus-within:ring-1 transition-colors">
                         <Search size={18} className="text-slate-400 mr-2 shrink-0" />

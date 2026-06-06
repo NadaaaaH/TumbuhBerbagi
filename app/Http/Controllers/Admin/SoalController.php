@@ -57,7 +57,6 @@ class SoalController extends Controller
             'tingkat_kesulitan' => 'nullable|string|max:30',
             'kunci_jawaban' => 'required|string',
             'pembahasan' => 'nullable|string',
-            'bobot_nilai' => 'required|integer|min:1',
             'is_case_sensitive' => 'boolean',
             'status' => 'required|in:aktif,nonaktif',
             
@@ -77,7 +76,7 @@ class SoalController extends Controller
                 'tingkat_kesulitan' => $validated['tingkat_kesulitan'] ?? 'medium',
                 'kunci_jawaban' => $validated['kunci_jawaban'],
             'pembahasan' => $validated['pembahasan'] ?? null,
-            'bobot_nilai' => $validated['bobot_nilai'] ?? 10,
+            'bobot_nilai' => 10,
             'is_case_sensitive' => $validated['is_case_sensitive'] ?? false,
             'status' => $validated['status'],
             ]);
@@ -123,7 +122,6 @@ class SoalController extends Controller
             'tingkat_kesulitan' => 'nullable|string|max:30',
             'kunci_jawaban' => 'required|string',
             'pembahasan' => 'nullable|string',
-            'bobot_nilai' => 'required|integer|min:1',
             'is_case_sensitive' => 'boolean',
             'status' => 'required|in:aktif,nonaktif',
             
@@ -142,7 +140,7 @@ class SoalController extends Controller
                 'tingkat_kesulitan' => $validated['tingkat_kesulitan'] ?? $soal->tingkat_kesulitan,
                 'kunci_jawaban' => $validated['kunci_jawaban'],
                 'pembahasan' => $validated['pembahasan'] ?? null,
-                'bobot_nilai' => $validated['bobot_nilai'],
+                'bobot_nilai' => $soal->bobot_nilai ?? 10,
                 'is_case_sensitive' => $validated['is_case_sensitive'] ?? false,
                 'status' => $validated['status'],
             ]);
