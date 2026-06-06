@@ -112,7 +112,7 @@ export default function AdminLayout({ user, header, children }) {
             {/* Main Content Area */}
             <div className="flex-1 md:ml-64 flex flex-col min-h-screen pt-16 md:pt-0">
                 {/* Topbar for Desktop */}
-                <header className="hidden md:flex h-20 bg-white border-b border-slate-200 items-center justify-between px-8 sticky top-0 z-10">
+                <header className="hidden md:flex h-20 bg-white border-b border-slate-200 items-center justify-between px-8 sticky top-0 z-20 shrink-0">
                     <div className="font-['Poppins'] font-semibold text-xl text-slate-800">
                         {header}
                     </div>

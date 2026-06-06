@@ -70,7 +70,7 @@ export default function Create({ auth, pakets, defaultPaketId }) {
         post(route('soal.store'));
     };
 
-    const categories = ['PPU', 'PK', 'PBM', 'Literasi Bahasa Indonesia', 'Literasi Bahasa Inggris', 'Penalaran Matematika'];
+    const categories = ['PU', 'PPU', 'PK', 'PBM', 'Literasi Bahasa Indonesia', 'Literasi Bahasa Inggris', 'Penalaran Matematika'];
 
     return (
         <AdminLayout user={auth.user} header="Tambah Soal UTBK Baru">

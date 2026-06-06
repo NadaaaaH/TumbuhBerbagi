@@ -104,7 +104,7 @@ export default function Edit({ auth, soal, pakets, referrer }) {
         });
     };
 
-    const categories = ['PPU', 'PK', 'PBM', 'Literasi Bahasa Indonesia', 'Literasi Bahasa Inggris', 'Penalaran Matematika'];
+    const categories = ['PU', 'PPU', 'PK', 'PBM', 'Literasi Bahasa Indonesia', 'Literasi Bahasa Inggris', 'Penalaran Matematika'];
 
     return (
         <AdminLayout user={auth.user} header="Edit Soal UTBK">

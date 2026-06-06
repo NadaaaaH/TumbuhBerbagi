@@ -10,7 +10,7 @@ export default function Index({ auth, soals, pakets = [], filters }) {
     const [searchQuery, setSearchQuery] = useState(filters?.search || '');
     
     // Available categories
-    const categories = ['PPU', 'PK', 'PBM', 'Literasi Bahasa Indonesia', 'Literasi Bahasa Inggris', 'Penalaran Matematika'];
+    const categories = ['PU', 'PPU', 'PK', 'PBM', 'Literasi Bahasa Indonesia', 'Literasi Bahasa Inggris', 'Penalaran Matematika'];
 
     const handleFilterChange = (kategori, id_paket, search = searchQuery) => {
         setSelectedKategori(kategori);
