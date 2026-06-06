@@ -339,7 +339,9 @@
                         <div class="header-tagline">Platform Belajar Bersama &bull; Diterbitkan: {{ $tanggal }}</div>
                     </td>
                     <td style="text-align:right; vertical-align:middle; width:80px;">
-                        <div style="width:52px; height:52px; background-color:rgba(255,255,255,0.15); border-radius:50%; text-align:center; line-height:52px; font-size:22pt; display:inline-block;">&#127807;</div>
+                        <div style="width:60px; height:60px; background-color:rgba(255,255,255,0.15); border-radius:50%; text-align:center; display:inline-block; overflow:hidden;">
+                            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/logo2.png'))) }}" style="width:48px; height:48px; margin: 6px auto; display: block;" alt="Logo">
+                        </div>
                     </td>
                 </tr>
             </table>

@@ -107,6 +107,7 @@ class SoalController extends Controller
         return Inertia::render('Admin/Soal/Edit', [
             'soal' => $soal,
             'pakets' => $pakets,
+            'referrer' => url()->previous(),
         ]);
     }
 
@@ -146,21 +147,41 @@ class SoalController extends Controller
                 'status' => $validated['status'],
             ]);
 
-            // Reset/Hapus pilihan jawaban lama
-            PilihanJawaban::where('id_soal', $soal->id_soal)->delete();
-
-            // Masukkan pilihan jawaban baru jika pilihan ganda
+            // Perbarui atau buat pilihan jawaban jika pilihan ganda
             if ($validated['jenis_soal'] === 'pilihan_ganda' && !empty($validated['pilihan'])) {
                 foreach ($validated['pilihan'] as $pilihan) {
-                    PilihanJawaban::create([
-                        'id_soal' => $soal->id_soal,
-                        'kode_pilihan' => $pilihan['kode_pilihan'],
-                        'teks_pilihan' => $pilihan['teks_pilihan'],
-                    ]);
+                    PilihanJawaban::updateOrCreate(
+                        [
+                            'id_soal' => $soal->id_soal,
+                            'kode_pilihan' => $pilihan['kode_pilihan']
+                        ],
+                        [
+                            'teks_pilihan' => $pilihan['teks_pilihan']
+                        ]
+                    );
+                }
+
+                // Hapus pilihan lain yang mungkin ada (jika kode_pilihan tidak ada dalam input pilihan)
+                $inputCodes = collect($validated['pilihan'])->pluck('kode_pilihan')->toArray();
+                PilihanJawaban::where('id_soal', $soal->id_soal)
+                    ->whereNotIn('kode_pilihan', $inputCodes)
+                    ->delete();
+            } else {
+                // Jika jenis soal berubah menjadi isian, hapus pilihan jawaban (hanya jika tidak dirujuk, tapi jika dirujuk kita harus set id_pilihan ke null di jawaban_siswa dahulu)
+                $pilihanIds = PilihanJawaban::where('id_soal', $soal->id_soal)->pluck('id_pilihan')->toArray();
+                if (!empty($pilihanIds)) {
+                    DB::table('jawaban_siswa')->whereIn('id_pilihan', $pilihanIds)->update(['id_pilihan' => null]);
+                    PilihanJawaban::where('id_soal', $soal->id_soal)->delete();
                 }
             }
 
             DB::commit();
+
+            $redirectTo = $request->input('redirect_to');
+            if ($redirectTo && (str_contains($redirectTo, '/soal') || str_contains($redirectTo, '/paket-latihan'))) {
+                return redirect($redirectTo)->with('success', 'Soal berhasil diperbarui.');
+            }
+
             return redirect()->route('paket-latihan.show', $soal->id_paket)->with('success', 'Soal berhasil diperbarui.');
         } catch (\Exception $e) {
             DB::rollBack();

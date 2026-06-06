@@ -83,18 +83,36 @@ export default function Edit({ auth, jadwal }) {
                                 </div>
 
                                 <div>
-                                    <InputLabel htmlFor="status" value="Status" />
-                                    <select
-                                        id="status"
-                                        className="border-gray-300 focus:border-[#1b5e20] focus:ring-[#1b5e20] rounded-md shadow-sm mt-1 block w-full"
-                                        value={data.status}
-                                        onChange={(e) => setData('status', e.target.value)}
-                                        required
-                                        disabled={processing}
-                                    >
-                                        <option value="aktif">Aktif (Ditampilkan)</option>
-                                        <option value="nonaktif">Nonaktif (Disembunyikan)</option>
-                                    </select>
+                                    <InputLabel value="Status" />
+                                    <div className="mt-2 flex items-center gap-4">
+                                        <button
+                                            type="button"
+                                            role="switch"
+                                            aria-checked={data.status === 'aktif' || data.status === 'Aktif'}
+                                            onClick={() => setData('status', (data.status === 'aktif' || data.status === 'Aktif') ? 'nonaktif' : 'aktif')}
+                                            disabled={processing}
+                                            className={`relative inline-flex h-8 w-[72px] shrink-0 cursor-pointer items-center rounded-full border-2 transition-colors duration-300 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1b5e20] focus-visible:ring-offset-2 ${
+                                                (data.status === 'aktif' || data.status === 'Aktif')
+                                                    ? 'bg-[#1b5e20] border-[#1b5e20]'
+                                                    : 'bg-slate-200 border-slate-200'
+                                            } ${processing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        >
+                                            <span
+                                                className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition-transform duration-300 ease-in-out ${
+                                                    (data.status === 'aktif' || data.status === 'Aktif')
+                                                        ? 'translate-x-[40px]'
+                                                        : 'translate-x-0.5'
+                                                }`}
+                                            />
+                                        </button>
+                                        <span className={`text-sm font-semibold transition-colors duration-200 ${
+                                            (data.status === 'aktif' || data.status === 'Aktif')
+                                                ? 'text-[#1b5e20]'
+                                                : 'text-slate-400'
+                                        }`}>
+                                            {(data.status === 'aktif' || data.status === 'Aktif') ? 'Aktif' : 'Nonaktif'}
+                                        </span>
+                                    </div>
                                     <InputError message={errors.status} className="mt-2" />
                                 </div>
                             </div>

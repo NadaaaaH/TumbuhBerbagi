@@ -7,6 +7,7 @@ import InputError from '@/Components/InputError';
 import { ArrowLeft, Save } from 'lucide-react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import Swal from 'sweetalert2';
 
 // Konfigurasi toolbar untuk React Quill
 const modules = {
@@ -20,7 +21,7 @@ const modules = {
     ],
 };
 
-export default function Edit({ auth, soal, pakets }) {
+export default function Edit({ auth, soal, pakets, referrer }) {
     // Robustly pre-fill options A-E
     const initialPilihan = ['A', 'B', 'C', 'D', 'E'].map(code => {
         const found = soal?.pilihan_jawaban?.find(p => p.kode_pilihan === code);
@@ -42,6 +43,7 @@ export default function Edit({ auth, soal, pakets }) {
         is_case_sensitive: soal?.is_case_sensitive === 1 || soal?.is_case_sensitive === true,
         status: soal?.status || 'aktif',
         pilihan: initialPilihan,
+        redirect_to: referrer || '',
     });
 
     // Reset/Set default kunci_jawaban if type changes and is different from original
@@ -74,7 +76,32 @@ export default function Edit({ auth, soal, pakets }) {
             return payload;
         });
 
-        put(route('soal.update', soal.id_soal));
+        put(route('soal.update', soal.id_soal), {
+            onSuccess: () => {
+                Swal.fire({
+                    title: 'Berhasil!',
+                    text: 'Perubahan soal berhasil disimpan.',
+                    icon: 'success',
+                    confirmButtonColor: '#1b5e20',
+                    customClass: {
+                        popup: 'rounded-3xl p-6 shadow-xl',
+                        confirmButton: 'rounded-xl px-5 py-3 font-medium text-sm'
+                    }
+                });
+            },
+            onError: (err) => {
+                Swal.fire({
+                    title: 'Gagal!',
+                    text: 'Terjadi kesalahan saat menyimpan soal. Silakan periksa kembali form.',
+                    icon: 'error',
+                    confirmButtonColor: '#ef4444',
+                    customClass: {
+                        popup: 'rounded-3xl p-6 shadow-xl',
+                        confirmButton: 'rounded-xl px-5 py-3 font-medium text-sm'
+                    }
+                });
+            }
+        });
     };
 
     const categories = ['PPU', 'PK', 'PBM', 'Literasi Bahasa Indonesia', 'Literasi Bahasa Inggris', 'Penalaran Matematika'];
@@ -184,17 +211,35 @@ export default function Edit({ auth, soal, pakets }) {
 
                             {/* Status */}
                             <div>
-                                <InputLabel htmlFor="status" value="Status" />
-                                <select
-                                    id="status"
-                                    className="border-gray-300 focus:border-[#1b5e20] focus:ring-[#1b5e20] rounded-md shadow-sm mt-1 block w-full"
-                                    value={data.status}
-                                    onChange={(e) => setData('status', e.target.value)}
-                                    required
-                                >
-                                    <option value="aktif">Aktif</option>
-                                    <option value="nonaktif">Nonaktif</option>
-                                </select>
+                                <InputLabel value="Status" />
+                                <div className="mt-2 flex items-center gap-4">
+                                    <button
+                                        type="button"
+                                        role="switch"
+                                        aria-checked={data.status === 'aktif' || data.status === 'Aktif'}
+                                        onClick={() => setData('status', (data.status === 'aktif' || data.status === 'Aktif') ? 'nonaktif' : 'aktif')}
+                                        className={`relative inline-flex h-8 w-[72px] shrink-0 cursor-pointer items-center rounded-full border-2 transition-colors duration-300 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1b5e20] focus-visible:ring-offset-2 ${
+                                            (data.status === 'aktif' || data.status === 'Aktif')
+                                                ? 'bg-[#1b5e20] border-[#1b5e20]'
+                                                : 'bg-slate-200 border-slate-200'
+                                        }`}
+                                    >
+                                        <span
+                                            className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition-transform duration-300 ease-in-out ${
+                                                (data.status === 'aktif' || data.status === 'Aktif')
+                                                    ? 'translate-x-[40px]'
+                                                    : 'translate-x-0.5'
+                                            }`}
+                                        />
+                                    </button>
+                                    <span className={`text-sm font-semibold transition-colors duration-200 ${
+                                        (data.status === 'aktif' || data.status === 'Aktif')
+                                            ? 'text-[#1b5e20]'
+                                            : 'text-slate-400'
+                                    }`}>
+                                        {(data.status === 'aktif' || data.status === 'Aktif') ? 'Aktif' : 'Nonaktif'}
+                                    </span>
+                                </div>
                                 <InputError message={errors.status} className="mt-2" />
                             </div>
                         </div>

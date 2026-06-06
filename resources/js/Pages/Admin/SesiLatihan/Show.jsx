@@ -34,7 +34,7 @@ function PdfPreviewModal({ isOpen, onClose, previewUrl, downloadUrl, title }) {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 16 }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
-                className="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+                className="relative bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
                 style={{ width: '90vw', maxWidth: '960px', height: '90vh' }}
             >
                 {/* Modal Header */}
