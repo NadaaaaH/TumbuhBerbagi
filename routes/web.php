@@ -2,6 +2,19 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\KegiatanPublikController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\SiswaController as AdminSiswaController;
+use App\Http\Controllers\Admin\JadwalController as AdminJadwalController;
+use App\Http\Controllers\Admin\KegiatanController as AdminKegiatanController;
+use App\Http\Controllers\Admin\SoalController as AdminSoalController;
+use App\Http\Controllers\Admin\PaketLatihanController as AdminPaketLatihanController;
+use App\Http\Controllers\Admin\SesiLatihanController as AdminSesiLatihanController;
+use App\Http\Controllers\Siswa\DashboardController as SiswaDashboardController;
+use App\Http\Controllers\Siswa\JadwalController as SiswaJadwalController;
+use App\Http\Controllers\Siswa\KegiatanController as SiswaKegiatanController;
+use App\Http\Controllers\Siswa\LatihanController as SiswaLatihanController;
+use App\Http\Controllers\Siswa\NotificationController as SiswaNotificationController;
+use App\Models\Kegiatan;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -15,47 +28,65 @@ Route::get('/', function () {
         'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
-        'kegiatans' => \App\Models\Kegiatan::orderBy('tanggal', 'desc')->take(6)->get(),
+        'kegiatans' => Kegiatan::orderBy('tanggal', 'desc')->take(6)->get(),
     ]);
 });
 
-Route::get('/dashboard', [App\Http\Controllers\Siswa\DashboardController::class, 'index'])
+Route::get('/dashboard', [SiswaDashboardController::class, 'index'])
     ->middleware(['auth:siswa', 'siswa.verified', 'siswa.password_changed'])
     ->name('dashboard');
 
+// Admin Protected Routes
 Route::middleware('auth:admin')->group(function () {
-    Route::get('/admin/dashboard', [App\Http\Controllers\Admin\DashboardController::class, 'index'])
+    Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])
         ->name('admin.dashboard');
 
-    Route::resource('admin/siswa', App\Http\Controllers\Admin\SiswaController::class);
-    Route::resource('admin/jadwal', App\Http\Controllers\Admin\JadwalController::class);
-    Route::resource('admin/kegiatan', App\Http\Controllers\Admin\KegiatanController::class);
-    Route::resource('admin/soal', App\Http\Controllers\Admin\SoalController::class);
-    Route::patch('admin/soal/{id}/toggle-status', [App\Http\Controllers\Admin\SoalController::class, 'toggleStatus'])->name('soal.toggleStatus');
-    Route::resource('admin/paket-latihan', App\Http\Controllers\Admin\PaketLatihanController::class)->names('paket-latihan');
-    Route::resource('admin/sesi-latihan', App\Http\Controllers\Admin\SesiLatihanController::class)->only(['index','show'])->names('sesi-latihan');
-    Route::get('admin/sesi-latihan/{id}/export-all', [App\Http\Controllers\Admin\SesiLatihanController::class, 'exportAll'])->name('sesi-latihan.export-all');
-    Route::get('admin/sesi-latihan/{id_sesi}/export-siswa', [App\Http\Controllers\Admin\SesiLatihanController::class, 'exportSiswa'])->name('sesi-latihan.export-siswa');
-    Route::get('admin/sesi-latihan/{id}/preview-all', [App\Http\Controllers\Admin\SesiLatihanController::class, 'previewAll'])->name('sesi-latihan.preview-all');
-    Route::get('admin/sesi-latihan/{id_sesi}/preview-siswa', [App\Http\Controllers\Admin\SesiLatihanController::class, 'previewSiswa'])->name('sesi-latihan.preview-siswa');
+    Route::resource('admin/siswa', AdminSiswaController::class);
+    Route::resource('admin/jadwal', AdminJadwalController::class);
+    Route::resource('admin/kegiatan', AdminKegiatanController::class);
+    Route::resource('admin/soal', AdminSoalController::class);
+    
+    Route::patch('admin/soal/{id}/toggle-status', [AdminSoalController::class, 'toggleStatus'])
+        ->name('soal.toggleStatus');
+        
+    Route::resource('admin/paket-latihan', AdminPaketLatihanController::class)
+        ->names('paket-latihan');
+        
+    Route::resource('admin/sesi-latihan', AdminSesiLatihanController::class)
+        ->only(['index', 'show'])
+        ->names('sesi-latihan');
+        
+    Route::get('admin/sesi-latihan/{id}/export-all', [AdminSesiLatihanController::class, 'exportAll'])
+        ->name('sesi-latihan.export-all');
+    Route::get('admin/sesi-latihan/{id_sesi}/export-siswa', [AdminSesiLatihanController::class, 'exportSiswa'])
+        ->name('sesi-latihan.export-siswa');
+    Route::get('admin/sesi-latihan/{id}/preview-all', [AdminSesiLatihanController::class, 'previewAll'])
+        ->name('sesi-latihan.preview-all');
+    Route::get('admin/sesi-latihan/{id_sesi}/preview-siswa', [AdminSesiLatihanController::class, 'previewSiswa'])
+        ->name('sesi-latihan.preview-siswa');
 });
 
+// Siswa Protected Routes
 Route::middleware(['auth:siswa', 'siswa.verified', 'siswa.password_changed'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::get('/jadwal', [App\Http\Controllers\Siswa\JadwalController::class, 'index'])->name('siswa.jadwal');
-    Route::post('/jadwal/{id}/alarm', [App\Http\Controllers\Siswa\JadwalController::class, 'toggleAlarm'])->name('siswa.jadwal.alarm');
-    Route::get('/kegiatan', [App\Http\Controllers\Siswa\KegiatanController::class, 'index'])->name('siswa.kegiatan.index');
-    Route::get('/kegiatan/{id}', [App\Http\Controllers\Siswa\KegiatanController::class, 'show'])->name('siswa.kegiatan.show');
+    
+    Route::get('/jadwal', [SiswaJadwalController::class, 'index'])->name('siswa.jadwal');
+    Route::post('/jadwal/{id}/alarm', [SiswaJadwalController::class, 'toggleAlarm'])->name('siswa.jadwal.alarm');
+    
+    Route::get('/kegiatan', [SiswaKegiatanController::class, 'index'])->name('siswa.kegiatan.index');
+    Route::get('/kegiatan/{id}', [SiswaKegiatanController::class, 'show'])->name('siswa.kegiatan.show');
+    
     // Latihan soal (siswa)
-    Route::get('/latihan', [App\Http\Controllers\Siswa\LatihanController::class, 'index'])->name('siswa.latihan.index');
-    Route::get('/latihan/{id}', [App\Http\Controllers\Siswa\LatihanController::class, 'show'])->name('siswa.latihan.show');
-    Route::post('/latihan/{id}/submit', [App\Http\Controllers\Siswa\LatihanController::class, 'submit'])->name('siswa.latihan.submit');
-    Route::get('/latihan/{id}/hasil', [App\Http\Controllers\Siswa\LatihanController::class, 'hasil'])->name('siswa.latihan.hasil');
+    Route::get('/latihan', [SiswaLatihanController::class, 'index'])->name('siswa.latihan.index');
+    Route::get('/latihan/{id}', [SiswaLatihanController::class, 'show'])->name('siswa.latihan.show');
+    Route::post('/latihan/{id}/submit', [SiswaLatihanController::class, 'submit'])->name('siswa.latihan.submit');
+    Route::get('/latihan/{id}/hasil', [SiswaLatihanController::class, 'hasil'])->name('siswa.latihan.hasil');
 
     // Notifikasi (siswa)
-    Route::post('/notifications/read-all', [App\Http\Controllers\Siswa\NotificationController::class, 'markAllAsRead'])->name('siswa.notifications.read-all');
-    Route::post('/notifications/{id}/read', [App\Http\Controllers\Siswa\NotificationController::class, 'markAsRead'])->name('siswa.notifications.read');
+    Route::post('/notifications/read-all', [SiswaNotificationController::class, 'markAllAsRead'])->name('siswa.notifications.read-all');
+    Route::post('/notifications/{id}/read', [SiswaNotificationController::class, 'markAsRead'])->name('siswa.notifications.read');
 });
 
 require __DIR__ . '/auth.php';
+

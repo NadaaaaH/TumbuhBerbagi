@@ -58,7 +58,7 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        return Inertia::render('AdminDashboard', [
+        return Inertia::render('Admin/Dashboard', [
             'stats' => [
                 'totalUsers' => $totalUsers,
                 'totalJadwals' => $totalJadwals,

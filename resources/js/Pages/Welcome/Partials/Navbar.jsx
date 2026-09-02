@@ -20,7 +20,7 @@ export default function Navbar({ scrolled, isMenuOpen, setIsMenuOpen, auth, dash
                         <a
                             key={section}
                             href={`#${section}`}
-                            className="text-sm font-semibold text-slate-600 hover:text-[#1b5e20] transition-colors relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-0.5 after:bg-[#1b5e20] hover:after:w-full after:transition-all after:duration-300"
+                            className="text-sm font-semibold text-slate-600 hover:text-[#d99b00] transition-colors relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-0.5 after:bg-[#fcc526] hover:after:w-full after:transition-all after:duration-300"
                         >
                             {section.charAt(0).toUpperCase() + section.slice(1)}
                         </a>
@@ -37,7 +37,7 @@ export default function Navbar({ scrolled, isMenuOpen, setIsMenuOpen, auth, dash
 
                     <button
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        className="p-2 md:hidden text-slate-600 hover:text-[#1b5e20] transition-colors focus:outline-none"
+                        className="p-2 md:hidden text-slate-600 hover:text-[#d99b00] transition-colors focus:outline-none"
                         aria-label="Toggle Menu"
                     >
                         {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -61,7 +61,7 @@ export default function Navbar({ scrolled, isMenuOpen, setIsMenuOpen, auth, dash
                                     key={section}
                                     href={`#${section}`}
                                     onClick={() => setIsMenuOpen(false)}
-                                    className="text-base font-semibold text-slate-600 hover:text-[#1b5e20] transition-colors py-2 border-b border-slate-50"
+                                    className="text-base font-semibold text-slate-600 hover:text-[#d99b00] transition-colors py-2 border-b border-slate-50"
                                 >
                                     {section.charAt(0).toUpperCase() + section.slice(1)}
                                 </a>

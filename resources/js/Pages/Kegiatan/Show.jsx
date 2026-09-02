@@ -232,13 +232,15 @@ export default function KegiatanShow({ auth, kegiatan }) {
                 </main>
 
                 {/* ── Simple footer ── */}
-                <footer className="border-t border-slate-100 bg-white py-8">
-                    <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-400">
+                <footer className="border-t border-emerald-800/40 bg-gradient-to-r from-[#1b5e20] to-[#144718] text-white py-8">
+                    <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-emerald-100/80">
                         <div className="flex items-center gap-3">
-                            <img src="/images/logo.png" alt="Tumbuh Berbagi" className="h-7 w-auto opacity-60" />
+                            <div className="bg-white/95 px-2 py-1 rounded-lg inline-block">
+                                <img src="/images/logo.png" alt="Tumbuh Berbagi" className="h-6 w-auto" />
+                            </div>
                             <span>© {new Date().getFullYear()} Tumbuh Berbagi</span>
                         </div>
-                        <Link href="/" className="hover:text-slate-600 transition-colors">
+                        <Link href="/" className="hover:text-white transition-colors">
                             ← Kembali ke Beranda
                         </Link>
                     </div>

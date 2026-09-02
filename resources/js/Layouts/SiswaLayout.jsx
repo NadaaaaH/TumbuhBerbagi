@@ -371,25 +371,27 @@ export default function SiswaLayout({ user, header, children }) {
                 </main>
 
                 {/* Footer Section */}
-                <footer className="bg-white border-t border-slate-200 py-6 px-4 md:px-8 relative z-10 mt-auto">
+                <footer className="bg-gradient-to-r from-[#1b5e20] to-[#144718] text-white border-t border-emerald-800/40 py-6 px-4 md:px-8 relative z-10 mt-auto">
                     <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 text-center sm:text-left">
-                            <img src="/images/logo.png" alt="Tumbuh Berbagi" className="h-6 w-auto opacity-80" />
-                            <span className="text-slate-300 hidden sm:inline">|</span>
-                            <p className="text-xs text-slate-400 font-medium font-['Poppins']">Menumbuhkan Kepedulian, Berbagi Kebaikan</p>
+                            <div className="bg-white/95 px-2 py-1 rounded-lg inline-block">
+                                <img src="/images/logo.png" alt="Tumbuh Berbagi" className="h-5 w-auto" />
+                            </div>
+                            <span className="text-emerald-300/40 hidden sm:inline">|</span>
+                            <p className="text-xs text-emerald-100/80 font-medium font-['Poppins']">Menumbuhkan Kepedulian, Berbagi Kebaikan</p>
                         </div>
-                        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-slate-500 font-semibold font-['Poppins']">
-                            <Link href={route('dashboard')} className="hover:text-[#1b5e20] transition-colors">Beranda</Link>
-                            <Link href={route('siswa.kegiatan.index')} className="hover:text-[#1b5e20] transition-colors">Kegiatan</Link>
-                            <Link href={route('siswa.jadwal')} className="hover:text-[#1b5e20] transition-colors">Jadwal</Link>
-                            <Link href={route('siswa.latihan.index')} className="hover:text-[#1b5e20] transition-colors">Latihan Soal</Link>
+                        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-emerald-100/90 font-medium font-['Poppins']">
+                            <Link href={route('dashboard')} className="hover:text-white transition-colors">Beranda</Link>
+                            <Link href={route('siswa.kegiatan.index')} className="hover:text-white transition-colors">Kegiatan</Link>
+                            <Link href={route('siswa.jadwal')} className="hover:text-white transition-colors">Jadwal</Link>
+                            <Link href={route('siswa.latihan.index')} className="hover:text-white transition-colors">Latihan Soal</Link>
                         </div>
                     </div>
-                    <div className="max-w-7xl mx-auto border-t border-slate-100 mt-4 pt-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
-                        <p className="text-[10px] text-slate-400">
+                    <div className="max-w-7xl mx-auto border-t border-emerald-800/60 mt-4 pt-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
+                        <p className="text-[10px] text-emerald-200/60">
                             &copy; {new Date().getFullYear()} Tumbuh Berbagi. Hak Cipta Dilindungi.
                         </p>
-                        <p className="text-[10px] text-slate-450 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100 font-medium">
+                        <p className="text-[10px] text-emerald-200 bg-white/10 px-2 py-0.5 rounded-md border border-white/15 font-medium">
                             Versi 1.1.0
                         </p>
                     </div>

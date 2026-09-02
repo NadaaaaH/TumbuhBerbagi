@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Head } from '@inertiajs/react';
 import { AnimatePresence } from 'framer-motion';
 
-import Navbar          from './Welcome/Navbar';
-import HeroSection     from './Welcome/HeroSection';
-import KegiatanSection from './Welcome/KegiatanSection';
-import FiturSection    from './Welcome/FiturSection';
-import TentangSection  from './Welcome/TentangSection';
-import FaqSection      from './Welcome/FaqSection';
-import Footer          from './Welcome/Footer';
-import KegiatanModal   from './Welcome/KegiatanModal';
+import Navbar from './Welcome/Partials/Navbar';
+import HeroSection from './Welcome/Partials/HeroSection';
+import KegiatanSection from './Welcome/Partials/KegiatanSection';
+import FiturSection from './Welcome/Partials/FiturSection';
+import TentangSection from './Welcome/Partials/TentangSection';
+import FaqSection from './Welcome/Partials/FaqSection';
+import Footer from './Welcome/Partials/Footer';
+import KegiatanModal from './Welcome/Partials/KegiatanModal';
 
 export default function Welcome({ auth, kegiatans }) {
     const [scrolled, setScrolled] = useState(false);
@@ -29,7 +29,7 @@ export default function Welcome({ auth, kegiatans }) {
     return (
         <>
             <Head>
-                <title>Tumbuh Berbagi - Portal Akademik</title>
+                <title>Tumbuh Berbagi</title>
                 <link rel="preconnect" href="https://fonts.googleapis.com" />
                 <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="true" />
                 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />

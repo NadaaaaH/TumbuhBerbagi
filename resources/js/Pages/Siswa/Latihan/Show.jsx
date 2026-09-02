@@ -4,10 +4,10 @@ import SiswaLayout from '@/Layouts/SiswaLayout';
 import { ArrowLeft, Clock, BookOpen } from 'lucide-react';
 
 // Komponen-komponen latihan
-import TimerCard    from './components/TimerCard';
-import NavigasiSoal from './components/NavigasiSoal';
-import SoalCard     from './components/SoalCard';
-import ConfirmModal from './components/ConfirmModal';
+import TimerCard    from './Partials/TimerCard';
+import NavigasiSoal from './Partials/NavigasiSoal';
+import SoalCard     from './Partials/SoalCard';
+import ConfirmModal from './Partials/ConfirmModal';
 
 export default function Show({ auth, paket, soals = [], sesi, errors }) {
     // ─── Kunci localStorage ───────────────────────────────────────────────

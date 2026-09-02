@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Siswa;
 use Illuminate\Http\Request;
+use App\Http\Requests\Admin\Siswa\StoreSiswaRequest;
+use App\Http\Requests\Admin\Siswa\UpdateSiswaRequest;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -45,15 +47,9 @@ class SiswaController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreSiswaRequest $request)
     {
-        $validated = $request->validate([
-            'nama' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'string', 'email', 'max:100', 'unique:siswa,email'],
-            'password' => ['required', 'string', 'min:8'],
-            'no_handphone' => ['nullable', 'string', 'max:20'],
-            'status_akun' => ['required', 'string', 'max:30'],
-        ]);
+        $validated = $request->validated();
 
         $validated['password'] = Hash::make($validated['password']);
         $validated['email_verified_at'] = null; // Terisi otomatis ketika tautan verifikasi diklik
@@ -86,17 +82,11 @@ class SiswaController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(UpdateSiswaRequest $request, string $id)
     {
         $siswa = Siswa::findOrFail($id);
 
-        $validated = $request->validate([
-            'nama' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'string', 'email', 'max:100', 'unique:siswa,email,' . $siswa->id_siswa . ',id_siswa'],
-            'password' => ['nullable', 'string', 'min:8'],
-            'no_handphone' => ['nullable', 'string', 'max:20'],
-            'status_akun' => ['required', 'string', 'max:30'],
-        ]);
+        $validated = $request->validated();
 
         if (!empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
