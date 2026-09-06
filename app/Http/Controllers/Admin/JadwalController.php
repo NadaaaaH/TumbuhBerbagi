@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Jadwal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class JadwalController extends Controller
@@ -35,11 +36,17 @@ class JadwalController extends Controller
     {
         $validated = $request->validate([
             'nama_jadwal' => 'required|string|max:100',
-            'tanggal' => 'required|date',
+            'deskripsi'   => 'nullable|string|max:1000',
+            'tanggal'     => 'required|date',
             'waktu_mulai' => 'required',
             'waktu_selesai' => 'nullable',
-            'status' => 'nullable|in:aktif,nonaktif',
+            'status'      => 'nullable|in:aktif,nonaktif',
+            'gambar'      => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
+
+        if ($request->hasFile('gambar')) {
+            $validated['gambar'] = $request->file('gambar')->store('jadwal', 'public');
+        }
 
         $jadwal = Jadwal::create($validated);
 
@@ -74,11 +81,31 @@ class JadwalController extends Controller
 
         $validated = $request->validate([
             'nama_jadwal' => 'required|string|max:100',
-            'tanggal' => 'required|date',
+            'deskripsi'   => 'nullable|string|max:1000',
+            'tanggal'     => 'required|date',
             'waktu_mulai' => 'required',
             'waktu_selesai' => 'nullable',
-            'status' => 'required|in:aktif,nonaktif',
+            'status'      => 'required|in:aktif,nonaktif',
+            'gambar'      => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
+
+        // Handle gambar baru
+        if ($request->hasFile('gambar')) {
+            // Hapus gambar lama jika ada
+            if ($jadwal->gambar) {
+                Storage::disk('public')->delete($jadwal->gambar);
+            }
+            $validated['gambar'] = $request->file('gambar')->store('jadwal', 'public');
+        } elseif ($request->input('remove_gambar')) {
+            // Hapus gambar tanpa ganti
+            if ($jadwal->gambar) {
+                Storage::disk('public')->delete($jadwal->gambar);
+            }
+            $validated['gambar'] = null;
+        } else {
+            // Pertahankan gambar lama
+            unset($validated['gambar']);
+        }
 
         $jadwal->update($validated);
 

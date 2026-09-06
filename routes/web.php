@@ -13,6 +13,7 @@ use App\Http\Controllers\Siswa\DashboardController as SiswaDashboardController;
 use App\Http\Controllers\Siswa\JadwalController as SiswaJadwalController;
 use App\Http\Controllers\Siswa\KegiatanController as SiswaKegiatanController;
 use App\Http\Controllers\Siswa\LatihanController as SiswaLatihanController;
+use App\Http\Controllers\Siswa\TryoutController as SiswaTryoutController;
 use App\Http\Controllers\Siswa\NotificationController as SiswaNotificationController;
 use App\Models\Kegiatan;
 use Illuminate\Foundation\Application;
@@ -68,6 +69,7 @@ Route::middleware('auth:admin')->group(function () {
 
 // Siswa Protected Routes
 Route::middleware(['auth:siswa', 'siswa.verified', 'siswa.password_changed'])->group(function () {
+    Route::get('/profil', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     
@@ -82,6 +84,12 @@ Route::middleware(['auth:siswa', 'siswa.verified', 'siswa.password_changed'])->g
     Route::get('/latihan/{id}', [SiswaLatihanController::class, 'show'])->name('siswa.latihan.show');
     Route::post('/latihan/{id}/submit', [SiswaLatihanController::class, 'submit'])->name('siswa.latihan.submit');
     Route::get('/latihan/{id}/hasil', [SiswaLatihanController::class, 'hasil'])->name('siswa.latihan.hasil');
+
+    // Try Out (siswa)
+    Route::get('/tryout', [SiswaTryoutController::class, 'index'])->name('siswa.tryout.index');
+    Route::get('/tryout/{id}', [SiswaTryoutController::class, 'show'])->name('siswa.tryout.show');
+    Route::post('/tryout/{id}/submit', [SiswaTryoutController::class, 'submit'])->name('siswa.tryout.submit');
+    Route::get('/tryout/{id}/hasil', [SiswaTryoutController::class, 'hasil'])->name('siswa.tryout.hasil');
 
     // Notifikasi (siswa)
     Route::post('/notifications/read-all', [SiswaNotificationController::class, 'markAllAsRead'])->name('siswa.notifications.read-all');

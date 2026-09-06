@@ -1,24 +1,42 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, ImagePlus, X } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 export default function Create({ auth }) {
+    const [imagePreview, setImagePreview] = useState(null);
+
     const { data, setData, post, processing, errors } = useForm({
         nama_jadwal: '',
+        deskripsi: '',
         tanggal: '',
         waktu_mulai: '',
         waktu_selesai: '',
         status: 'aktif',
+        gambar: null,
     });
+
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setData('gambar', file);
+            setImagePreview(URL.createObjectURL(file));
+        }
+    };
+
+    const removeImage = () => {
+        setData('gambar', null);
+        setImagePreview(null);
+    };
 
     const submit = (e) => {
         e.preventDefault();
         post(route('jadwal.store'), {
+            forceFormData: true,
             onSuccess: () => {
                 Swal.fire({
                     icon: 'success',
@@ -65,6 +83,20 @@ export default function Create({ auth }) {
                                     disabled={processing}
                                 />
                                 <InputError message={errors.nama_jadwal} className="mt-2" />
+                            </div>
+
+                            <div>
+                                <InputLabel htmlFor="deskripsi" value="Deskripsi (Opsional)" />
+                                <textarea
+                                    id="deskripsi"
+                                    className="mt-1 block w-full border-gray-300 focus:border-[#1b5e20] focus:ring-[#1b5e20] rounded-lg shadow-sm text-sm px-4 py-2.5 resize-none"
+                                    rows={3}
+                                    value={data.deskripsi}
+                                    onChange={(e) => setData('deskripsi', e.target.value)}
+                                    placeholder="Deskripsi singkat tentang jadwal ini..."
+                                    disabled={processing}
+                                />
+                                <InputError message={errors.deskripsi} className="mt-2" />
                             </div>
 
                             <div className="grid md:grid-cols-2 gap-6">
@@ -115,6 +147,47 @@ export default function Create({ auth }) {
                                     </div>
                                     <InputError message={errors.status} className="mt-2" />
                                 </div>
+                            </div>
+
+                            {/* Upload Gambar Banner */}
+                            <div>
+                                <InputLabel htmlFor="gambar" value="Gambar Banner (Opsional)" />
+                                <p className="text-xs text-slate-400 mt-0.5 mb-2">Gambar akan ditampilkan sebagai banner card jadwal di halaman siswa. Rasio 16:9 disarankan.</p>
+                                {imagePreview ? (
+                                    <div className="relative rounded-xl overflow-hidden border border-slate-200">
+                                        <img
+                                            src={imagePreview}
+                                            alt="Preview banner"
+                                            className="w-full h-40 object-cover"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={removeImage}
+                                            className="absolute top-2 right-2 bg-white/90 hover:bg-white text-slate-700 rounded-full p-1.5 shadow transition-all"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-[#1b5e20]/80 to-transparent h-12" />
+                                    </div>
+                                ) : (
+                                    <label
+                                        htmlFor="gambar"
+                                        className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-slate-200 rounded-xl cursor-pointer hover:border-[#1b5e20] hover:bg-green-50/40 transition-all"
+                                    >
+                                        <ImagePlus size={28} className="text-slate-300 mb-2" />
+                                        <span className="text-xs text-slate-400 font-medium">Klik untuk upload gambar</span>
+                                        <span className="text-xs text-slate-300 mt-0.5">JPG, PNG, WEBP — maks. 2MB</span>
+                                    </label>
+                                )}
+                                <input
+                                    id="gambar"
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={handleImageChange}
+                                    disabled={processing}
+                                />
+                                <InputError message={errors.gambar} className="mt-2" />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">

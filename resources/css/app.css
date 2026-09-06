@@ -6,6 +6,22 @@ html {
     scroll-behavior: smooth;
 }
 
+/* Global Window Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
 /* Custom scrollbar utility */
 .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
@@ -20,6 +36,74 @@ html {
 .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: #cbd5e1 transparent;
+}
+
+/* Sleek Modern Custom Scrollbar Themes */
+.scrollbar-custom-dark::-webkit-scrollbar,
+.scrollbar-custom-light::-webkit-scrollbar,
+.scrollbar-custom-emerald::-webkit-scrollbar,
+.scrollbar-custom-amber::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+
+.scrollbar-custom-dark::-webkit-scrollbar-track,
+.scrollbar-custom-light::-webkit-scrollbar-track,
+.scrollbar-custom-emerald::-webkit-scrollbar-track,
+.scrollbar-custom-amber::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* Dark / Green Background Theme (White translucent thumb) */
+.scrollbar-custom-dark::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.22);
+    border-radius: 9999px;
+}
+.scrollbar-custom-dark::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.45);
+}
+.scrollbar-custom-dark {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+/* Light Background Theme (Slate/Gray translucent thumb) */
+.scrollbar-custom-light::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.35);
+    border-radius: 9999px;
+}
+.scrollbar-custom-light::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(100, 116, 139, 0.6);
+}
+.scrollbar-custom-light {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+}
+
+/* Emerald Theme */
+.scrollbar-custom-emerald::-webkit-scrollbar-thumb {
+    background-color: rgba(27, 94, 32, 0.35);
+    border-radius: 9999px;
+}
+.scrollbar-custom-emerald::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(27, 94, 32, 0.65);
+}
+.scrollbar-custom-emerald {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(27, 94, 32, 0.35) transparent;
+}
+
+/* Amber/Yellow Theme */
+.scrollbar-custom-amber::-webkit-scrollbar-thumb {
+    background-color: rgba(252, 197, 38, 0.45);
+    border-radius: 9999px;
+}
+.scrollbar-custom-amber::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(252, 197, 38, 0.75);
+}
+.scrollbar-custom-amber {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(252, 197, 38, 0.45) transparent;
 }
 
 /* Hide scrollbar utility */

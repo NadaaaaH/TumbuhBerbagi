@@ -10,6 +10,7 @@ export default function Create({ auth }) {
     const { data, setData, post, processing, errors } = useForm({
         nama_paket: '',
         deskripsi: '',
+        tipe: 'latihan',
         status: 'aktif',
         waktu_ujian: 0,
     });
@@ -20,7 +21,7 @@ export default function Create({ auth }) {
     };
 
     return (
-        <AdminLayout user={auth.user} header="Tambah Paket Latihan">
+        <AdminLayout user={auth.user} header="Tambah Paket Latihan / Try Out">
             <Head title="Tambah Paket" />
 
             <div className="mb-6">
@@ -47,6 +48,20 @@ export default function Create({ auth }) {
                                 required
                             />
                             <InputError message={errors.nama_paket} className="mt-2" />
+                        </div>
+
+                        <div>
+                            <InputLabel htmlFor="tipe" value="Kategori / Tipe Paket" />
+                            <select
+                                id="tipe"
+                                className="border-gray-300 focus:border-[#1b5e20] focus:ring-[#1b5e20] rounded-md shadow-sm mt-1 block w-full text-sm font-medium"
+                                value={data.tipe}
+                                onChange={(e) => setData('tipe', e.target.value)}
+                            >
+                                <option value="latihan">Latihan Soal</option>
+                                <option value="tryout">Try Out</option>
+                            </select>
+                            <InputError message={errors.tipe} className="mt-2" />
                         </div>
 
                         <div>

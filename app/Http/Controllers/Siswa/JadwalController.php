@@ -35,11 +35,15 @@ class JadwalController extends Controller
     {
         $siswa = Auth::guard('siswa')->user();
         
-        // Siswa bisa melihat semua jadwal
-        $jadwals = Jadwal::orderBy('tanggal', 'desc')->orderBy('waktu_mulai', 'desc')->get()->map(function ($jadwal) {
-            $jadwal->google_calendar_url = $this->getGoogleCalendarUrl($jadwal);
-            return $jadwal;
-        });
+        // Siswa hanya melihat jadwal dengan status 'aktif'
+        $jadwals = Jadwal::where('status', 'aktif')
+            ->orderBy('tanggal', 'asc')
+            ->orderBy('waktu_mulai', 'asc')
+            ->get()
+            ->map(function ($jadwal) {
+                $jadwal->google_calendar_url = $this->getGoogleCalendarUrl($jadwal);
+                return $jadwal;
+            });
 
         // Ambil alarm yang diaktifkan oleh siswa ini
         $alarms = JadwalAlarm::where('id_siswa', $siswa->id_siswa)

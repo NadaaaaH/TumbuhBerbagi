@@ -63,6 +63,7 @@ class PaketLatihanController extends Controller
         $validated = $request->validate([
             'nama_paket' => 'required|string|max:150',
             'deskripsi' => 'nullable|string',
+            'tipe' => 'required|string|in:latihan,tryout',
             'status' => 'required|in:aktif,nonaktif',
             'waktu_ujian' => 'required|integer|min:0',
         ]);
@@ -71,19 +72,20 @@ class PaketLatihanController extends Controller
 
         if ($paket->status === 'aktif') {
             $siswas = \App\Models\Siswa::all();
+            $labelNotif = $paket->tipe === 'tryout' ? 'Try Out' : 'Latihan Soal';
             foreach ($siswas as $siswa) {
                 \App\Models\Notifikasi::create([
                     'id_siswa' => $siswa->id_siswa,
-                    'judul' => 'Latihan Soal Baru',
-                    'pesan' => 'Paket latihan baru "' . $paket->nama_paket . '" sekarang sudah aktif. Yuk dikerjakan!',
-                    'tipe' => 'latihan',
+                    'judul' => $labelNotif . ' Baru',
+                    'pesan' => 'Paket ' . strtolower($labelNotif) . ' baru "' . $paket->nama_paket . '" sekarang sudah aktif. Yuk dikerjakan!',
+                    'tipe' => $paket->tipe === 'tryout' ? 'tryout' : 'latihan',
                     'id_referensi' => $paket->id_paket,
                     'is_dibaca' => false,
                 ]);
             }
         }
 
-        return redirect()->route('paket-latihan.index')->with('success', 'Paket Latihan berhasil dibuat.');
+        return redirect()->route('paket-latihan.index')->with('success', 'Paket Paket berhasil dibuat.');
     }
 
     public function edit(string $id)
@@ -101,6 +103,7 @@ class PaketLatihanController extends Controller
         $validated = $request->validate([
             'nama_paket' => 'required|string|max:150',
             'deskripsi' => 'nullable|string',
+            'tipe' => 'required|string|in:latihan,tryout',
             'status' => 'required|in:aktif,nonaktif',
             'waktu_ujian' => 'required|integer|min:0',
         ]);

@@ -38,11 +38,16 @@ export default function Index({ auth, pakets, filters }) {
                             <div key={paket.id_paket} className="p-5 border border-slate-200 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-slate-300 hover:shadow-sm transition-all bg-white">
                                 <div>
                                     <div className="font-bold text-lg text-slate-800">{paket.nama_paket}</div>
-                                    <div className="text-sm text-slate-500 mt-1 flex items-center gap-3">
-                                        <span className="flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-md text-slate-600 font-medium">
+                                    <div className="text-sm text-slate-500 mt-1 flex flex-wrap items-center gap-2">
+                                        <span className={`px-2.5 py-0.5 rounded-md text-xs font-bold uppercase tracking-wider ${
+                                            paket.tipe === 'tryout' ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                        }`}>
+                                            {paket.tipe === 'tryout' ? 'Try Out' : 'Latihan Soal'}
+                                        </span>
+                                        <span className="flex items-center gap-1 bg-slate-100 px-2.5 py-0.5 rounded-md text-xs text-slate-600 font-medium">
                                             Total Soal: {paket.soal_count || 0}
                                         </span>
-                                        <span className={`px-2.5 py-1 rounded-md font-medium ${
+                                        <span className={`px-2.5 py-0.5 rounded-md text-xs font-medium ${
                                             paket.status === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
                                         }`}>
                                             {paket.status === 'aktif' ? 'Aktif' : 'Nonaktif'}

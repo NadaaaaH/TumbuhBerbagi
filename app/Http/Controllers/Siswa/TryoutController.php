@@ -13,16 +13,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
-class LatihanController extends Controller
+class TryoutController extends Controller
 {
     public function index()
     {
         $siswa = auth()->user();
+
         $pakets = PaketLatihan::where('status', 'aktif')
-            ->where(function ($query) {
-                $query->where('tipe', 'latihan')
-                      ->orWhereNull('tipe');
-            })
+            ->where('tipe', 'tryout')
             ->withCount(['soal' => function ($query) {
                 $query->where('status', 'aktif');
             }])
@@ -40,7 +38,7 @@ class LatihanController extends Controller
             ->pluck('id_paket')
             ->toArray();
 
-        return Inertia::render('Siswa/Latihan/Index', [
+        return Inertia::render('Siswa/Tryout/Index', [
             'pakets' => $pakets,
             'ongoingPackages' => $ongoingPackages,
             'completedPackages' => $completedPackages,
@@ -70,14 +68,14 @@ class LatihanController extends Controller
         ]);
 
         if ($sesi->wasRecentlyCreated) {
-            \App\Models\AktivitasSiswa::log('mulai_latihan', 'Siswa memulai ' . $paket->nama_paket);
+            \App\Models\AktivitasSiswa::log('mulai_tryout', 'Siswa memulai Try Out ' . $paket->nama_paket);
         }
 
         if ($sesi->hasil_latihan) {
-            return redirect()->route('siswa.latihan.hasil', $paket->id_paket);
+            return redirect()->route('siswa.tryout.hasil', $paket->id_paket);
         }
 
-        return Inertia::render('Siswa/Latihan/Show', [
+        return Inertia::render('Siswa/Tryout/Show', [
             'paket' => $paket,
             'sesi' => $sesi,
             'soals' => $paket->soal,
@@ -97,7 +95,7 @@ class LatihanController extends Controller
             ->firstOrFail();
 
         if ($sesi->hasil_latihan) {
-            return redirect()->route('siswa.latihan.hasil', $paket->id_paket);
+            return redirect()->route('siswa.tryout.hasil', $paket->id_paket);
         }
 
         $validated = $request->validate([
@@ -181,9 +179,9 @@ class LatihanController extends Controller
 
             DB::commit();
 
-            \App\Models\AktivitasSiswa::log('selesai_latihan', 'Siswa menyelesaikan ' . $paket->nama_paket . ' (Nilai: ' . $nilaiAkhir . ')');
+            \App\Models\AktivitasSiswa::log('selesai_tryout', 'Siswa menyelesaikan Try Out ' . $paket->nama_paket . ' (Nilai: ' . $nilaiAkhir . ')');
 
-            return redirect()->route('siswa.latihan.hasil', $paket->id_paket);
+            return redirect()->route('siswa.tryout.hasil', $paket->id_paket);
         } catch (\Throwable $e) {
             DB::rollBack();
             return back()->withErrors(['error' => 'Gagal mengirim jawaban: ' . $e->getMessage()]);
@@ -206,10 +204,9 @@ class LatihanController extends Controller
             ->firstOrFail();
 
         if (! $sesi->hasil_latihan) {
-            return redirect()->route('siswa.latihan.show', $paket->id_paket);
+            return redirect()->route('siswa.tryout.show', $paket->id_paket);
         }
 
-        // Hitung peringkat dan total peserta
         $scores = HasilLatihan::join('sesi_latihan', 'hasil_latihan.id_sesi', '=', 'sesi_latihan.id_sesi')
             ->where('sesi_latihan.id_paket', $id)
             ->select('sesi_latihan.id_siswa', 'hasil_latihan.nilai_akhir')
@@ -239,7 +236,7 @@ class LatihanController extends Controller
             ];
         });
 
-        return Inertia::render('Siswa/Latihan/Hasil', [
+        return Inertia::render('Siswa/Tryout/Hasil', [
             'paket' => $paket,
             'sesi' => $sesi,
             'hasil' => $sesi->hasil_latihan,

@@ -11,6 +11,7 @@ export default function Edit({ auth, paket }) {
     const { data, setData, put, processing, errors } = useForm({
         nama_paket: paket?.nama_paket || '',
         deskripsi: paket?.deskripsi || '',
+        tipe: paket?.tipe || 'latihan',
         status: paket?.status || 'aktif',
         waktu_ujian: paket?.waktu_ujian || 0,
     });
@@ -83,6 +84,20 @@ export default function Edit({ auth, paket }) {
                                 required
                             />
                             <InputError message={errors.nama_paket} className="mt-2" />
+                        </div>
+
+                        <div>
+                            <InputLabel htmlFor="tipe" value="Kategori / Tipe Paket" />
+                            <select
+                                id="tipe"
+                                className="border-gray-300 focus:border-[#1b5e20] focus:ring-[#1b5e20] rounded-md shadow-sm mt-1 block w-full text-sm font-medium"
+                                value={data.tipe}
+                                onChange={(e) => setData('tipe', e.target.value)}
+                            >
+                                <option value="latihan">Latihan Soal</option>
+                                <option value="tryout">Try Out</option>
+                            </select>
+                            <InputError message={errors.tipe} className="mt-2" />
                         </div>
 
                         <div>

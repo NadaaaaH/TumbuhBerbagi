@@ -1,24 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
-import { 
-    LayoutDashboard, 
-    User, 
-    LogOut, 
-    Menu, 
+import {
+    LayoutDashboard,
+    User,
+    LogOut,
+    Menu,
     X,
     Calendar,
     Newspaper,
     BookOpen,
+    ClipboardList,
     Bell
 } from 'lucide-react';
+import Footer from '../Pages/Welcome/Partials/Footer';
+import CustomScrollbar from '@/Components/CustomScrollbar';
 
 export default function SiswaLayout({ user, header, children }) {
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
+    const [sidebarBottom, setSidebarBottom] = useState(16);
     const { url } = usePage();
 
     const notificationRef = useRef(null);
     const mobileNotificationRef = useRef(null);
+    const footerRef = useRef(null);
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -33,6 +38,20 @@ export default function SiswaLayout({ user, header, children }) {
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
+    }, []);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            if (!footerRef.current) return;
+            const footerRect = footerRef.current.getBoundingClientRect();
+            const windowHeight = window.innerHeight;
+            const calculatedBottom = windowHeight - footerRect.top + 20;
+            setSidebarBottom(Math.max(16, calculatedBottom));
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        handleScroll();
+        return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
     const { auth } = usePage().props;
@@ -82,47 +101,143 @@ export default function SiswaLayout({ user, header, children }) {
 
     const navigation = [
         { name: 'Dashboard', href: route('dashboard'), icon: LayoutDashboard, active: url === '/dashboard' },
+        { name: 'Latihan Soal', href: route('siswa.latihan.index'), icon: BookOpen, active: url.startsWith('/latihan') },
+        { name: 'Try Out', href: route('siswa.tryout.index'), icon: ClipboardList, active: url.startsWith('/tryout') },
         { name: 'Kegiatan & Info', href: route('siswa.kegiatan.index'), icon: Newspaper, active: url.startsWith('/kegiatan') },
         { name: 'Jadwal Mentoring', href: route('siswa.jadwal'), icon: Calendar, active: url.startsWith('/jadwal') },
-        { name: 'Latihan Soal', href: route('siswa.latihan.index'), icon: BookOpen, active: url.startsWith('/latihan') },
-        { name: 'Profil Saya', href: route('profile.edit'), icon: User, active: url.startsWith('/profile') },
+        { name: 'Profil Saya', href: route('profile.show'), icon: User, active: url.startsWith('/profil') || url.startsWith('/profile') },
     ];
 
     return (
-        <div className="min-h-screen bg-[#f8f9fa] font-['Inter',sans-serif] flex">
-            {/* Sidebar for Desktop (Left) */}
-            <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 fixed h-full z-10 shrink-0">
-                <div className="flex items-center justify-center h-20 border-b border-slate-100">
+        <div className="min-h-screen bg-[#FAFBFC] font-['Inter',sans-serif] flex">
+
+            {/* Sidebar for Desktop (Right Side Floating Layout with Smart Sticky Footer Offset) */}
+            <aside
+                className="hidden md:flex flex-col w-64 bg-gradient-to-b from-[#1b5e20] to-[#124216] text-white border border-emerald-800/50 fixed right-4 top-4 z-30 shrink-0 shadow-[0_12px_40px_rgba(0,0,0,0.15)] rounded-[2.2rem] overflow-hidden"
+                style={{ bottom: `${sidebarBottom}px` }}
+            >
+
+                {/* Logo & Notification Bell Header */}
+                <div className="flex items-center justify-between h-20 px-6 border-b border-emerald-800/50">
                     <Link href="/">
-                        <img src="/images/logo.png" alt="Tumbuh Berbagi" className="h-10 w-auto" />
+                        <img src="/images/logo2.png" alt="Tumbuh Berbagi" className="h-9 w-auto drop-shadow" />
                     </Link>
+
+                    {/* Desktop Notification Bell */}
+                    <div className="relative" ref={notificationRef}>
+                        <button
+                            onClick={() => setShowNotifications(!showNotifications)}
+                            className="p-2.5 rounded-2xl text-emerald-100 hover:text-[#fcc526] hover:bg-white/10 transition-colors relative focus:outline-none"
+                            aria-label="Notifikasi"
+                        >
+                            <Bell size={20} />
+                            {unreadCount > 0 && (
+                                <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#fcc526] text-[10px] font-extrabold text-slate-950 ring-2 ring-[#1b5e20] animate-pulse">
+                                    {unreadCount}
+                                </span>
+                            )}
+                        </button>
+
+                        {showNotifications && (
+                            <div className="absolute right-0 mt-2 w-80 bg-white text-slate-800 rounded-3xl border border-slate-100 shadow-2xl py-2 z-50 text-left overflow-hidden">
+                                <div className="flex items-center justify-between px-5 py-3 border-b border-slate-50">
+                                    <h4 className="font-semibold text-slate-800 text-sm font-['Poppins']">Notifikasi</h4>
+                                    {unreadCount > 0 && (
+                                        <button
+                                            onClick={handleMarkAllRead}
+                                            className="text-xs font-medium text-[#1b5e20] hover:text-[#508953] hover:underline transition-all"
+                                        >
+                                            Tandai semua dibaca
+                                        </button>
+                                    )}
+                                </div>
+
+                                <CustomScrollbar theme="light" className="max-h-[360px] divide-y divide-slate-50">
+                                    {notifications.length > 0 ? (
+                                        notifications.map((n) => {
+                                            const Icon = n.tipe === 'jadwal' ? Calendar : BookOpen;
+                                            return (
+                                                <div
+                                                    key={n.id_notifikasi}
+                                                    onClick={() => handleNotificationClick(n)}
+                                                    className={`p-3.5 flex gap-3 hover:bg-slate-50 transition-colors cursor-pointer relative ${!n.is_dibaca ? 'bg-green-50/20' : ''}`}
+                                                >
+                                                    <div className={`p-2 rounded-xl h-9 w-9 shrink-0 flex items-center justify-center ${n.tipe === 'jadwal'
+                                                        ? 'bg-blue-50 text-blue-600'
+                                                        : 'bg-green-50 text-[#1b5e20]'
+                                                        }`}>
+                                                        <Icon size={16} />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex justify-between items-start gap-1">
+                                                            <p className={`text-xs font-medium text-slate-800 truncate ${!n.is_dibaca ? 'font-semibold' : ''}`}>
+                                                                {n.judul}
+                                                            </p>
+                                                            {!n.is_dibaca && (
+                                                                <span className="h-1.5 w-1.5 rounded-full bg-red-500 shrink-0 mt-1 animate-pulse"></span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">
+                                                            {n.pesan}
+                                                        </p>
+                                                        <span className="text-[9px] text-slate-400 mt-1 block">
+                                                            {timeAgo(n.created_at)}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="py-8 px-4 flex flex-col items-center justify-center text-center">
+                                            <div className="p-3 bg-slate-50 rounded-full text-slate-400 mb-2">
+                                                <Bell size={20} />
+                                            </div>
+                                            <p className="text-xs text-slate-500 font-medium">Tidak ada notifikasi</p>
+                                        </div>
+                                    )}
+                                </CustomScrollbar>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto py-6 px-4">
-                    <div className="space-y-1">
+                {/* Integrated User Profile Card */}
+                <div className="p-3.5 mx-4 mt-4 bg-white/10 border border-white/15 backdrop-blur-md rounded-2xl flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-[#fcc526] text-slate-950 flex items-center justify-center font-black shadow-md shrink-0 text-base">
+                        {user?.nama?.charAt(0) || 'S'}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-white truncate leading-snug">{user?.nama || 'Siswa'}</p>
+                        <p className="text-[10px] text-[#fcc526] font-semibold">Siswa Beasiswa</p>
+                    </div>
+                </div>
+
+                {/* Navigation Links */}
+                <CustomScrollbar theme="dark" className="flex-1 py-4 px-4">
+                    <div className="space-y-2">
                         {navigation.map((item) => (
                             <Link
                                 key={item.name}
                                 href={item.href}
-                                className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                                    item.active
-                                        ? 'bg-green-50 text-[#1b5e20]'
-                                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                                }`}
+                                className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-2xl transition-all duration-300 ${item.active
+                                    ? 'bg-[#fcc526] text-slate-950 font-bold shadow-[0_4px_20px_rgba(252,197,38,0.35)]'
+                                    : 'text-emerald-100/90 hover:bg-white/10 hover:text-white'
+                                    }`}
                             >
-                                <item.icon size={20} className={item.active ? 'text-[#1b5e20]' : 'text-slate-400'} />
+                                <item.icon size={20} className={item.active ? 'text-slate-950' : 'text-[#fcc526]'} />
                                 {item.name}
                             </Link>
                         ))}
                     </div>
-                </div>
+                </CustomScrollbar>
 
-                <div className="p-4 border-t border-slate-100">
+                {/* Logout Button */}
+                <div className="p-4 border-t border-emerald-800/50">
                     <Link
                         href={route('logout')}
                         method="post"
                         as="button"
-                        className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-red-600 rounded-xl hover:bg-red-50 transition-colors"
+                        className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-red-300 rounded-2xl hover:bg-red-500/20 hover:text-red-200 transition-colors"
                     >
                         <LogOut size={20} />
                         Keluar
@@ -130,13 +245,13 @@ export default function SiswaLayout({ user, header, children }) {
                 </div>
             </aside>
 
-            {/* Mobile Navigation */}
+            {/* Mobile Navigation Bar */}
             <div className="md:hidden fixed top-0 w-full bg-white border-b border-slate-200 z-20">
                 <div className="flex items-center justify-between h-16 px-4">
                     <Link href="/">
                         <img src="/images/logo.png" alt="Tumbuh Berbagi" className="h-8 w-auto" />
                     </Link>
-                    
+
                     <div className="flex items-center gap-2">
                         {/* Mobile Notification Bell */}
                         <div className="relative" ref={mobileNotificationRef}>
@@ -151,14 +266,14 @@ export default function SiswaLayout({ user, header, children }) {
                                     </span>
                                 )}
                             </button>
-                            
+
                             {/* Mobile Notification Dropdown */}
                             {showNotifications && (
                                 <div className="absolute right-0 mt-2 w-[280px] sm:w-80 bg-white rounded-2xl border border-slate-100 shadow-xl py-2 z-50 text-left overflow-hidden">
                                     <div className="flex items-center justify-between px-4 py-2 border-b border-slate-50">
                                         <h4 className="font-semibold text-slate-800 text-xs font-['Poppins']">Notifikasi</h4>
                                         {unreadCount > 0 && (
-                                            <button 
+                                            <button
                                                 onClick={handleMarkAllRead}
                                                 className="text-[10px] font-medium text-[#1b5e20] hover:text-[#508953] hover:underline transition-all"
                                             >
@@ -166,22 +281,21 @@ export default function SiswaLayout({ user, header, children }) {
                                             </button>
                                         )}
                                     </div>
-                                    
+
                                     <div className="max-h-[300px] overflow-y-auto divide-y divide-slate-50">
                                         {notifications.length > 0 ? (
                                             notifications.map((n) => {
                                                 const Icon = n.tipe === 'jadwal' ? Calendar : BookOpen;
                                                 return (
-                                                    <div 
+                                                    <div
                                                         key={n.id_notifikasi}
                                                         onClick={() => handleNotificationClick(n)}
                                                         className={`p-3 flex gap-2 hover:bg-slate-50 transition-colors cursor-pointer relative ${!n.is_dibaca ? 'bg-green-50/20' : ''}`}
                                                     >
-                                                        <div className={`p-1.5 rounded-lg h-8 w-8 shrink-0 flex items-center justify-center ${
-                                                            n.tipe === 'jadwal' 
-                                                                ? 'bg-blue-50 text-blue-600' 
-                                                                : 'bg-green-50 text-[#1b5e20]'
-                                                        }`}>
+                                                        <div className={`p-1.5 rounded-lg h-8 w-8 shrink-0 flex items-center justify-center ${n.tipe === 'jadwal'
+                                                            ? 'bg-blue-50 text-blue-600'
+                                                            : 'bg-green-50 text-[#1b5e20]'
+                                                            }`}>
                                                             <Icon size={14} />
                                                         </div>
                                                         <div className="flex-1 min-w-0">
@@ -231,11 +345,10 @@ export default function SiswaLayout({ user, header, children }) {
                             <Link
                                 key={item.name}
                                 href={item.href}
-                                className={`flex items-center gap-3 px-3 py-2 rounded-md text-base font-medium ${
-                                    item.active
-                                        ? 'bg-green-50 text-[#1b5e20]'
-                                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                                }`}
+                                className={`flex items-center gap-3 px-3 py-2 rounded-md text-base font-medium ${item.active
+                                    ? 'bg-green-50 text-[#1b5e20]'
+                                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                    }`}
                             >
                                 <item.icon size={20} className={item.active ? 'text-[#1b5e20]' : 'text-slate-400'} />
                                 {item.name}
@@ -255,102 +368,7 @@ export default function SiswaLayout({ user, header, children }) {
             </div>
 
             {/* Main Content Area */}
-            <div className="flex-1 md:ml-64 flex flex-col min-h-screen pt-16 md:pt-0">
-                {/* Topbar for Desktop */}
-                <header className="hidden md:flex h-20 bg-white border-b border-slate-200 items-center justify-between px-8 sticky top-0 z-20 shrink-0">
-                    <div className="font-['Poppins'] font-semibold text-xl text-slate-800">
-                        {header}
-                    </div>
-                    <div className="flex items-center gap-6">
-                        {/* Desktop Notification Bell */}
-                        <div className="relative" ref={notificationRef}>
-                            <button
-                                onClick={() => setShowNotifications(!showNotifications)}
-                                className="p-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors relative focus:outline-none"
-                            >
-                                <Bell size={22} />
-                                {unreadCount > 0 && (
-                                    <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white animate-pulse">
-                                        {unreadCount}
-                                    </span>
-                                )}
-                            </button>
-
-                            {showNotifications && (
-                                <div className="absolute right-0 mt-2 w-96 bg-white rounded-2xl border border-slate-100 shadow-xl py-2 z-50 text-left overflow-hidden">
-                                    <div className="flex items-center justify-between px-4 py-2 border-b border-slate-50">
-                                        <h4 className="font-semibold text-slate-800 text-sm font-['Poppins']">Notifikasi</h4>
-                                        {unreadCount > 0 && (
-                                            <button 
-                                                onClick={handleMarkAllRead}
-                                                className="text-xs font-medium text-[#1b5e20] hover:text-[#508953] hover:underline transition-all"
-                                            >
-                                                Tandai semua dibaca
-                                            </button>
-                                        )}
-                                    </div>
-                                    
-                                    <div className="max-h-[360px] overflow-y-auto divide-y divide-slate-50">
-                                        {notifications.length > 0 ? (
-                                            notifications.map((n) => {
-                                                const Icon = n.tipe === 'jadwal' ? Calendar : BookOpen;
-                                                return (
-                                                    <div 
-                                                        key={n.id_notifikasi}
-                                                        onClick={() => handleNotificationClick(n)}
-                                                        className={`p-4 flex gap-3 hover:bg-slate-50 transition-colors cursor-pointer relative ${!n.is_dibaca ? 'bg-green-50/20' : ''}`}
-                                                    >
-                                                        <div className={`p-2 rounded-xl h-10 w-10 shrink-0 flex items-center justify-center ${
-                                                            n.tipe === 'jadwal' 
-                                                                ? 'bg-blue-50 text-blue-600' 
-                                                                : 'bg-green-50 text-[#1b5e20]'
-                                                        }`}>
-                                                            <Icon size={18} />
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex justify-between items-start gap-1">
-                                                                <p className={`text-xs sm:text-sm font-medium text-slate-800 truncate ${!n.is_dibaca ? 'font-semibold' : ''}`}>
-                                                                    {n.judul}
-                                                                </p>
-                                                                {!n.is_dibaca && (
-                                                                    <span className="h-2 w-2 rounded-full bg-red-500 shrink-0 mt-1.5 animate-pulse"></span>
-                                                                )}
-                                                            </div>
-                                                            <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
-                                                                {n.pesan}
-                                                            </p>
-                                                            <span className="text-[10px] text-slate-400 mt-1 block">
-                                                                {timeAgo(n.created_at)}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })
-                                        ) : (
-                                            <div className="py-8 px-4 flex flex-col items-center justify-center text-center">
-                                                <div className="p-3 bg-slate-50 rounded-full text-slate-400 mb-2">
-                                                    <Bell size={24} />
-                                                </div>
-                                                <p className="text-xs text-slate-500 font-medium">Tidak ada notifikasi</p>
-                                                <p className="text-[10px] text-slate-400">Semua info terbaru akan muncul di sini</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
-                            <div className="text-right hidden lg:block">
-                                <p className="text-sm font-semibold text-slate-700">{user?.nama || 'Siswa'}</p>
-                                <p className="text-xs text-[#1b5e20] font-medium">Siswa Beasiswa</p>
-                            </div>
-                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#1b5e20] to-[#508953] flex items-center justify-center text-white font-bold shadow-md">
-                                {user?.nama?.charAt(0) || 'S'}
-                            </div>
-                        </div>
-                    </div>
-                </header>
+            <div className="flex-1 flex flex-col min-h-screen pt-16 md:pt-0 min-w-0 overflow-x-hidden">
 
                 {/* Mobile Header Title */}
                 <div className="md:hidden bg-white border-b border-slate-200 px-4 py-4">
@@ -358,44 +376,22 @@ export default function SiswaLayout({ user, header, children }) {
                 </div>
 
                 {/* Main Content */}
-                <main className="flex-1 p-4 md:p-8 relative">
+                <main className="flex-1 p-4 md:p-8 md:mr-72 relative">
                     {/* Subtle Background Elements */}
                     <div className="absolute inset-0 overflow-hidden pointer-events-none">
                         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#508953]/5 rounded-full blur-3xl -translate-y-1/2 -z-10"></div>
                         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#1b5e20]/5 rounded-full blur-3xl translate-y-1/2 -z-10"></div>
                     </div>
-                    
+
                     <div className="max-w-7xl mx-auto relative z-10">
                         {children}
                     </div>
                 </main>
 
-                {/* Footer Section */}
-                <footer className="bg-gradient-to-r from-[#1b5e20] to-[#144718] text-white border-t border-emerald-800/40 py-6 px-4 md:px-8 relative z-10 mt-auto">
-                    <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 text-center sm:text-left">
-                            <div className="bg-white/95 px-2 py-1 rounded-lg inline-block">
-                                <img src="/images/logo.png" alt="Tumbuh Berbagi" className="h-5 w-auto" />
-                            </div>
-                            <span className="text-emerald-300/40 hidden sm:inline">|</span>
-                            <p className="text-xs text-emerald-100/80 font-medium font-['Poppins']">Menumbuhkan Kepedulian, Berbagi Kebaikan</p>
-                        </div>
-                        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-emerald-100/90 font-medium font-['Poppins']">
-                            <Link href={route('dashboard')} className="hover:text-white transition-colors">Beranda</Link>
-                            <Link href={route('siswa.kegiatan.index')} className="hover:text-white transition-colors">Kegiatan</Link>
-                            <Link href={route('siswa.jadwal')} className="hover:text-white transition-colors">Jadwal</Link>
-                            <Link href={route('siswa.latihan.index')} className="hover:text-white transition-colors">Latihan Soal</Link>
-                        </div>
-                    </div>
-                    <div className="max-w-7xl mx-auto border-t border-emerald-800/60 mt-4 pt-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
-                        <p className="text-[10px] text-emerald-200/60">
-                            &copy; {new Date().getFullYear()} Tumbuh Berbagi. Hak Cipta Dilindungi.
-                        </p>
-                        <p className="text-[10px] text-emerald-200 bg-white/10 px-2 py-0.5 rounded-md border border-white/15 font-medium">
-                            Versi 1.1.0
-                        </p>
-                    </div>
-                </footer>
+                {/* Footer Section (Standard layout matching landing page, with ref for sticky sidebar detection) */}
+                <div className="w-full relative z-10" ref={footerRef}>
+                    <Footer />
+                </div>
             </div>
         </div>
     );

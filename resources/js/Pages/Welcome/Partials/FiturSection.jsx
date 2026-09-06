@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Users, BookOpen, Heart, ArrowUpRight } from 'lucide-react';
+import ContainerWhite from '@/Components/ContainerWhite';
+import FirstIcon from '@/Components/FirstIcon';
 
 const features = [
     {
@@ -79,27 +81,23 @@ export default function FiturSection() {
                                 whileHover={{ y: -6, scale: 1.015 }}
                                 className={`w-full max-w-xl self-center lg:self-start ${feature.offsetClass}`}
                             >
-                                <div className="group p-6 sm:p-7 rounded-2xl sm:rounded-3xl bg-white border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden cursor-pointer">
-                                    <div className="flex items-start gap-5">
-                                        {/* Yellow Icon Badge like FAQ */}
-                                        <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-[#fef8e7] text-[#d99b00] group-hover:bg-[#fcc526] group-hover:text-white flex items-center justify-center shadow-sm group-hover:shadow-md group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-                                            <feature.icon size={22} strokeWidth={2.2} />
-                                        </div>
+                                <ContainerWhite className="flex items-start gap-5 cursor-pointer">
+                                    {/* Yellow Icon Badge */}
+                                    <FirstIcon icon={feature.icon} />
 
-                                        {/* Card Text Content */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between gap-2 mb-1.5">
-                                                <h3 className="font-['Poppins'] font-bold text-lg sm:text-xl text-slate-800 group-hover:text-[#1b5e20] transition-colors leading-tight">
-                                                    {feature.title}
-                                                </h3>
-                                                <ArrowUpRight size={18} className="text-slate-300 group-hover:text-[#d99b00] group-hover:translate-x-1 group-hover:-translate-y-1 transition-all duration-300" />
-                                            </div>
-                                            <p className="text-slate-500 font-light text-sm sm:text-base leading-relaxed">
-                                                {feature.desc}
-                                            </p>
+                                    {/* Card Text Content */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                                            <h3 className="font-['Poppins'] font-bold text-lg sm:text-xl text-slate-800 group-hover:text-[#1b5e20] transition-colors leading-tight">
+                                                {feature.title}
+                                            </h3>
+                                            <ArrowUpRight size={18} className="text-slate-300 group-hover:text-[#d99b00] group-hover:translate-x-1 group-hover:-translate-y-1 transition-all duration-300" />
                                         </div>
+                                        <p className="text-slate-500 font-light text-sm sm:text-base leading-relaxed">
+                                            {feature.desc}
+                                        </p>
                                     </div>
-                                </div>
+                                </ContainerWhite>
                             </motion.div>
                         ))}
                     </div>

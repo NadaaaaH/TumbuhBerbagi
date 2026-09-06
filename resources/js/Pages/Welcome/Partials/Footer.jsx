@@ -24,7 +24,7 @@ const socialLinks = [
     { icon: LinkedInIcon, href: '#' },
 ];
 
-export default function Footer() {
+export default function Footer({ containerClassName = '' }) {
     return (
         <div className="relative mt-0">
             {/* Animated 3D Wave Top Border Divider */}
@@ -72,7 +72,7 @@ export default function Footer() {
             </div>
 
             <footer className="bg-gradient-to-b from-[#1b5e20] to-[#124216] text-white pt-10 pb-10 relative z-20">
-                <div className="max-w-7xl mx-auto px-6">
+                <div className={`max-w-7xl mx-auto px-6 ${containerClassName}`}>
                     <div className="grid md:grid-cols-4 gap-12 mb-16">
                         {/* Brand */}
                         <div className="md:col-span-2 space-y-6">
@@ -99,9 +99,9 @@ export default function Footer() {
                         <div>
                             <h4 className="font-bold text-white text-sm uppercase tracking-wider mb-6 font-['Poppins']">Tautan Utama</h4>
                             <ul className="space-y-4 text-sm font-light text-emerald-100/80">
-                                <li><a href="#tentang" className="hover:text-white hover:translate-x-1 transition-all inline-block">Tentang Kami</a></li>
-                                <li><a href="#kegiatan" className="hover:text-white hover:translate-x-1 transition-all inline-block">Informasi Kegiatan</a></li>
-                                <li><a href="#faq" className="hover:text-white hover:translate-x-1 transition-all inline-block">Bantuan FAQ</a></li>
+                                <li><a href="/#tentang" className="hover:text-white hover:translate-x-1 transition-all inline-block">Tentang Kami</a></li>
+                                <li><a href="/#kegiatan" className="hover:text-white hover:translate-x-1 transition-all inline-block">Informasi Kegiatan</a></li>
+                                <li><a href="/#faq" className="hover:text-white hover:translate-x-1 transition-all inline-block">Bantuan FAQ</a></li>
                             </ul>
                         </div>
 

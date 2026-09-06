@@ -37,7 +37,7 @@ export default function KegiatanModal({ kegiatan, auth, onClose }) {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 40, scale: 0.98 }}
                 transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                className="relative bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto no-scrollbar shadow-2xl border border-slate-100"
+                className="relative bg-white rounded-t-2xl sm:rounded-3xl w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto no-scrollbar shadow-2xl border border-slate-100 font-['Inter',sans-serif]"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Close Button */}
@@ -66,6 +66,10 @@ export default function KegiatanModal({ kegiatan, auth, onClose }) {
 
                 {/* Content */}
                 <div className="p-8">
+                    <h2 className="font-['Poppins'] text-2xl sm:text-3xl font-extrabold text-slate-800 leading-tight mb-3">
+                        {kegiatan.nama_kegiatan}
+                    </h2>
+
                     <div className="flex flex-wrap gap-3 mb-6">
                         <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-50 border border-slate-100 text-xs font-medium text-slate-500">
                             <Calendar size={12} className="text-[#1b5e20]" />
@@ -79,10 +83,6 @@ export default function KegiatanModal({ kegiatan, auth, onClose }) {
                         )}
                     </div>
 
-                    <h2 className="font-['Poppins'] text-2xl sm:text-3xl font-extrabold text-slate-800 leading-tight mb-4">
-                        {kegiatan.nama_kegiatan}
-                    </h2>
-
                     <div className="w-12 h-1 rounded-full bg-[#1b5e20] mb-6" />
 
                     <div className="text-slate-600 font-light leading-relaxed text-base whitespace-pre-wrap mb-2">
@@ -90,17 +90,20 @@ export default function KegiatanModal({ kegiatan, auth, onClose }) {
                     </div>
 
                     {/* Instagram Link Footer */}
-                    <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <span className="text-slate-500 text-sm font-light">
-                            Lihat kegiatan Tumbuh Berbagi lainnya
-                        </span>
+                    <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-end">
                         <a
                             href="https://www.instagram.com/tumbuhberbagi"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-900 text-white text-xs font-bold hover:bg-[#1b5e20] hover:shadow-[0_4px_16px_rgba(27,94,32,0.2)] transition-all active:scale-95 shadow-sm"
+                            className="w-10 h-10 rounded-full bg-slate-900 text-white hover:bg-[#1b5e20] hover:shadow-[0_4px_16px_rgba(27,94,32,0.2)] flex items-center justify-center transition-all active:scale-95 shadow-sm"
+                            aria-label="Instagram @tumbuhberbagi"
+                            title="Instagram @tumbuhberbagi"
                         >
-                            Instagram @tumbuhberbagi
+                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                            </svg>
                         </a>
                     </div>
                 </div>

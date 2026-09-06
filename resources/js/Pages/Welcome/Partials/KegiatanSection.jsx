@@ -149,7 +149,7 @@ export default function KegiatanSection({ kegiatans, onSelectKegiatan }) {
                                                         {new Date(mainKegiatan.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                                                     </span>
                                                 </div>
-                                                <h3 className="font-['Poppins'] font-bold text-2xl sm:text-3xl text-slate-800 mb-4 group-hover: leading-tight">
+                                                <h3 className="font-['Poppins'] font-bold text-2xl sm:text-3xl text-slate-800 mb-4 group-hover:text-[#1b5e20] transition-colors leading-tight">
                                                     {mainKegiatan.nama_kegiatan}
                                                 </h3>
                                                 <p className="text-slate-500 font-light text-sm sm:text-base line-clamp-3 sm:line-clamp-4 leading-relaxed mb-6">
@@ -203,7 +203,7 @@ export default function KegiatanSection({ kegiatans, onSelectKegiatan }) {
                                                         <span className="text-[10px] sm:text-xs text-slate-400 font-semibold block mb-1">
                                                             {new Date(kegiatan.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                                                         </span>
-                                                        <h4 className="font-['Poppins'] font-bold text-base sm:text-lg text-slate-800 mb-2 line-clamp-1 group-hover: leading-tight">
+                                                        <h4 className="font-['Poppins'] font-bold text-base sm:text-lg text-slate-800 mb-2 line-clamp-1 group-hover:text-[#1b5e20] transition-colors leading-tight">
                                                             {kegiatan.nama_kegiatan}
                                                         </h4>
                                                         <p className="text-slate-500 font-light text-xs sm:text-sm line-clamp-2 leading-relaxed">
