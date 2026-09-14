@@ -105,10 +105,10 @@ class LatihanController extends Controller
         ]);
 
         $jawabanData = $validated['jawaban'] ?? [];
-        $soals = Soal::where('id_paket', $paket->id_paket)
+        $soals = $paket->soal()
             ->where('status', 'aktif')
             ->orderBy('kategori', 'asc')
-            ->orderBy('id_soal', 'asc')
+            ->orderBy('soal.id_soal', 'asc')
             ->with('pilihan_jawaban')
             ->get();
 

@@ -6,7 +6,6 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import { Plus, Pencil, Trash2, Calendar, Clock, Search, X, ImagePlus, Save } from 'lucide-react';
 import Swal from 'sweetalert2';
-import TextInput from '@/Components/TextInput';
 
 export default function Index({ auth, jadwals, filters }) {
     const [searchQuery, setSearchQuery] = useState(filters?.search || '');
@@ -233,9 +232,9 @@ export default function Index({ auth, jadwals, filters }) {
                     {/* Search Bar */}
                     <form onSubmit={handleSearch} className="relative w-full sm:w-64">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                        <TextInput 
-                            type="text" 
-                            placeholder="Cari jadwal..." 
+                        <TextInput
+                            type="text"
+                            placeholder="Cari jadwal..."
                             className="w-full !pl-10 !pr-4 !py-2.5 !rounded-xl !border-slate-200 focus:!border-[#1b5e20] focus:!ring-[#1b5e20] text-sm"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -322,14 +321,14 @@ export default function Index({ auth, jadwals, filters }) {
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6">
                     {/* Backdrop Click Outside to Close */}
-                    <div 
-                        className="fixed inset-0" 
+                    <div
+                        className="fixed inset-0"
                         onClick={closeModal}
                     />
 
                     {/* Modal Content Panel */}
                     <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden z-10 max-h-[92vh] flex flex-col">
-                        
+
                         {/* Modal Header */}
                         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-slate-50/70">
                             <div>
@@ -353,7 +352,7 @@ export default function Index({ auth, jadwals, filters }) {
                         {/* Modal Scrollable Form Body */}
                         <div className="p-6 overflow-y-auto flex-1">
                             <form id="form-jadwal-modal" onSubmit={handleFormSubmit} className="space-y-5">
-                                
+
                                 {/* Nama Jadwal */}
                                 <div>
                                     <InputLabel htmlFor="modal_nama_jadwal" value="Nama Jadwal / Kegiatan" />
@@ -410,25 +409,22 @@ export default function Index({ auth, jadwals, filters }) {
                                                 aria-checked={data.status === 'aktif' || data.status === 'Aktif'}
                                                 onClick={() => setData('status', (data.status === 'aktif' || data.status === 'Aktif') ? 'nonaktif' : 'aktif')}
                                                 disabled={processing}
-                                                className={`relative inline-flex h-8 w-[72px] shrink-0 cursor-pointer items-center rounded-full border-2 transition-colors duration-300 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1b5e20] focus-visible:ring-offset-2 ${
-                                                    (data.status === 'aktif' || data.status === 'Aktif')
+                                                className={`relative inline-flex h-8 w-[72px] shrink-0 cursor-pointer items-center rounded-full border-2 transition-colors duration-300 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1b5e20] focus-visible:ring-offset-2 ${(data.status === 'aktif' || data.status === 'Aktif')
                                                         ? 'bg-[#1b5e20] border-[#1b5e20]'
                                                         : 'bg-slate-200 border-slate-200'
-                                                } ${processing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                    } ${processing ? 'opacity-50 cursor-not-allowed' : ''}`}
                                             >
                                                 <span
-                                                    className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition-transform duration-300 ease-in-out ${
-                                                        (data.status === 'aktif' || data.status === 'Aktif')
+                                                    className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition-transform duration-300 ease-in-out ${(data.status === 'aktif' || data.status === 'Aktif')
                                                             ? 'translate-x-[40px]'
                                                             : 'translate-x-0.5'
-                                                    }`}
+                                                        }`}
                                                 />
                                             </button>
-                                            <span className={`text-sm font-semibold transition-colors duration-200 ${
-                                                (data.status === 'aktif' || data.status === 'Aktif')
+                                            <span className={`text-sm font-semibold transition-colors duration-200 ${(data.status === 'aktif' || data.status === 'Aktif')
                                                     ? 'text-[#1b5e20]'
                                                     : 'text-slate-400'
-                                            }`}>
+                                                }`}>
                                                 {(data.status === 'aktif' || data.status === 'Aktif') ? 'Aktif' : 'Nonaktif'}
                                             </span>
                                         </div>
@@ -440,7 +436,7 @@ export default function Index({ auth, jadwals, filters }) {
                                 <div>
                                     <InputLabel htmlFor="modal_gambar" value="Gambar Banner (Opsional)" />
                                     <p className="text-xs text-slate-400 mt-0.5 mb-2">Gambar akan ditampilkan sebagai banner card jadwal di halaman siswa. Rasio 16:9 disarankan.</p>
-                                    
+
                                     {imagePreview ? (
                                         <div className="relative rounded-2xl overflow-hidden border border-slate-200 group">
                                             <img

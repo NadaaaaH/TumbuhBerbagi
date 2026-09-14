@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import InputLabel from '@/Components/InputLabel';
@@ -7,10 +7,16 @@ import InputError from '@/Components/InputError';
 import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
 import RichTextEditor from '@/Components/RichTextEditor';
 import SelectInput from '@/Components/SelectInput';
+import MultiSelect from '@/Components/MultiSelect';
 
 export default function Create({ auth, pakets, defaultPaketId }) {
+    const initialPaket = defaultPaketId 
+        ? [Number(defaultPaketId)] 
+        : (pakets[0]?.id_paket ? [pakets[0].id_paket] : []);
+
     const { data, setData, post, transform, processing, errors } = useForm({
-        id_paket: defaultPaketId || (pakets[0]?.id_paket || ''),
+        id_paket: initialPaket,
+        default_paket_id: defaultPaketId || '',
         konten_soal: '',
         jenis_soal: 'pilihan_ganda',
         kategori: 'PPU',
@@ -47,7 +53,7 @@ export default function Create({ auth, pakets, defaultPaketId }) {
 
     const submit = (e) => {
         e.preventDefault();
-        
+
         transform((data) => {
             const payload = { ...data };
             if (data.jenis_soal !== 'pilihan_ganda') {
@@ -91,22 +97,14 @@ export default function Create({ auth, pakets, defaultPaketId }) {
                         <div className="grid gap-6 md:grid-cols-2">
                             {/* Paket Latihan */}
                             <div>
-                                <InputLabel htmlFor="id_paket" value="Paket Latihan" />
-                                <SelectInput
-                                    id="id_paket"
-                                    className="mt-1 block w-full disabled:bg-slate-100 disabled:text-slate-500"
+                                <InputLabel htmlFor="id_paket" value="Paket Soal (Bisa Pilih Banyak)" />
+                                <MultiSelect
+                                    options={pakets}
                                     value={data.id_paket}
-                                    onChange={(e) => setData('id_paket', e.target.value)}
-                                    disabled={!!defaultPaketId}
-                                    required
-                                >
-                                    <option value="" disabled>Pilih Paket Latihan</option>
-                                    {pakets.map((paket) => (
-                                        <option key={paket.id_paket} value={paket.id_paket}>
-                                            {paket.nama_paket}
-                                        </option>
-                                    ))}
-                                </SelectInput>
+                                    onChange={(vals) => setData('id_paket', vals)}
+                                    placeholder="Pilih satu atau beberapa paket latihan..."
+                                    className="mt-1"
+                                />
                                 <InputError message={errors.id_paket} className="mt-2" />
                             </div>
 
@@ -159,18 +157,22 @@ export default function Create({ auth, pakets, defaultPaketId }) {
 
                             {/* Tingkat Kesulitan */}
                             <div>
-                                <InputLabel htmlFor="tingkat_kesulitan" value="Tingkat Kesulitan" />
+                                <InputLabel htmlFor="tingkat_kesulitan" value="Tingkat Kesulitan (Opsional)" />
                                 <SelectInput
                                     id="tingkat_kesulitan"
                                     className="mt-1 block w-full"
                                     value={data.tingkat_kesulitan}
                                     onChange={(e) => setData('tingkat_kesulitan', e.target.value)}
-                                    required
                                 >
-                                    <option value="easy">Easy (Mudah)</option>
+                                    <option value="">-- Belum ditentukan --</option>
+                                    <option value="mudah">Mudah</option>
                                     <option value="medium">Medium (Sedang)</option>
-                                    <option value="hard">Hard (Sulit)</option>
+                                    <option value="sulit">Sulit</option>
                                 </SelectInput>
+                                <p className="mt-1.5 text-[11px] text-slate-400 flex items-center gap-1">
+                                    <span>ℹ️</span>
+                                    Setelah soal dipakai di Try Out, tingkat kesulitan akan dihitung ulang otomatis berdasarkan indeks (P-value) hasil pengerjaan siswa dan akan menggantikan pilihan ini.
+                                </p>
                                 <InputError message={errors.tingkat_kesulitan} className="mt-2" />
                             </div>
 
@@ -183,25 +185,22 @@ export default function Create({ auth, pakets, defaultPaketId }) {
                                         role="switch"
                                         aria-checked={data.status === 'aktif' || data.status === 'Aktif'}
                                         onClick={() => setData('status', (data.status === 'aktif' || data.status === 'Aktif') ? 'nonaktif' : 'aktif')}
-                                        className={`relative inline-flex h-8 w-[72px] shrink-0 cursor-pointer items-center rounded-full border-2 transition-colors duration-300 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1b5e20] focus-visible:ring-offset-2 ${
-                                            (data.status === 'aktif' || data.status === 'Aktif')
+                                        className={`relative inline-flex h-8 w-[72px] shrink-0 cursor-pointer items-center rounded-full border-2 transition-colors duration-300 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1b5e20] focus-visible:ring-offset-2 ${(data.status === 'aktif' || data.status === 'Aktif')
                                                 ? 'bg-[#1b5e20] border-[#1b5e20]'
                                                 : 'bg-slate-200 border-slate-200'
-                                        }`}
+                                            }`}
                                     >
                                         <span
-                                            className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition-transform duration-300 ease-in-out ${
-                                                (data.status === 'aktif' || data.status === 'Aktif')
+                                            className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition-transform duration-300 ease-in-out ${(data.status === 'aktif' || data.status === 'Aktif')
                                                     ? 'translate-x-[40px]'
                                                     : 'translate-x-0.5'
-                                            }`}
+                                                }`}
                                         />
                                     </button>
-                                    <span className={`text-sm font-semibold transition-colors duration-200 ${
-                                        (data.status === 'aktif' || data.status === 'Aktif')
+                                    <span className={`text-sm font-semibold transition-colors duration-200 ${(data.status === 'aktif' || data.status === 'Aktif')
                                             ? 'text-[#1b5e20]'
                                             : 'text-slate-400'
-                                    }`}>
+                                        }`}>
                                         {(data.status === 'aktif' || data.status === 'Aktif') ? 'Aktif' : 'Nonaktif'}
                                     </span>
                                 </div>
@@ -213,9 +212,9 @@ export default function Create({ auth, pakets, defaultPaketId }) {
                         <div>
                             <InputLabel htmlFor="konten_soal" value="Pertanyaan (Konten Soal)" />
                             <div className="mt-1 bg-white rounded-md">
-                                <RichTextEditor 
-                                    value={data.konten_soal} 
-                                    onChange={(value) => setData('konten_soal', value)} 
+                                <RichTextEditor
+                                    value={data.konten_soal}
+                                    onChange={(value) => setData('konten_soal', value)}
                                     placeholder="Masukkan isi pertanyaan di sini (bisa sisipkan gambar)..."
                                 />
                             </div>
@@ -297,9 +296,9 @@ export default function Create({ auth, pakets, defaultPaketId }) {
                         <div>
                             <InputLabel htmlFor="pembahasan" value="Pembahasan Soal" />
                             <div className="mt-1 bg-white rounded-md">
-                                <RichTextEditor 
-                                    value={data.pembahasan || ''} 
-                                    onChange={(value) => setData('pembahasan', value)} 
+                                <RichTextEditor
+                                    value={data.pembahasan || ''}
+                                    onChange={(value) => setData('pembahasan', value)}
                                     placeholder="Tuliskan penjelasan atau pembahasan soal di sini..."
                                 />
                             </div>

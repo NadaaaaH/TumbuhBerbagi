@@ -24,7 +24,7 @@ class PaketLatihan extends Model
 
     public function soal()
     {
-        return $this->hasMany(Soal::class, 'id_paket', 'id_paket');
+        return $this->belongsToMany(Soal::class, 'paket_soal', 'id_paket', 'id_soal');
     }
 
     public function sesi_latihan()

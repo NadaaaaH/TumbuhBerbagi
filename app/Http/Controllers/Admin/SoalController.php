@@ -21,7 +21,9 @@ class SoalController extends Controller
         }
 
         if ($request->has('id_paket') && $request->id_paket != '') {
-            $query->where('id_paket', $request->id_paket);
+            $query->whereHas('paket_latihan', function ($q) use ($request) {
+                $q->where('paket_latihan.id_paket', $request->id_paket);
+            });
         }
 
         if ($request->has('search') && $request->search != '') {
@@ -50,7 +52,8 @@ class SoalController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'id_paket' => 'required|exists:paket_latihan,id_paket',
+            'id_paket' => 'required|array|min:1',
+            'id_paket.*' => 'exists:paket_latihan,id_paket',
             'konten_soal' => 'required|string',
             'jenis_soal' => 'required|in:pilihan_ganda,isian',
             'kategori' => 'required|string|max:50',
@@ -69,19 +72,24 @@ class SoalController extends Controller
 
         DB::beginTransaction();
         try {
+            $firstPaketId = $validated['id_paket'][0] ?? null;
+
             $soal = Soal::create([
-                'id_paket' => $validated['id_paket'],
+                'id_paket' => $firstPaketId,
                 'konten_soal' => $validated['konten_soal'],
                 'jenis_soal' => $validated['jenis_soal'],
                 'kategori' => $validated['kategori'],
                 'materi' => $validated['materi'] ?? null,
-                'tingkat_kesulitan' => $validated['tingkat_kesulitan'] ?? 'medium',
+                'tingkat_kesulitan' => $validated['tingkat_kesulitan'] ?: null,
                 'kunci_jawaban' => $validated['kunci_jawaban'],
-            'pembahasan' => $validated['pembahasan'] ?? null,
-            'bobot_nilai' => 10,
-            'is_case_sensitive' => $validated['is_case_sensitive'] ?? false,
-            'status' => $validated['status'],
+                'pembahasan' => $validated['pembahasan'] ?? null,
+                'bobot_nilai' => 10,
+                'is_case_sensitive' => $validated['is_case_sensitive'] ?? false,
+                'status' => $validated['status'],
             ]);
+
+            // Sinkronkan relasi pivot many-to-many
+            $soal->paket_latihan()->sync($validated['id_paket']);
 
             if ($validated['jenis_soal'] === 'pilihan_ganda' && !empty($validated['pilihan'])) {
                 foreach ($validated['pilihan'] as $pilihan) {
@@ -94,7 +102,17 @@ class SoalController extends Controller
             }
 
             DB::commit();
-            return redirect()->route('paket-latihan.show', $validated['id_paket'])->with('success', 'Soal berhasil ditambahkan ke paket ini.');
+
+            $redirectTo = $request->input('redirect_to');
+            if ($redirectTo && (str_contains($redirectTo, '/soal') || str_contains($redirectTo, '/paket-latihan'))) {
+                return redirect($redirectTo)->with('success', 'Soal berhasil ditambahkan.');
+            }
+
+            if ($request->filled('default_paket_id')) {
+                return redirect()->route('paket-latihan.show', $request->default_paket_id)->with('success', 'Soal berhasil ditambahkan ke paket ini.');
+            }
+
+            return redirect()->route('soal.index')->with('success', 'Soal berhasil ditambahkan.');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['error' => 'Gagal menyimpan soal: ' . $e->getMessage()]);
@@ -103,7 +121,7 @@ class SoalController extends Controller
 
     public function edit(string $id)
     {
-        $soal = Soal::with('pilihan_jawaban')->findOrFail($id);
+        $soal = Soal::with(['pilihan_jawaban', 'paket_latihan'])->findOrFail($id);
         $pakets = PaketLatihan::orderBy('nama_paket')->get();
         return Inertia::render('Admin/Soal/Edit', [
             'soal' => $soal,
@@ -117,7 +135,8 @@ class SoalController extends Controller
         $soal = Soal::findOrFail($id);
 
         $validated = $request->validate([
-            'id_paket' => 'required|exists:paket_latihan,id_paket',
+            'id_paket' => 'required|array|min:1',
+            'id_paket.*' => 'exists:paket_latihan,id_paket',
             'konten_soal' => 'required|string',
             'jenis_soal' => 'required|in:pilihan_ganda,isian',
             'kategori' => 'required|string|max:50',
@@ -135,19 +154,24 @@ class SoalController extends Controller
 
         DB::beginTransaction();
         try {
+            $firstPaketId = $validated['id_paket'][0] ?? null;
+
             $soal->update([
-                'id_paket' => $validated['id_paket'],
+                'id_paket' => $firstPaketId,
                 'konten_soal' => $validated['konten_soal'],
                 'jenis_soal' => $validated['jenis_soal'],
                 'kategori' => $validated['kategori'],
                 'materi' => $validated['materi'] ?? null,
-                'tingkat_kesulitan' => $validated['tingkat_kesulitan'] ?? $soal->tingkat_kesulitan,
+                'tingkat_kesulitan' => $validated['tingkat_kesulitan'] ?: null,
                 'kunci_jawaban' => $validated['kunci_jawaban'],
                 'pembahasan' => $validated['pembahasan'] ?? null,
                 'bobot_nilai' => $soal->bobot_nilai ?? 10,
                 'is_case_sensitive' => $validated['is_case_sensitive'] ?? false,
                 'status' => $validated['status'],
             ]);
+
+            // Sinkronkan relasi pivot many-to-many
+            $soal->paket_latihan()->sync($validated['id_paket']);
 
             // Perbarui atau buat pilihan jawaban jika pilihan ganda
             if ($validated['jenis_soal'] === 'pilihan_ganda' && !empty($validated['pilihan'])) {
@@ -163,13 +187,12 @@ class SoalController extends Controller
                     );
                 }
 
-                // Hapus pilihan lain yang mungkin ada (jika kode_pilihan tidak ada dalam input pilihan)
+                // Hapus pilihan lain yang mungkin ada
                 $inputCodes = collect($validated['pilihan'])->pluck('kode_pilihan')->toArray();
                 PilihanJawaban::where('id_soal', $soal->id_soal)
                     ->whereNotIn('kode_pilihan', $inputCodes)
                     ->delete();
             } else {
-                // Jika jenis soal berubah menjadi isian, hapus pilihan jawaban (hanya jika tidak dirujuk, tapi jika dirujuk kita harus set id_pilihan ke null di jawaban_siswa dahulu)
                 $pilihanIds = PilihanJawaban::where('id_soal', $soal->id_soal)->pluck('id_pilihan')->toArray();
                 if (!empty($pilihanIds)) {
                     DB::table('jawaban_siswa')->whereIn('id_pilihan', $pilihanIds)->update(['id_pilihan' => null]);
@@ -184,7 +207,7 @@ class SoalController extends Controller
                 return redirect($redirectTo)->with('success', 'Soal berhasil diperbarui.');
             }
 
-            return redirect()->route('paket-latihan.show', $soal->id_paket)->with('success', 'Soal berhasil diperbarui.');
+            return redirect()->route('soal.index')->with('success', 'Soal berhasil diperbarui.');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['error' => 'Gagal memperbarui soal: ' . $e->getMessage()]);
@@ -194,10 +217,12 @@ class SoalController extends Controller
     public function destroy(string $id)
     {
         $soal = Soal::findOrFail($id);
-        $id_paket = $soal->id_paket;
 
         DB::beginTransaction();
         try {
+            // Hapus relasi pivot terlebih dahulu
+            $soal->paket_latihan()->detach();
+
             // Hapus jawaban siswa yang merujuk ke soal ini
             DB::table('jawaban_siswa')->where('id_soal', $soal->id_soal)->delete();
 
@@ -208,7 +233,7 @@ class SoalController extends Controller
             $soal->delete();
 
             DB::commit();
-            return redirect()->route('paket-latihan.show', $id_paket)->with('success', 'Soal berhasil dihapus dari paket.');
+            return back()->with('success', 'Soal berhasil dihapus.');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['error' => 'Gagal menghapus soal: ' . $e->getMessage()]);

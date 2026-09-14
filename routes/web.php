@@ -54,6 +54,10 @@ Route::middleware('auth:admin')->group(function () {
 
     Route::resource('admin/paket-latihan', AdminPaketLatihanController::class)
         ->names('paket-latihan');
+    Route::delete('admin/paket-latihan/{id_paket}/soal/{id_soal}', [AdminPaketLatihanController::class, 'removeSoal'])
+        ->name('paket-latihan.remove-soal');
+    Route::post('admin/paket-latihan/{id_paket}/soal/attach', [AdminPaketLatihanController::class, 'addSoal'])
+        ->name('paket-latihan.add-soal');
 
     Route::resource('admin/sesi-latihan', AdminSesiLatihanController::class)
         ->only(['index', 'show'])

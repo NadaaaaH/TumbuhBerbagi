@@ -14,16 +14,20 @@ class PaketLatihanController extends Controller
     {
         $query = PaketLatihan::withCount('soal');
 
-        if ($request->has('search') && $request->search != '') {
+        if ($request->filled('search')) {
             $searchTerm = '%' . strtolower($request->search) . '%';
             $query->where(DB::raw('LOWER(nama_paket)'), 'like', $searchTerm);
+        }
+
+        if ($request->filled('tipe') && in_array($request->tipe, ['tryout', 'latihan'])) {
+            $query->where('tipe', $request->tipe);
         }
 
         $pakets = $query->orderBy('id_paket', 'desc')->get();
         
         return Inertia::render('Admin/PaketLatihan/Index', [
             'pakets' => $pakets,
-            'filters' => $request->only(['search'])
+            'filters' => $request->only(['search', 'tipe'])
         ]);
     }
 
@@ -36,10 +40,8 @@ class PaketLatihanController extends Controller
     {
         $paket = PaketLatihan::findOrFail($id);
         
-        // Ambil soal-soal yang ada di paket ini
-        $query = \App\Models\Soal::with('pilihan_jawaban')
-            ->where('id_paket', $id)
-            ->orderBy('id_soal', 'desc');
+        // Ambil soal-soal yang ada di paket ini via many-to-many
+        $query = $paket->soal()->with('pilihan_jawaban');
 
         if ($request->has('search') && $request->search != '') {
             $query->where(DB::raw('LOWER(konten_soal)'), 'like', '%' . strtolower($request->search) . '%');
@@ -49,12 +51,19 @@ class PaketLatihanController extends Controller
             $query->where('kategori', $request->kategori);
         }
 
-        $soals = $query->get();
+        $soals = $query->orderBy('soal.id_soal', 'desc')->get();
+
+        $existingIds = $soals->pluck('id_soal')->toArray();
+        $bankSoals = \App\Models\Soal::whereNotIn('id_soal', $existingIds)
+            ->where('status', 'aktif')
+            ->orderBy('id_soal', 'desc')
+            ->get(['id_soal', 'konten_soal', 'kategori', 'jenis_soal', 'materi', 'tingkat_kesulitan']);
 
         return Inertia::render('Admin/PaketLatihan/Show', [
-            'paket' => $paket,
-            'soals' => $soals,
-            'filters' => $request->only(['search', 'kategori'])
+            'paket'     => $paket,
+            'soals'     => $soals,
+            'bankSoals' => $bankSoals,
+            'filters'   => $request->only(['search', 'kategori'])
         ]);
     }
 
@@ -90,9 +99,20 @@ class PaketLatihanController extends Controller
 
     public function edit(string $id)
     {
-        $paket = PaketLatihan::findOrFail($id);
+        $paket = PaketLatihan::withCount('soal')->findOrFail($id);
+        $soals = $paket->soal()->orderBy('soal.id_soal', 'desc')->get();
+
+        // Soal dari bank yang BELUM ada di paket ini
+        $existingIds = $soals->pluck('id_soal')->toArray();
+        $bankSoals = \App\Models\Soal::whereNotIn('id_soal', $existingIds)
+            ->where('status', 'aktif')
+            ->orderBy('id_soal', 'desc')
+            ->get(['id_soal', 'konten_soal', 'kategori', 'jenis_soal', 'materi', 'tingkat_kesulitan']);
+
         return Inertia::render('Admin/PaketLatihan/Edit', [
-            'paket' => $paket
+            'paket'     => $paket,
+            'soals'     => $soals,
+            'bankSoals' => $bankSoals,
         ]);
     }
 
@@ -136,15 +156,34 @@ class PaketLatihanController extends Controller
         return redirect()->route('paket-latihan.index')->with('success', 'Paket Latihan berhasil diperbarui.');
     }
 
+    public function removeSoal(string $id_paket, string $id_soal)
+    {
+        $paket = PaketLatihan::findOrFail($id_paket);
+        $paket->soal()->detach($id_soal);
+
+        return back()->with('success', 'Soal berhasil dilepas dari paket ini.');
+    }
+
+    public function addSoal(Request $request, string $id_paket)
+    {
+        $request->validate([
+            'soal_ids'   => 'required|array|min:1',
+            'soal_ids.*' => 'exists:soal,id_soal',
+        ]);
+
+        $paket = PaketLatihan::findOrFail($id_paket);
+        // syncWithoutDetaching agar soal yang sudah ada tidak terhapus
+        $paket->soal()->syncWithoutDetaching($request->soal_ids);
+
+        return back()->with('success', count($request->soal_ids) . ' soal berhasil ditambahkan ke paket.');
+    }
+
     public function destroy(string $id)
     {
         $paket = PaketLatihan::findOrFail($id);
 
         DB::beginTransaction();
         try {
-            // Cari semua soal di dalam paket ini
-            $soalIds = DB::table('soal')->where('id_paket', $paket->id_paket)->pluck('id_soal')->toArray();
-
             // Cari semua sesi latihan untuk paket ini
             $sesiIds = DB::table('sesi_latihan')->where('id_paket', $paket->id_paket)->pluck('id_sesi')->toArray();
 
@@ -158,16 +197,8 @@ class PaketLatihanController extends Controller
                 DB::table('sesi_latihan')->whereIn('id_sesi', $sesiIds)->delete();
             }
 
-            if (!empty($soalIds)) {
-                // Hapus jawaban siswa yang terhubung dengan soal-soal ini
-                DB::table('jawaban_siswa')->whereIn('id_soal', $soalIds)->delete();
-
-                // Hapus pilihan jawaban untuk soal-soal ini
-                DB::table('pilihan_jawaban')->whereIn('id_soal', $soalIds)->delete();
-
-                // Hapus soal-soal ini
-                DB::table('soal')->whereIn('id_soal', $soalIds)->delete();
-            }
+            // Lepaskan relasi soal dari paket ini
+            $paket->soal()->detach();
 
             // Hapus notifikasi yang merujuk ke paket latihan ini
             DB::table('notifikasi')->where('tipe', 'latihan')->where('id_referensi', $paket->id_paket)->delete();

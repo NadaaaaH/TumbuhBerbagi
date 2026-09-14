@@ -103,10 +103,10 @@ class TryoutController extends Controller
         ]);
 
         $jawabanData = $validated['jawaban'] ?? [];
-        $soals = Soal::where('id_paket', $paket->id_paket)
+        $soals = $paket->soal()
             ->where('status', 'aktif')
             ->orderBy('kategori', 'asc')
-            ->orderBy('id_soal', 'asc')
+            ->orderBy('soal.id_soal', 'asc')
             ->with('pilihan_jawaban')
             ->get();
 
@@ -178,6 +178,11 @@ class TryoutController extends Controller
             ]);
 
             DB::commit();
+
+            // Hitung ulang tingkat_kesulitan_index untuk semua soal di paket ini
+            foreach ($soals as $soal) {
+                Soal::updateDifficultyIndex($soal->id_soal);
+            }
 
             \App\Models\AktivitasSiswa::log('selesai_tryout', 'Siswa menyelesaikan Try Out ' . $paket->nama_paket . ' (Nilai: ' . $nilaiAkhir . ')');
 

@@ -76,7 +76,7 @@ export default function Index({ auth, soals, pakets = [], filters }) {
     };
 
     return (
-        <AdminLayout user={auth.user} header="Bank Soal Latsol UTBK">
+        <AdminLayout user={auth.user} header="Bank Soal Latsol & TryOut">
             <Head title="Bank Soal" />
 
             <div className="flex flex-col gap-4 mb-6">
@@ -87,8 +87,8 @@ export default function Index({ auth, soals, pakets = [], filters }) {
                         <button
                             onClick={() => handleFilterChange('', selectedPaket, searchQuery)}
                             className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors whitespace-nowrap ${selectedKategori === ''
-                                    ? 'bg-[#1b5e20] text-white'
-                                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                                ? 'bg-[#1b5e20] text-white'
+                                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
                                 }`}
                         >
                             Semua Kategori
@@ -98,8 +98,8 @@ export default function Index({ auth, soals, pakets = [], filters }) {
                                 key={cat}
                                 onClick={() => handleFilterChange(cat, selectedPaket, searchQuery)}
                                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors whitespace-nowrap ${selectedKategori === cat
-                                        ? 'bg-[#1b5e20] text-white'
-                                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                                    ? 'bg-[#1b5e20] text-white'
+                                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
                                     }`}
                             >
                                 {cat}
@@ -170,15 +170,56 @@ export default function Index({ auth, soals, pakets = [], filters }) {
                                             <p className="text-sm font-medium text-slate-900 line-clamp-2">
                                                 {stripHtml(soal.konten_soal)}
                                             </p>
-                                            <div className="mt-1 flex items-center gap-1 text-xs text-slate-400">
-                                                <BookOpen size={12} />
-                                                <span>{soal.paket_latihan?.nama_paket || 'Tanpa Paket'}</span>
+                                            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
+                                                <BookOpen size={12} className="text-slate-400 shrink-0" />
+                                                {Array.isArray(soal.paket_latihan) && soal.paket_latihan.length > 0 ? (
+                                                    <>
+                                                        {soal.paket_latihan.slice(0, 2).map((pkt) => (
+                                                            <span
+                                                                key={pkt.id_paket}
+                                                                className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md text-[11px] font-medium"
+                                                            >
+                                                                {pkt.nama_paket}
+                                                            </span>
+                                                        ))}
+                                                        {soal.paket_latihan.length > 2 && (
+                                                            <span
+                                                                className="bg-emerald-50 text-[#1b5e20] font-semibold px-1.5 py-0.5 rounded-md text-[11px]"
+                                                                title={soal.paket_latihan.slice(2).map(p => p.nama_paket).join(', ')}
+                                                            >
+                                                                +{soal.paket_latihan.length - 2} lainnya
+                                                            </span>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <span className="text-slate-400 italic">
+                                                        {soal.paket_latihan?.nama_paket || 'Tanpa Paket'}
+                                                    </span>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
                                                 {soal.kategori}
                                             </span>
+                                            <div className="mt-1">
+                                                {soal.tingkat_kesulitan_index !== null && soal.tingkat_kesulitan_index !== undefined ? (
+                                                    <span
+                                                        className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md border ${
+                                                            soal.tingkat_kesulitan === 'mudah' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                                            soal.tingkat_kesulitan === 'sulit' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                                                            'bg-amber-50 text-amber-700 border-amber-200'
+                                                        }`}
+                                                        title={`Indeks Kesulitan: ${soal.tingkat_kesulitan_index}`}
+                                                    >
+                                                        {soal.tingkat_kesulitan === 'mudah' ? 'Mudah' : soal.tingkat_kesulitan === 'sulit' ? 'Sulit' : 'Sedang'} ({soal.tingkat_kesulitan_index})
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[10px] text-slate-400 italic">
+                                                        Belum diuji
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className="text-sm text-slate-600 uppercase">
@@ -194,8 +235,8 @@ export default function Index({ auth, soals, pakets = [], filters }) {
                                             <button
                                                 onClick={() => toggleStatus(soal.id_soal)}
                                                 className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${soal.status === 'aktif'
-                                                        ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                                                        : 'bg-rose-50 text-rose-700 hover:bg-rose-100'
+                                                    ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                                    : 'bg-rose-50 text-rose-700 hover:bg-rose-100'
                                                     }`}
                                                 title="Klik untuk mengubah status"
                                             >

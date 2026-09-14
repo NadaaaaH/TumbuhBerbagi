@@ -3,6 +3,7 @@ import { Head, Link, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Plus, Edit, Trash2, Search, MoreVertical } from 'lucide-react';
 import Swal from 'sweetalert2';
+import TextInput from '@/Components/TextInput';
 
 export default function Index({ auth, siswas, filters }) {
     const { delete: destroy } = useForm();
@@ -56,15 +57,15 @@ export default function Index({ auth, siswas, filters }) {
                 <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <form onSubmit={handleSearch} className="relative w-full sm:max-w-xs">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                        <TextInput 
-                            type="text" 
-                            placeholder="Cari siswa..." 
+                        <TextInput
+                            type="text"
+                            placeholder="Cari siswa..."
                             className="w-full !pl-10 !pr-4 !py-2.5 !rounded-xl !border-slate-200 focus:!border-[#1b5e20] focus:!ring-[#1b5e20] text-sm"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </form>
-                    
+
                     <Link
                         href={route('siswa.create')}
                         className="inline-flex items-center gap-2 bg-[#1b5e20] text-white px-5 py-2.5 rounded-xl font-medium hover:bg-[#144718] transition-colors shadow-sm hover:shadow"
@@ -95,11 +96,10 @@ export default function Index({ auth, siswas, filters }) {
                                         <td className="px-6 py-4">{siswa.email}</td>
                                         <td className="px-6 py-4">{siswa.no_handphone || '-'}</td>
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                                                siswa.status_akun === 'aktif' || siswa.status_akun === 'Aktif' 
-                                                ? 'bg-green-100 text-green-700' 
-                                                : 'bg-slate-100 text-slate-700'
-                                            }`}>
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${siswa.status_akun === 'aktif' || siswa.status_akun === 'Aktif'
+                                                    ? 'bg-green-100 text-green-700'
+                                                    : 'bg-slate-100 text-slate-700'
+                                                }`}>
                                                 {siswa.status_akun}
                                             </span>
                                         </td>
@@ -133,7 +133,7 @@ export default function Index({ auth, siswas, filters }) {
                         </tbody>
                     </table>
                 </div>
-                
+
                 {/* Pagination Placeholder */}
                 <div className="p-4 border-t border-slate-100 flex items-center justify-between text-sm text-slate-500">
                     <div>Menampilkan {siswas?.length || 0} siswa</div>

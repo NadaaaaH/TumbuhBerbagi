@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import InputLabel from '@/Components/InputLabel';
@@ -7,6 +7,7 @@ import InputError from '@/Components/InputError';
 import { ArrowLeft, Save } from 'lucide-react';
 import RichTextEditor from '@/Components/RichTextEditor';
 import SelectInput from '@/Components/SelectInput';
+import MultiSelect from '@/Components/MultiSelect';
 import Swal from 'sweetalert2';
 
 export default function Edit({ auth, soal, pakets, referrer }) {
@@ -19,8 +20,12 @@ export default function Edit({ auth, soal, pakets, referrer }) {
         };
     });
 
+    const initialPaketIds = (soal?.paket_latihan && soal.paket_latihan.length > 0)
+        ? soal.paket_latihan.map(p => p.id_paket)
+        : (soal?.id_paket ? [soal.id_paket] : []);
+
     const { data, setData, put, transform, processing, errors } = useForm({
-        id_paket: soal?.id_paket || '',
+        id_paket: initialPaketIds,
         konten_soal: soal?.konten_soal || '',
         jenis_soal: soal?.jenis_soal || 'pilihan_ganda',
         kategori: soal?.kategori || 'PPU',
@@ -56,7 +61,7 @@ export default function Edit({ auth, soal, pakets, referrer }) {
 
     const submit = (e) => {
         e.preventDefault();
-        
+
         transform((data) => {
             const payload = { ...data };
             if (data.jenis_soal !== 'pilihan_ganda') {
@@ -115,21 +120,14 @@ export default function Edit({ auth, soal, pakets, referrer }) {
                         <div className="grid gap-6 md:grid-cols-2">
                             {/* Paket Latihan */}
                             <div>
-                                <InputLabel htmlFor="id_paket" value="Paket Latihan" />
-                                <SelectInput
-                                    id="id_paket"
-                                    className="mt-1 block w-full"
+                                <InputLabel htmlFor="id_paket" value="Paket Soal (Bisa Pilih Banyak)" />
+                                <MultiSelect
+                                    options={pakets}
                                     value={data.id_paket}
-                                    onChange={(e) => setData('id_paket', e.target.value)}
-                                    required
-                                >
-                                    <option value="" disabled>Pilih Paket Latihan</option>
-                                    {pakets.map((paket) => (
-                                        <option key={paket.id_paket} value={paket.id_paket}>
-                                            {paket.nama_paket}
-                                        </option>
-                                    ))}
-                                </SelectInput>
+                                    onChange={(vals) => setData('id_paket', vals)}
+                                    placeholder="Pilih satu atau beberapa paket..."
+                                    className="mt-1"
+                                />
                                 <InputError message={errors.id_paket} className="mt-2" />
                             </div>
 
@@ -180,20 +178,50 @@ export default function Edit({ auth, soal, pakets, referrer }) {
                                 <InputError message={errors.jenis_soal} className="mt-2" />
                             </div>
 
-                            {/* Tingkat Kesulitan */}
+                            {/* Tingkat Kesulitan & Indeks */}
                             <div>
-                                <InputLabel htmlFor="tingkat_kesulitan" value="Tingkat Kesulitan" />
+                                <InputLabel htmlFor="tingkat_kesulitan" value="Tingkat Kesulitan (Opsional)" />
                                 <SelectInput
                                     id="tingkat_kesulitan"
                                     className="mt-1 block w-full"
                                     value={data.tingkat_kesulitan}
                                     onChange={(e) => setData('tingkat_kesulitan', e.target.value)}
-                                    required
                                 >
-                                    <option value="easy">Easy (Mudah)</option>
+                                    <option value="">-- Belum ditentukan --</option>
+                                    <option value="mudah">Mudah</option>
                                     <option value="medium">Medium (Sedang)</option>
-                                    <option value="hard">Hard (Sulit)</option>
+                                    <option value="sulit">Sulit</option>
                                 </SelectInput>
+
+                                {/* Auto-index info card */}
+                                {soal?.tingkat_kesulitan_index !== null && soal?.tingkat_kesulitan_index !== undefined ? (
+                                    <div className={`mt-2 p-2.5 rounded-xl border flex items-center gap-2.5 ${
+                                        soal.tingkat_kesulitan === 'mudah' ? 'bg-emerald-50 border-emerald-200' :
+                                        soal.tingkat_kesulitan === 'sulit' ? 'bg-rose-50 border-rose-200' :
+                                        'bg-amber-50 border-amber-200'
+                                    }`}>
+                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 ${
+                                            soal.tingkat_kesulitan === 'mudah' ? 'bg-emerald-100 text-emerald-800' :
+                                            soal.tingkat_kesulitan === 'sulit' ? 'bg-rose-100 text-rose-800' :
+                                            'bg-amber-100 text-amber-800'
+                                        }`}>
+                                            {soal.tingkat_kesulitan_index}
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-800">
+                                                Indeks Aktif: {soal.tingkat_kesulitan === 'mudah' ? 'Mudah' : soal.tingkat_kesulitan === 'sulit' ? 'Sulit' : 'Sedang'} — P = {soal.tingkat_kesulitan_index}
+                                            </p>
+                                            <p className="text-[11px] text-slate-500 mt-0.5">
+                                                Dihitung dari tryout siswa. Nilai ini yang diutamakan dan menggantikan pilihan manual di atas.
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p className="mt-1.5 text-[11px] text-slate-400 flex items-center gap-1">
+                                        <span>ℹ️</span>
+                                        Setelah soal dipakai di Try Out, tingkat kesulitan akan dihitung ulang otomatis (P-value) dan menggantikan pilihan manual di atas.
+                                    </p>
+                                )}
                                 <InputError message={errors.tingkat_kesulitan} className="mt-2" />
                             </div>
 
@@ -206,25 +234,22 @@ export default function Edit({ auth, soal, pakets, referrer }) {
                                         role="switch"
                                         aria-checked={data.status === 'aktif' || data.status === 'Aktif'}
                                         onClick={() => setData('status', (data.status === 'aktif' || data.status === 'Aktif') ? 'nonaktif' : 'aktif')}
-                                        className={`relative inline-flex h-8 w-[72px] shrink-0 cursor-pointer items-center rounded-full border-2 transition-colors duration-300 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1b5e20] focus-visible:ring-offset-2 ${
-                                            (data.status === 'aktif' || data.status === 'Aktif')
+                                        className={`relative inline-flex h-8 w-[72px] shrink-0 cursor-pointer items-center rounded-full border-2 transition-colors duration-300 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1b5e20] focus-visible:ring-offset-2 ${(data.status === 'aktif' || data.status === 'Aktif')
                                                 ? 'bg-[#1b5e20] border-[#1b5e20]'
                                                 : 'bg-slate-200 border-slate-200'
-                                        }`}
+                                            }`}
                                     >
                                         <span
-                                            className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition-transform duration-300 ease-in-out ${
-                                                (data.status === 'aktif' || data.status === 'Aktif')
+                                            className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition-transform duration-300 ease-in-out ${(data.status === 'aktif' || data.status === 'Aktif')
                                                     ? 'translate-x-[40px]'
                                                     : 'translate-x-0.5'
-                                            }`}
+                                                }`}
                                         />
                                     </button>
-                                    <span className={`text-sm font-semibold transition-colors duration-200 ${
-                                        (data.status === 'aktif' || data.status === 'Aktif')
+                                    <span className={`text-sm font-semibold transition-colors duration-200 ${(data.status === 'aktif' || data.status === 'Aktif')
                                             ? 'text-[#1b5e20]'
                                             : 'text-slate-400'
-                                    }`}>
+                                        }`}>
                                         {(data.status === 'aktif' || data.status === 'Aktif') ? 'Aktif' : 'Nonaktif'}
                                     </span>
                                 </div>
@@ -236,9 +261,9 @@ export default function Edit({ auth, soal, pakets, referrer }) {
                         <div>
                             <InputLabel htmlFor="konten_soal" value="Pertanyaan (Konten Soal)" />
                             <div className="mt-1 bg-white rounded-md">
-                                <RichTextEditor 
-                                    value={data.konten_soal} 
-                                    onChange={(value) => setData('konten_soal', value)} 
+                                <RichTextEditor
+                                    value={data.konten_soal}
+                                    onChange={(value) => setData('konten_soal', value)}
                                     placeholder="Masukkan isi pertanyaan di sini (bisa sisipkan gambar)..."
                                 />
                             </div>
@@ -320,9 +345,9 @@ export default function Edit({ auth, soal, pakets, referrer }) {
                         <div>
                             <InputLabel htmlFor="pembahasan" value="Pembahasan Soal" />
                             <div className="mt-1 bg-white rounded-md">
-                                <RichTextEditor 
-                                    value={data.pembahasan || ''} 
-                                    onChange={(value) => setData('pembahasan', value)} 
+                                <RichTextEditor
+                                    value={data.pembahasan || ''}
+                                    onChange={(value) => setData('pembahasan', value)}
                                     placeholder="Tuliskan penjelasan atau pembahasan soal di sini..."
                                 />
                             </div>
