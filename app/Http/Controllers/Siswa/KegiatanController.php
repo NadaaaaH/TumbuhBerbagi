@@ -21,8 +21,15 @@ class KegiatanController extends Controller
     {
         // Menampilkan detail spesifik satu kegiatan
         $kegiatan = Kegiatan::findOrFail($id);
-        return Inertia::render('Siswa/Kegiatan/Show', [
+        return Inertia::render('Kegiatan/Show', [
             'kegiatan' => $kegiatan
         ]);
+    }
+
+    public function modal()
+    {
+        $kegiatan = Kegiatan::latest('created_at')->get();
+
+        return response()->json($kegiatan);
     }
 }

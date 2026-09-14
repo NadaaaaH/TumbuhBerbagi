@@ -14,6 +14,11 @@ class Kegiatan extends Model
     protected $primaryKey = 'id_kegiatan';
     public $timestamps = false;
 
+    public function getRouteKeyName(): string
+    {
+        return 'id_kegiatan';
+    }
+
     protected $fillable = [
         'nama_kegiatan',
         'deskripsi',
@@ -32,7 +37,7 @@ class Kegiatan extends Model
             if (filter_var($this->gambar, FILTER_VALIDATE_URL)) {
                 return $this->gambar;
             }
-            return Storage::disk(config('filesystems.default'))->url($this->gambar);
+            return Storage::disk('r2')->url($this->gambar);
         }
         
         return null; // Bisa juga return URL default/placeholder jika diinginkan

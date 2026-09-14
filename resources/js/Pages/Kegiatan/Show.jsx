@@ -193,9 +193,12 @@ export default function KegiatanShow({ auth, kegiatan }) {
                                 <div className="border-t border-slate-100" />
 
                                 {/* Description */}
-                                <div className="text-slate-600 leading-relaxed text-base whitespace-pre-wrap">
-                                    {kegiatan.deskripsi || 'Tidak ada deskripsi untuk kegiatan ini.'}
-                                </div>
+                                <div
+                                    className="prose prose-slate max-w-none leading-relaxed text-base prose-img:rounded-2xl prose-img:shadow-md prose-img:border prose-img:border-slate-100 prose-headings:font-['Poppins'] prose-h2:text-2xl prose-h3:text-xl"
+                                    dangerouslySetInnerHTML={{
+                                        __html: kegiatan.deskripsi || '<p>Tidak ada deskripsi untuk kegiatan ini.</p>'
+                                    }}
+                                />
 
                                 {/* CTA for non-logged users */}
                                 {!auth?.user && (

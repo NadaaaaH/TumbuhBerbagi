@@ -17,9 +17,9 @@ class KegiatanController extends Controller
 
         if ($request->has('search') && $request->search != '') {
             $searchTerm = '%' . strtolower($request->search) . '%';
-            $query->where(function($q) use ($searchTerm) {
+            $query->where(function ($q) use ($searchTerm) {
                 $q->where(DB::raw('LOWER(nama_kegiatan)'), 'like', $searchTerm)
-                  ->orWhere(DB::raw('LOWER(deskripsi)'), 'like', $searchTerm);
+                    ->orWhere(DB::raw('LOWER(deskripsi)'), 'like', $searchTerm);
             });
         }
 
@@ -48,8 +48,7 @@ class KegiatanController extends Controller
         ]);
 
         if ($request->hasFile('gambar')) {
-            $disk = config('filesystems.default');
-            $path = $request->file('gambar')->store('kegiatan', $disk);
+            $path = $request->file('gambar')->store('kegiatan', 'r2');
             $validated['gambar'] = $path;
         }
 
@@ -81,13 +80,24 @@ class KegiatanController extends Controller
         ]);
 
         if ($request->hasFile('gambar')) {
-            $disk = config('filesystems.default');
-            // Hapus gambar lama jika ada
-            if ($kegiatan->gambar && Storage::disk($disk)->exists($kegiatan->gambar)) {
-                Storage::disk($disk)->delete($kegiatan->gambar);
+
+            // Hapus gambar lama dari R2
+            if ($kegiatan->gambar) {
+                try {
+                    Storage::disk('r2')->delete($kegiatan->gambar);
+                } catch (\Throwable $e) {
+                    // Abaikan jika gambar lama gagal dihapus
+                }
             }
-            $path = $request->file('gambar')->store('kegiatan', $disk);
+
+            // Upload gambar baru ke R2
+            $path = $request->file('gambar')->store('kegiatan', 'r2');
+
+            // Simpan path gambar baru
             $validated['gambar'] = $path;
+
+        } else {
+            unset($validated['gambar']);
         }
 
         $kegiatan->update($validated);
@@ -98,15 +108,38 @@ class KegiatanController extends Controller
     public function destroy(string $id)
     {
         $kegiatan = Kegiatan::findOrFail($id);
-        
-        // Hapus file gambar jika ada
-        $disk = config('filesystems.default');
-        if ($kegiatan->gambar && Storage::disk($disk)->exists($kegiatan->gambar)) {
-            Storage::disk($disk)->delete($kegiatan->gambar);
+
+        // Hapus file gambar dari R2 jika ada
+        if ($kegiatan->gambar) {
+            try {
+                if (Storage::disk('r2')->exists($kegiatan->gambar)) {
+                    Storage::disk('r2')->delete($kegiatan->gambar);
+                }
+            } catch (\Throwable $e) {
+                // Skip jika file tidak ditemukan
+            }
         }
-        
+
         $kegiatan->delete();
 
         return redirect()->route('kegiatan.index')->with('success', 'Kegiatan berhasil dihapus.');
+    }
+
+    /**
+     * Menerima unggahan gambar dari Tiptap editor,
+     * menyimpannya ke storage, dan mengembalikan URL-nya.
+     */
+    public function uploadImage(Request $request)
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+        ]);
+
+        $path = $request->file('image')->store('kegiatan/editor', 'r2');
+
+        // Kembalikan URL yang bisa langsung dipakai Tiptap
+        $url = Storage::disk('r2')->url($path);
+
+        return response()->json(['url' => $url]);
     }
 }

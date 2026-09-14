@@ -7,6 +7,12 @@ const fadeInUp = {
     visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } }
 };
 
+// Membersihkan tag HTML dari deskripsi agar tampilan ringkasan bebas markup mentah
+const stripHtml = (html) => {
+    if (!html) return '';
+    return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+};
+
 export default function KegiatanSection({ kegiatans, onSelectKegiatan }) {
     const hasKegiatans = kegiatans && kegiatans.length > 0;
     const mainKegiatan = hasKegiatans ? kegiatans[0] : null;
@@ -153,7 +159,7 @@ export default function KegiatanSection({ kegiatans, onSelectKegiatan }) {
                                                     {mainKegiatan.nama_kegiatan}
                                                 </h3>
                                                 <p className="text-slate-500 font-light text-sm sm:text-base line-clamp-3 sm:line-clamp-4 leading-relaxed mb-6">
-                                                    {mainKegiatan.deskripsi}
+                                                    {stripHtml(mainKegiatan.deskripsi)}
                                                 </p>
                                             </div>
                                             <div>
@@ -207,7 +213,7 @@ export default function KegiatanSection({ kegiatans, onSelectKegiatan }) {
                                                             {kegiatan.nama_kegiatan}
                                                         </h4>
                                                         <p className="text-slate-500 font-light text-xs sm:text-sm line-clamp-2 leading-relaxed">
-                                                            {kegiatan.deskripsi}
+                                                            {stripHtml(kegiatan.deskripsi)}
                                                         </p>
                                                     </div>
                                                     <div className="mt-2 text-xs font-bold text-[#1b5e20] inline-flex items-center gap-1">

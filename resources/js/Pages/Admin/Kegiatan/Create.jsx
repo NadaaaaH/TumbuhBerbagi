@@ -4,6 +4,7 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
+import RichTextEditor from '@/Components/RichTextEditor';
 import { ArrowLeft, Save, Upload } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -49,7 +50,7 @@ export default function Create({ auth }) {
                 </Link>
             </div>
 
-            <div className="max-w-3xl">
+            <div className="w-full">
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                     <div className="p-6 md:p-8">
                         <form onSubmit={submit} className="space-y-6">
@@ -70,14 +71,13 @@ export default function Create({ auth }) {
 
                             <div>
                                 <InputLabel htmlFor="deskripsi" value="Deskripsi Lengkap" />
-                                <textarea
-                                    id="deskripsi"
-                                    className="border-gray-300 focus:border-[#1b5e20] focus:ring-[#1b5e20] rounded-md shadow-sm mt-1 block w-full"
-                                    rows="5"
-                                    value={data.deskripsi}
-                                    onChange={(e) => setData('deskripsi', e.target.value)}
-                                    placeholder="Tuliskan detail informasi atau deskripsi kegiatan di sini..."
-                                ></textarea>
+                                <div className="mt-1">
+                                    <RichTextEditor
+                                        value={data.deskripsi}
+                                        onChange={(html) => setData('deskripsi', html)}
+                                        placeholder="Tuliskan detail informasi atau deskripsi kegiatan di sini..."
+                                    />
+                                </div>
                                 <InputError message={errors.deskripsi} className="mt-2" />
                             </div>
 

@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
+import RichTextEditor from '@/Components/RichTextEditor';
 import { ArrowLeft, Save, Upload } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -19,6 +20,16 @@ export default function Edit({ auth, kegiatan }) {
         waktu_selesai: kegiatan.waktu_selesai || '',
         status: kegiatan.status || 'Aktif',
     });
+
+    const [imagePreview, setImagePreview] = useState(null);
+
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setData('gambar', file);
+            setImagePreview(URL.createObjectURL(file));
+        }
+    };
 
     const submit = (e) => {
         e.preventDefault();
@@ -52,7 +63,7 @@ export default function Edit({ auth, kegiatan }) {
                 </Link>
             </div>
 
-            <div className="max-w-3xl">
+            <div className="w-full">
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                     <div className="p-6 md:p-8">
                         <form onSubmit={submit} className="space-y-6">
@@ -72,13 +83,12 @@ export default function Edit({ auth, kegiatan }) {
 
                             <div>
                                 <InputLabel htmlFor="deskripsi" value="Deskripsi Lengkap" />
-                                <textarea
-                                    id="deskripsi"
-                                    className="border-gray-300 focus:border-[#1b5e20] focus:ring-[#1b5e20] rounded-md shadow-sm mt-1 block w-full"
-                                    rows="5"
-                                    value={data.deskripsi}
-                                    onChange={(e) => setData('deskripsi', e.target.value)}
-                                ></textarea>
+                                <div className="mt-1">
+                                    <RichTextEditor
+                                        value={data.deskripsi}
+                                        onChange={(html) => setData('deskripsi', html)}
+                                    />
+                                </div>
                                 <InputError message={errors.deskripsi} className="mt-2" />
                             </div>
 
@@ -157,7 +167,13 @@ export default function Edit({ auth, kegiatan }) {
                                 <div>
                                     <InputLabel htmlFor="gambar" value="Ganti Poster / Foto (Opsional)" />
                                     
-                                    {(kegiatan.gambar_url || kegiatan.gambar) && (
+                                    {/* Preview gambar baru jika sudah dipilih */}
+                                    {imagePreview ? (
+                                        <div className="mb-2">
+                                            <p className="text-xs text-slate-500 mb-1">Preview gambar baru:</p>
+                                            <img src={imagePreview} alt="Preview" className="h-32 rounded-md object-cover border border-[#1b5e20]/30" />
+                                        </div>
+                                    ) : (kegiatan.gambar_url || kegiatan.gambar) && (
                                         <div className="mb-2">
                                             <p className="text-xs text-slate-500 mb-1">Gambar saat ini:</p>
                                             <img src={kegiatan.gambar_url || `/storage/${kegiatan.gambar}`} alt="Current" className="h-20 rounded-md object-cover border border-slate-200" />
@@ -168,20 +184,22 @@ export default function Edit({ auth, kegiatan }) {
                                         <label className="flex-1 flex flex-col items-center justify-center w-full h-10 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
                                             <div className="flex items-center gap-2 text-sm text-slate-500">
                                                 <Upload size={16} />
-                                                <span className="font-semibold">Klik untuk ganti gambar</span>
+                                                <span className="font-semibold">
+                                                    {imagePreview ? 'Ganti gambar lain' : 'Klik untuk ganti gambar'}
+                                                </span>
                                             </div>
                                             <input 
                                                 id="gambar" 
                                                 type="file" 
                                                 className="hidden" 
                                                 accept="image/*"
-                                                onChange={(e) => setData('gambar', e.target.files[0])}
+                                                onChange={handleImageChange}
                                             />
                                         </label>
                                     </div>
                                     {data.gambar && (
                                         <p className="mt-2 text-sm text-[#1b5e20] flex items-center gap-1">
-                                            ✓ File baru: {data.gambar.name}
+                                            ✓ File baru dipilih: {data.gambar.name}
                                         </p>
                                     )}
                                     <InputError message={errors.gambar} className="mt-2" />

@@ -37,7 +37,7 @@ export default function KegiatanModal({ kegiatan, auth, onClose }) {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 40, scale: 0.98 }}
                 transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                className="relative bg-white rounded-t-2xl sm:rounded-3xl w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto no-scrollbar shadow-2xl border border-slate-100 font-['Inter',sans-serif]"
+                className="relative bg-white rounded-t-2xl sm:rounded-3xl w-full sm:max-w-4xl lg:max-w-5xl max-h-[90vh] overflow-y-auto no-scrollbar shadow-2xl border border-slate-100 font-['Inter',sans-serif]"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Close Button */}
@@ -51,9 +51,9 @@ export default function KegiatanModal({ kegiatan, auth, onClose }) {
 
                 {/* Banner Image */}
                 <div className="w-full h-56 sm:h-72 bg-slate-100 overflow-hidden relative flex-shrink-0">
-                    {kegiatan.gambar_url ? (
+                    {kegiatan.gambar_url || kegiatan.gambar ? (
                         <img
-                            src={kegiatan.gambar_url}
+                            src={kegiatan.gambar_url || `/storage/${kegiatan.gambar}`}
                             alt={kegiatan.nama_kegiatan}
                             className="w-full h-full object-cover"
                         />
@@ -71,12 +71,12 @@ export default function KegiatanModal({ kegiatan, auth, onClose }) {
                     </h2>
 
                     <div className="flex flex-wrap gap-3 mb-6">
-                        <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-50 border border-slate-100 text-xs font-medium text-slate-500">
+                        <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-slate-500">
                             <Calendar size={12} className="text-[#1b5e20]" />
                             {formattedDate}
                         </span>
                         {(kegiatan.waktu_mulai || kegiatan.waktu_selesai) && (
-                            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-50 border border-slate-100 text-xs font-medium text-slate-500">
+                            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-slate-500">
                                 <Clock size={12} className="text-[#1b5e20]" />
                                 {kegiatan.waktu_mulai ? kegiatan.waktu_mulai.substring(0, 5) : '00:00'} – {kegiatan.waktu_selesai ? kegiatan.waktu_selesai.substring(0, 5) : 'Selesai'} WIB
                             </span>
@@ -85,9 +85,12 @@ export default function KegiatanModal({ kegiatan, auth, onClose }) {
 
                     <div className="w-12 h-1 rounded-full bg-[#1b5e20] mb-6" />
 
-                    <div className="text-slate-600 font-light leading-relaxed text-base whitespace-pre-wrap mb-2">
-                        {kegiatan.deskripsi || 'Tidak ada deskripsi untuk kegiatan ini.'}
-                    </div>
+                    <div
+                        className="prose prose-slate max-w-none text-slate-600 leading-relaxed text-base mb-2 prose-img:rounded-xl prose-img:shadow-sm prose-img:border prose-img:border-slate-100"
+                        dangerouslySetInnerHTML={{
+                            __html: kegiatan.deskripsi || '<p>Tidak ada deskripsi untuk kegiatan ini.</p>'
+                        }}
+                    />
 
                     {/* Instagram Link Footer */}
                     <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-end">

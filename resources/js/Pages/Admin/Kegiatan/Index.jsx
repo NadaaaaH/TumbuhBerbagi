@@ -8,6 +8,12 @@ export default function Index({ auth, kegiatans, filters }) {
     const { delete: destroy } = useForm();
     const [searchQuery, setSearchQuery] = useState(filters?.search || '');
 
+    // Strip HTML tags untuk preview deskripsi
+    const stripHtml = (html) => {
+        if (!html) return '';
+        return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    };
+
     const handleDelete = (id) => {
         Swal.fire({
             title: 'Apakah Anda yakin?',
@@ -110,7 +116,7 @@ export default function Index({ auth, kegiatans, filters }) {
                                 </div>
 
                                 <p className="text-slate-500 text-sm line-clamp-2 mt-2">
-                                    {kegiatan.deskripsi}
+                                    {stripHtml(kegiatan.deskripsi)}
                                 </p>
 
                                 <div className="mt-auto pt-4 flex gap-2 border-t border-slate-100">

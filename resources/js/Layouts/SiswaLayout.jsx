@@ -383,7 +383,7 @@ export default function SiswaLayout({ user, header, children }) {
                         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#1b5e20]/5 rounded-full blur-3xl translate-y-1/2 -z-10"></div>
                     </div>
 
-                    <div className="max-w-7xl mx-auto relative z-10">
+                    <div className="max-w-7xl mx-auto relative z-20">
                         {children}
                     </div>
                 </main>

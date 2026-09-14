@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 // Public route — accessible without login
-Route::get('/kegiatan/{id}', [KegiatanPublikController::class, 'show'])->name('kegiatan.publik.show');
+Route::get('/kegiatan/{id}', [KegiatanPublikController::class, 'show'])->name('siswa.kegiatan.show');
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -44,19 +44,21 @@ Route::middleware('auth:admin')->group(function () {
 
     Route::resource('admin/siswa', AdminSiswaController::class);
     Route::resource('admin/jadwal', AdminJadwalController::class);
+    Route::post('admin/kegiatan/upload-image', [AdminKegiatanController::class, 'uploadImage'])
+        ->name('kegiatan.upload-image');
     Route::resource('admin/kegiatan', AdminKegiatanController::class);
     Route::resource('admin/soal', AdminSoalController::class);
-    
+
     Route::patch('admin/soal/{id}/toggle-status', [AdminSoalController::class, 'toggleStatus'])
         ->name('soal.toggleStatus');
-        
+
     Route::resource('admin/paket-latihan', AdminPaketLatihanController::class)
         ->names('paket-latihan');
-        
+
     Route::resource('admin/sesi-latihan', AdminSesiLatihanController::class)
         ->only(['index', 'show'])
         ->names('sesi-latihan');
-        
+
     Route::get('admin/sesi-latihan/{id}/export-all', [AdminSesiLatihanController::class, 'exportAll'])
         ->name('sesi-latihan.export-all');
     Route::get('admin/sesi-latihan/{id_sesi}/export-siswa', [AdminSesiLatihanController::class, 'exportSiswa'])
@@ -72,13 +74,12 @@ Route::middleware(['auth:siswa', 'siswa.verified', 'siswa.password_changed'])->g
     Route::get('/profil', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    
+
     Route::get('/jadwal', [SiswaJadwalController::class, 'index'])->name('siswa.jadwal');
     Route::post('/jadwal/{id}/alarm', [SiswaJadwalController::class, 'toggleAlarm'])->name('siswa.jadwal.alarm');
-    
+
     Route::get('/kegiatan', [SiswaKegiatanController::class, 'index'])->name('siswa.kegiatan.index');
-    Route::get('/kegiatan/{id}', [SiswaKegiatanController::class, 'show'])->name('siswa.kegiatan.show');
-    
+
     // Latihan soal (siswa)
     Route::get('/latihan', [SiswaLatihanController::class, 'index'])->name('siswa.latihan.index');
     Route::get('/latihan/{id}', [SiswaLatihanController::class, 'show'])->name('siswa.latihan.show');
