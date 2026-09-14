@@ -24,6 +24,7 @@ class Soal extends Model
         'bobot_nilai',
         'is_case_sensitive',
         'status',
+        'materi',
     ];
 
     public function paket_latihan()

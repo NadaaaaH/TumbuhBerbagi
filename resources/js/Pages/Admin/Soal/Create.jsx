@@ -1,24 +1,12 @@
-import React, { useEffect } from 'react';
+﻿import React, { useEffect } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
-
-// Konfigurasi toolbar untuk React Quill
-const modules = {
-    toolbar: [
-        [{ 'header': [1, 2, 3, false] }],
-        ['bold', 'italic', 'underline', 'strike'],
-        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-        [{ 'script': 'sub'}, { 'script': 'super' }],
-        ['image', 'link', 'formula'],
-        ['clean']
-    ],
-};
+import RichTextEditor from '@/Components/RichTextEditor';
+import SelectInput from '@/Components/SelectInput';
 
 export default function Create({ auth, pakets, defaultPaketId }) {
     const { data, setData, post, transform, processing, errors } = useForm({
@@ -26,6 +14,7 @@ export default function Create({ auth, pakets, defaultPaketId }) {
         konten_soal: '',
         jenis_soal: 'pilihan_ganda',
         kategori: 'PPU',
+        materi: '',
         tingkat_kesulitan: 'medium',
         kunci_jawaban: 'A',
         pembahasan: '',
@@ -96,16 +85,16 @@ export default function Create({ auth, pakets, defaultPaketId }) {
                 )}
             </div>
 
-            <div className="max-w-4xl">
+            <div className="w-full">
                 <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden p-6">
                     <form onSubmit={submit} className="space-y-6">
                         <div className="grid gap-6 md:grid-cols-2">
                             {/* Paket Latihan */}
                             <div>
                                 <InputLabel htmlFor="id_paket" value="Paket Latihan" />
-                                <select
+                                <SelectInput
                                     id="id_paket"
-                                    className="border-gray-300 focus:border-[#1b5e20] focus:ring-[#1b5e20] rounded-md shadow-sm mt-1 block w-full disabled:bg-slate-100 disabled:text-slate-500"
+                                    className="mt-1 block w-full disabled:bg-slate-100 disabled:text-slate-500"
                                     value={data.id_paket}
                                     onChange={(e) => setData('id_paket', e.target.value)}
                                     disabled={!!defaultPaketId}
@@ -117,16 +106,16 @@ export default function Create({ auth, pakets, defaultPaketId }) {
                                             {paket.nama_paket}
                                         </option>
                                     ))}
-                                </select>
+                                </SelectInput>
                                 <InputError message={errors.id_paket} className="mt-2" />
                             </div>
 
                             {/* Kategori */}
                             <div>
                                 <InputLabel htmlFor="kategori" value="Kategori UTBK" />
-                                <select
+                                <SelectInput
                                     id="kategori"
-                                    className="border-gray-300 focus:border-[#1b5e20] focus:ring-[#1b5e20] rounded-md shadow-sm mt-1 block w-full"
+                                    className="mt-1 block w-full"
                                     value={data.kategori}
                                     onChange={(e) => setData('kategori', e.target.value)}
                                     required
@@ -134,32 +123,46 @@ export default function Create({ auth, pakets, defaultPaketId }) {
                                     {categories.map((cat) => (
                                         <option key={cat} value={cat}>{cat}</option>
                                     ))}
-                                </select>
+                                </SelectInput>
                                 <InputError message={errors.kategori} className="mt-2" />
+                            </div>
+
+                            {/* Materi */}
+                            <div>
+                                <InputLabel htmlFor="materi" value="Materi (Opsional)" />
+                                <TextInput
+                                    id="materi"
+                                    type="text"
+                                    className="mt-1 block w-full"
+                                    value={data.materi}
+                                    onChange={(e) => setData('materi', e.target.value)}
+                                    placeholder="Contoh: Aljabar, Tenses, dll."
+                                />
+                                <InputError message={errors.materi} className="mt-2" />
                             </div>
 
                             {/* Jenis Soal */}
                             <div>
                                 <InputLabel htmlFor="jenis_soal" value="Tipe Soal" />
-                                <select
+                                <SelectInput
                                     id="jenis_soal"
-                                    className="border-gray-300 focus:border-[#1b5e20] focus:ring-[#1b5e20] rounded-md shadow-sm mt-1 block w-full"
+                                    className="mt-1 block w-full"
                                     value={data.jenis_soal}
                                     onChange={(e) => setData('jenis_soal', e.target.value)}
                                     required
                                 >
                                     <option value="pilihan_ganda">Pilihan Ganda</option>
                                     <option value="isian">Isian Singkat</option>
-                                </select>
+                                </SelectInput>
                                 <InputError message={errors.jenis_soal} className="mt-2" />
                             </div>
 
                             {/* Tingkat Kesulitan */}
                             <div>
                                 <InputLabel htmlFor="tingkat_kesulitan" value="Tingkat Kesulitan" />
-                                <select
+                                <SelectInput
                                     id="tingkat_kesulitan"
-                                    className="border-gray-300 focus:border-[#1b5e20] focus:ring-[#1b5e20] rounded-md shadow-sm mt-1 block w-full"
+                                    className="mt-1 block w-full"
                                     value={data.tingkat_kesulitan}
                                     onChange={(e) => setData('tingkat_kesulitan', e.target.value)}
                                     required
@@ -167,7 +170,7 @@ export default function Create({ auth, pakets, defaultPaketId }) {
                                     <option value="easy">Easy (Mudah)</option>
                                     <option value="medium">Medium (Sedang)</option>
                                     <option value="hard">Hard (Sulit)</option>
-                                </select>
+                                </SelectInput>
                                 <InputError message={errors.tingkat_kesulitan} className="mt-2" />
                             </div>
 
@@ -210,11 +213,9 @@ export default function Create({ auth, pakets, defaultPaketId }) {
                         <div>
                             <InputLabel htmlFor="konten_soal" value="Pertanyaan (Konten Soal)" />
                             <div className="mt-1 bg-white rounded-md">
-                                <ReactQuill 
-                                    theme="snow" 
+                                <RichTextEditor 
                                     value={data.konten_soal} 
                                     onChange={(value) => setData('konten_soal', value)} 
-                                    modules={modules}
                                     placeholder="Masukkan isi pertanyaan di sini (bisa sisipkan gambar)..."
                                 />
                             </div>
@@ -249,9 +250,9 @@ export default function Create({ auth, pakets, defaultPaketId }) {
                             <div>
                                 <InputLabel htmlFor="kunci_jawaban" value="Kunci Jawaban" />
                                 {data.jenis_soal === 'pilihan_ganda' ? (
-                                    <select
+                                    <SelectInput
                                         id="kunci_jawaban"
-                                        className="border-gray-300 focus:border-[#1b5e20] focus:ring-[#1b5e20] rounded-md shadow-sm mt-1 block w-full font-semibold text-slate-800"
+                                        className="mt-1 block w-full font-semibold text-slate-800"
                                         value={data.kunci_jawaban}
                                         onChange={(e) => setData('kunci_jawaban', e.target.value)}
                                         required
@@ -261,7 +262,7 @@ export default function Create({ auth, pakets, defaultPaketId }) {
                                                 Pilihan {pil.kode_pilihan}
                                             </option>
                                         ))}
-                                    </select>
+                                    </SelectInput>
                                 ) : (
                                     <TextInput
                                         id="kunci_jawaban"
@@ -296,11 +297,9 @@ export default function Create({ auth, pakets, defaultPaketId }) {
                         <div>
                             <InputLabel htmlFor="pembahasan" value="Pembahasan Soal" />
                             <div className="mt-1 bg-white rounded-md">
-                                <ReactQuill 
-                                    theme="snow" 
+                                <RichTextEditor 
                                     value={data.pembahasan || ''} 
                                     onChange={(value) => setData('pembahasan', value)} 
-                                    modules={modules}
                                     placeholder="Tuliskan penjelasan atau pembahasan soal di sini..."
                                 />
                             </div>

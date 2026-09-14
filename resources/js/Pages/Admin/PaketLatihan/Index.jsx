@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import TextInput from '@/Components/TextInput';
 import { Search } from 'lucide-react';
 
 export default function Index({ auth, pakets, filters }) {
@@ -20,10 +21,10 @@ export default function Index({ auth, pakets, filters }) {
                     <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
                         <form onSubmit={handleSearch} className="relative w-full sm:w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                            <input 
-                                type="text" 
-                                placeholder="Cari paket..." 
-                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border-slate-200 focus:border-[#1b5e20] focus:ring-[#1b5e20] text-sm"
+                            <TextInput
+                                type="text"
+                                placeholder="Cari paket..."
+                                className="w-full !pl-10 !pr-4 !py-2.5 !rounded-xl !border-slate-200 focus:!border-[#1b5e20] focus:!ring-[#1b5e20] text-sm"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -39,30 +40,28 @@ export default function Index({ auth, pakets, filters }) {
                                 <div>
                                     <div className="font-bold text-lg text-slate-800">{paket.nama_paket}</div>
                                     <div className="text-sm text-slate-500 mt-1 flex flex-wrap items-center gap-2">
-                                        <span className={`px-2.5 py-0.5 rounded-md text-xs font-bold uppercase tracking-wider ${
-                                            paket.tipe === 'tryout' ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                                        }`}>
+                                        <span className={`px-2.5 py-0.5 rounded-md text-xs font-bold uppercase tracking-wider ${paket.tipe === 'tryout' ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                            }`}>
                                             {paket.tipe === 'tryout' ? 'Try Out' : 'Latihan Soal'}
                                         </span>
                                         <span className="flex items-center gap-1 bg-slate-100 px-2.5 py-0.5 rounded-md text-xs text-slate-600 font-medium">
                                             Total Soal: {paket.soal_count || 0}
                                         </span>
-                                        <span className={`px-2.5 py-0.5 rounded-md text-xs font-medium ${
-                                            paket.status === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
-                                        }`}>
+                                        <span className={`px-2.5 py-0.5 rounded-md text-xs font-medium ${paket.status === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
+                                            }`}>
                                             {paket.status === 'aktif' ? 'Aktif' : 'Nonaktif'}
                                         </span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Link 
-                                        href={route('paket-latihan.show', paket.id_paket)} 
+                                    <Link
+                                        href={route('paket-latihan.show', paket.id_paket)}
                                         className="text-sm text-white bg-[#1b5e20] hover:bg-[#144718] px-4 py-2.5 rounded-xl font-medium transition-colors"
                                     >
                                         Kelola Soal
                                     </Link>
-                                    <Link 
-                                        href={route('paket-latihan.edit', paket.id_paket)} 
+                                    <Link
+                                        href={route('paket-latihan.edit', paket.id_paket)}
                                         className="text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-4 py-2.5 rounded-xl font-medium transition-colors"
                                     >
                                         Edit Paket

@@ -56,10 +56,10 @@ export default function Index({ auth, siswas, filters }) {
                 <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <form onSubmit={handleSearch} className="relative w-full sm:max-w-xs">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                        <input 
+                        <TextInput 
                             type="text" 
                             placeholder="Cari siswa..." 
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border-slate-200 focus:border-[#1b5e20] focus:ring-[#1b5e20] text-sm"
+                            className="w-full !pl-10 !pr-4 !py-2.5 !rounded-xl !border-slate-200 focus:!border-[#1b5e20] focus:!ring-[#1b5e20] text-sm"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />

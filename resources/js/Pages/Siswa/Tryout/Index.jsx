@@ -3,6 +3,7 @@ import { Head, Link } from '@inertiajs/react';
 import SiswaLayout from '@/Layouts/SiswaLayout';
 import { ClipboardList, CheckCircle2, Clock, PlayCircle, Eye, Search, FileText, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import TextInput from '@/Components/TextInput';
 
 export default function Index({ auth, pakets = [], ongoingPackages = [], completedPackages = [] }) {
     const [searchQuery, setSearchQuery] = useState('');
@@ -55,10 +56,10 @@ export default function Index({ auth, pakets = [], ongoingPackages = [], complet
                     {/* Search Input */}
                     <div className="relative w-full md:w-80">
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                        <input 
+                        <TextInput 
                             type="text" 
                             placeholder="Cari paket try out..." 
-                            className="w-full pl-10 pr-4 py-2.5 rounded-2xl border-slate-200 focus:border-[#1b5e20] focus:ring-[#1b5e20] text-sm shadow-3xs font-medium"
+                            className="w-full !pl-10 !pr-4 !py-2.5 !rounded-2xl !border-slate-200 focus:!border-[#1b5e20] focus:!ring-[#1b5e20] text-sm shadow-3xs font-medium"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />

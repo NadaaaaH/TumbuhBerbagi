@@ -3,24 +3,25 @@ import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Plus, Edit2, Trash2, Check, X, Filter, BookOpen, AlertCircle, Search } from 'lucide-react';
 import Swal from 'sweetalert2';
+import TextInput from '@/Components/TextInput';
 
 export default function Index({ auth, soals, pakets = [], filters }) {
     const [selectedKategori, setSelectedKategori] = useState(filters?.kategori || '');
     const [selectedPaket, setSelectedPaket] = useState(filters?.id_paket || '');
     const [searchQuery, setSearchQuery] = useState(filters?.search || '');
-    
+
     // Available categories
     const categories = ['PU', 'PPU', 'PK', 'PBM', 'Literasi Bahasa Indonesia', 'Literasi Bahasa Inggris', 'Penalaran Matematika'];
 
     const handleFilterChange = (kategori, id_paket, search = searchQuery) => {
         setSelectedKategori(kategori);
         setSelectedPaket(id_paket);
-        
+
         const params = {};
         if (kategori) params.kategori = kategori;
         if (id_paket) params.id_paket = id_paket;
         if (search) params.search = search;
-        
+
         router.get(route('soal.index'), params, { preserveState: true });
     };
 
@@ -69,6 +70,11 @@ export default function Index({ auth, soals, pakets = [], filters }) {
         });
     };
 
+    const stripHtml = (html) => {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        return doc.body.textContent || "";
+    };
+
     return (
         <AdminLayout user={auth.user} header="Bank Soal Latsol UTBK">
             <Head title="Bank Soal" />
@@ -80,11 +86,10 @@ export default function Index({ auth, soals, pakets = [], filters }) {
                     <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 w-full md:w-auto flex-1 scrollbar-hide">
                         <button
                             onClick={() => handleFilterChange('', selectedPaket, searchQuery)}
-                            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors whitespace-nowrap ${
-                                selectedKategori === ''
+                            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors whitespace-nowrap ${selectedKategori === ''
                                     ? 'bg-[#1b5e20] text-white'
                                     : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                            }`}
+                                }`}
                         >
                             Semua Kategori
                         </button>
@@ -92,11 +97,10 @@ export default function Index({ auth, soals, pakets = [], filters }) {
                             <button
                                 key={cat}
                                 onClick={() => handleFilterChange(cat, selectedPaket, searchQuery)}
-                                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors whitespace-nowrap ${
-                                    selectedKategori === cat
+                                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors whitespace-nowrap ${selectedKategori === cat
                                         ? 'bg-[#1b5e20] text-white'
                                         : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                                }`}
+                                    }`}
                             >
                                 {cat}
                             </button>
@@ -118,10 +122,10 @@ export default function Index({ auth, soals, pakets = [], filters }) {
                     {/* Search Bar */}
                     <form onSubmit={handleSearch} className="w-full sm:w-1/2 flex items-center bg-white border border-slate-200 rounded-xl px-3 py-2 focus-within:border-[#1b5e20] focus-within:ring-[#1b5e20] focus-within:ring-1 transition-colors">
                         <Search size={18} className="text-slate-400 mr-2 shrink-0" />
-                        <input
+                        <TextInput
                             type="text"
                             placeholder="Cari soal..."
-                            className="bg-transparent border-none p-0 focus:ring-0 text-sm font-semibold text-slate-600 w-full placeholder-slate-400"
+                            className="!bg-transparent !border-none !p-0 focus:!ring-0 text-sm font-semibold text-slate-600 w-full placeholder-slate-400 !shadow-none"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -164,7 +168,7 @@ export default function Index({ auth, soals, pakets = [], filters }) {
                                     <tr key={soal.id_soal} className="hover:bg-slate-50/50 transition-colors">
                                         <td className="px-6 py-4 max-w-md">
                                             <p className="text-sm font-medium text-slate-900 line-clamp-2">
-                                                {soal.konten_soal}
+                                                {stripHtml(soal.konten_soal)}
                                             </p>
                                             <div className="mt-1 flex items-center gap-1 text-xs text-slate-400">
                                                 <BookOpen size={12} />
@@ -189,11 +193,10 @@ export default function Index({ auth, soals, pakets = [], filters }) {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <button
                                                 onClick={() => toggleStatus(soal.id_soal)}
-                                                className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
-                                                    soal.status === 'aktif'
+                                                className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${soal.status === 'aktif'
                                                         ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
                                                         : 'bg-rose-50 text-rose-700 hover:bg-rose-100'
-                                                }`}
+                                                    }`}
                                                 title="Klik untuk mengubah status"
                                             >
                                                 {soal.status === 'aktif' ? (

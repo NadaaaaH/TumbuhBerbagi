@@ -155,7 +155,7 @@ export default function Index({ auth, kegiatans }) {
                                                                 {kegiatan.nama_kegiatan}
                                                             </h4>
                                                             <p className="text-slate-500 font-light text-xs sm:text-sm line-clamp-2 leading-relaxed">
-                                                                {kegiatan.deskripsi}
+                                                                {stripHtml(kegiatan.deskripsi)}
                                                             </p>
                                                         </div>
                                                         <div className="mt-2 text-xs font-bold text-[#1b5e20] inline-flex items-center gap-1">

@@ -6,6 +6,7 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import { Plus, Pencil, Trash2, Calendar, Clock, Search, X, ImagePlus, Save } from 'lucide-react';
 import Swal from 'sweetalert2';
+import TextInput from '@/Components/TextInput';
 
 export default function Index({ auth, jadwals, filters }) {
     const [searchQuery, setSearchQuery] = useState(filters?.search || '');
@@ -232,10 +233,10 @@ export default function Index({ auth, jadwals, filters }) {
                     {/* Search Bar */}
                     <form onSubmit={handleSearch} className="relative w-full sm:w-64">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                        <input 
+                        <TextInput 
                             type="text" 
                             placeholder="Cari jadwal..." 
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border-slate-200 focus:border-[#1b5e20] focus:ring-[#1b5e20] text-sm"
+                            className="w-full !pl-10 !pr-4 !py-2.5 !rounded-xl !border-slate-200 focus:!border-[#1b5e20] focus:!ring-[#1b5e20] text-sm"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
