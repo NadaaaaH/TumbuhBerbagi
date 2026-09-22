@@ -71,6 +71,8 @@ Route::middleware('auth:admin')->group(function () {
         ->name('sesi-latihan.preview-all');
     Route::get('admin/sesi-latihan/{id_sesi}/preview-siswa', [AdminSesiLatihanController::class, 'previewSiswa'])
         ->name('sesi-latihan.preview-siswa');
+    Route::post('admin/sesi-latihan/{id}/hitung-irt', [AdminSesiLatihanController::class, 'hitungIrt'])
+        ->name('sesi-latihan.hitung-irt');
 });
 
 // Siswa Protected Routes
@@ -93,6 +95,9 @@ Route::middleware(['auth:siswa', 'siswa.verified', 'siswa.password_changed'])->g
     // Try Out (siswa)
     Route::get('/tryout', [SiswaTryoutController::class, 'index'])->name('siswa.tryout.index');
     Route::get('/tryout/{id}', [SiswaTryoutController::class, 'show'])->name('siswa.tryout.show');
+    Route::post('/tryout/{id}/pindah-subtes', [SiswaTryoutController::class, 'pindahSubtes'])->name('siswa.tryout.pindah-subtes');
+    Route::post('/tryout/{id}/toggle-pause', [SiswaTryoutController::class, 'togglePause'])->name('siswa.tryout.toggle-pause');
+    Route::post('/tryout/{id}/save-jawaban', [SiswaTryoutController::class, 'saveJawaban'])->name('siswa.tryout.save-jawaban');
     Route::post('/tryout/{id}/submit', [SiswaTryoutController::class, 'submit'])->name('siswa.tryout.submit');
     Route::get('/tryout/{id}/hasil', [SiswaTryoutController::class, 'hasil'])->name('siswa.tryout.hasil');
 

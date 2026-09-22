@@ -16,9 +16,22 @@ class SesiLatihan extends Model
     protected $fillable = [
         'id_siswa',
         'id_paket',
+        'subtes_aktif',
+        'waktu_mulai_subtes',
+        'sisa_detik_subtes',
+        'is_paused',
+        'subtes_selesai',
         'waktu_mulai',
         'waktu_selesai',
         'status',
+    ];
+
+    protected $casts = [
+        'waktu_mulai' => 'datetime',
+        'waktu_selesai' => 'datetime',
+        'waktu_mulai_subtes' => 'datetime',
+        'is_paused' => 'boolean',
+        'subtes_selesai' => 'array',
     ];
 
     public function siswa()

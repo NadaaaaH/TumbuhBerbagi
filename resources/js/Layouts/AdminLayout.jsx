@@ -17,7 +17,7 @@ export default function AdminLayout({ user, header, children }) {
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
     const { url } = usePage();
 
-        const navigation = [
+    const navigation = [
         { name: 'Dashboard', href: route('admin.dashboard'), icon: LayoutDashboard, active: url.startsWith('/admin/dashboard') },
         { name: 'Manajemen Siswa', href: route('siswa.index'), icon: Users, active: url.startsWith('/admin/siswa') },
         { name: 'Kegiatan & Info', href: route('kegiatan.index'), icon: Newspaper, active: url.startsWith('/admin/kegiatan') },
@@ -44,8 +44,8 @@ export default function AdminLayout({ user, header, children }) {
                                 key={item.name}
                                 href={item.href}
                                 className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-colors ${item.active
-                                        ? 'bg-green-50 text-[#1b5e20]'
-                                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                    ? 'bg-green-50 text-[#1b5e20]'
+                                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                                     }`}
                             >
                                 <item.icon size={20} className={item.active ? 'text-[#1b5e20]' : 'text-slate-400'} />
@@ -89,8 +89,8 @@ export default function AdminLayout({ user, header, children }) {
                                 key={item.name}
                                 href={item.href}
                                 className={`flex items-center gap-3 px-3 py-2 rounded-md text-base font-medium ${item.active
-                                        ? 'bg-green-50 text-[#1b5e20]'
-                                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                    ? 'bg-green-50 text-[#1b5e20]'
+                                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                                     }`}
                             >
                                 <item.icon size={20} className={item.active ? 'text-[#1b5e20]' : 'text-slate-400'} />

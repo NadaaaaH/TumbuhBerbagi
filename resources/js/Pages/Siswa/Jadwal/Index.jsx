@@ -10,9 +10,11 @@ import SecondIcon from '@/Components/SecondIcon';
 import SecondaryButton from '@/Components/SecondaryButton';
 import PrimaryButton from '@/Components/PrimaryButton';
 import CustomScrollbar from '@/Components/CustomScrollbar';
+import SearchBar from '@/Components/SearchBar';
 
 export default function Index({ auth, jadwals, activeAlarms }) {
     const [alarms, setAlarms] = useState(activeAlarms || {});
+    const [searchQuery, setSearchQuery] = useState('');
 
     const isPastEvent = (tanggal) => {
         const today = new Date();
@@ -20,9 +22,25 @@ export default function Index({ auth, jadwals, activeAlarms }) {
         return new Date(tanggal) < today;
     };
 
+    const getImageUrl = (path) => {
+        if (!path) return null;
+        if (path.startsWith('http')) return path;
+        if (path.startsWith('/storage/')) return path;
+        if (path.startsWith('storage/')) return `/${path}`;
+        return `/storage/${path}`;
+    };
+
     // Sort events: acara mendatang yang paling terdekat di paling atas (ascending), yang sudah lewat di bawah
     const sortedJadwals = useMemo(() => {
         if (!jadwals) return [];
+
+        let filtered = jadwals;
+        if (searchQuery) {
+            filtered = filtered.filter(j =>
+                j.nama_jadwal?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                j.deskripsi?.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+        }
 
         const getFullDate = (j) => {
             try {
@@ -34,7 +52,7 @@ export default function Index({ auth, jadwals, activeAlarms }) {
             }
         };
 
-        return [...jadwals].sort((a, b) => {
+        return [...filtered].sort((a, b) => {
             const dateA = getFullDate(a);
             const dateB = getFullDate(b);
             const isPastA = isPastEvent(a.tanggal);
@@ -52,7 +70,7 @@ export default function Index({ auth, jadwals, activeAlarms }) {
             // Jika keduanya sudah lewat: urutkan dari yang paling baru selesai
             return dateB - dateA;
         });
-    }, [jadwals]);
+    }, [jadwals, searchQuery]);
 
     // Initial calendar month focus on the closest upcoming event date, fallback to current date
     const initialDate = useMemo(() => {
@@ -240,12 +258,24 @@ export default function Index({ auth, jadwals, activeAlarms }) {
 
                 {/* LEFT COLUMN: Upcoming Events list (4/12 width) */}
                 <div className="xl:col-span-4 relative min-h-[500px] xl:min-h-0">
-                    <div className="flex flex-col h-full xl:absolute xl:inset-0 w-full bg-[#1b5e20] rounded-[2.5rem] p-5 md:p-6 shadow-md">
-                        <div className="flex-shrink-0 mb-6">
-                            <h2 className="text-2xl font-bold text-white tracking-tight">Jadwal Mendatang</h2>
-                            <p className="text-green-100 text-xs font-semibold mt-1">Jangan lewatkan jadwal Anda</p>
+                    <div className="flex flex-col h-full xl:absolute xl:inset-0 w-full p-2">
+                        {/* Header Section */}
+                        <div className="flex-shrink-0 mb-5">
+                            <h2 className="text-2xl md:text-3xl font-extrabold font-['Poppins'] text-slate-800 tracking-tight">Jadwal Mendatang</h2>
+                            <p className="text-slate-500 text-sm font-medium mt-1">Jangan lewatkan jadwal Anda</p>
                         </div>
 
+                        {/* Search Bar */}
+                        <div className="flex-shrink-0 mb-6">
+                            <SearchBar
+                                className="w-full"
+                                placeholder="Search"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+
+                        {/* Scrollable Cards */}
                         <CustomScrollbar theme="light" className="flex-1 min-h-0 pr-2 pb-2">
                             <motion.div
                                 variants={containerVariants}
@@ -256,98 +286,79 @@ export default function Index({ auth, jadwals, activeAlarms }) {
                                 {sortedJadwals.length > 0 ? (
                                     sortedJadwals.map((jadwal, idx) => {
                                         const past = isPastEvent(jadwal.tanggal);
+
+                                        // Menentukan styling berdasarkan status jadwal (past atau active)
+                                        const colorTheme = past ? 'bg-slate-100 text-slate-500 opacity-60 grayscale' : 'bg-white text-slate-800';
+
                                         return (
                                             <motion.div
                                                 variants={cardVariants}
                                                 key={jadwal.id_jadwal}
                                             >
-                                                <ContainerWhite id={`jadwal-card-${jadwal.id_jadwal}`} className={`overflow-hidden !p-0 flex flex-col scroll-mt-4 ${past ? 'opacity-60 grayscale' : ''}`}>
-                                                    {/* Badge Sudah Lewat */}
-                                                    {past && (
-                                                        <div className="absolute top-2 right-2 z-10 bg-slate-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">Sudah Lewat</div>
-                                                    )}
-                                                    {/* Card Banner: gambar dari admin (fixed height), atau header teks saja */}
-                                                    {jadwal.gambar ? (
-                                                        <div className="relative w-full h-32 overflow-hidden rounded-t-2xl sm:rounded-t-3xl flex-shrink-0">
+                                                <ContainerWhite id={`jadwal-card-${jadwal.id_jadwal}`} className={`!p-0 flex flex-col scroll-mt-4 overflow-hidden ${colorTheme}`}>
+
+                                                    {/* Header Image (if exists) */}
+                                                    {jadwal.gambar && (
+                                                        <div className="w-full h-36 relative shrink-0">
                                                             <img
-                                                                src={`/storage/${jadwal.gambar}`}
+                                                                src={getImageUrl(jadwal.gambar)}
                                                                 alt={jadwal.nama_jadwal}
                                                                 className="w-full h-full object-cover"
+                                                                onError={(e) => { e.target.style.display = 'none'; }}
                                                             />
-                                                            {/* Overlay judul di atas gambar */}
-                                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent flex items-end px-4 pb-3">
-                                                                <h3 className="font-bold text-sm sm:text-base text-white drop-shadow truncate pr-2 leading-tight">
-                                                                    {jadwal.nama_jadwal || 'Jadwal Mentoring'}
-                                                                </h3>
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="bg-gradient-to-br px-4 py-3 rounded-t-2xl sm:rounded-t-3xl flex-shrink-0">
-                                                            <h3 className="font-bold text-sm sm:text-base text-black leading-snug mt-2 mb-0">
-                                                                {jadwal.nama_jadwal || 'Jadwal Mentoring'}
-                                                            </h3>
                                                         </div>
                                                     )}
 
-                                                    {/* Card Body */}
-                                                    <div className="p-5 flex-1 flex flex-col space-y-3 text-slate-700">
-
-                                                        {/* Deskripsi */}
-                                                        {jadwal.deskripsi && (
-                                                            <p className="text-xs text-slate-500 leading-relaxed pb-1">
-                                                                {jadwal.deskripsi}
+                                                    <div className="p-6 flex flex-col gap-4">
+                                                        {/* Title & Desc */}
+                                                        <div>
+                                                            <h3 className="font-semibold text-xl leading-tight mb-2">
+                                                                {jadwal.nama_jadwal || 'Jadwal Mentoring'}
+                                                            </h3>
+                                                            <p className="text-sm opacity-80 leading-relaxed line-clamp-2">
+                                                                {jadwal.deskripsi || 'Sesi mentoring interaktif bersama mentor berpengalaman.'}
                                                             </p>
-                                                        )}
-
-                                                        {/* Date */}
-                                                        <div className="flex items-center gap-3 text-[11px] sm:text-xs font-semibold text-slate-600">
-                                                            <SecondIcon icon={Calendar} iconSize={14} className="w-6 h-6 rounded-lg" />
-                                                            <span>{formatDate(jadwal.tanggal)}</span>
                                                         </div>
 
-                                                        {/* Time */}
-                                                        <div className="flex items-center gap-3 text-[11px] sm:text-xs font-semibold text-slate-600">
-                                                            <SecondIcon icon={Clock} iconSize={14} className="w-6 h-6 rounded-lg" />
-                                                            <span>{formatTime(jadwal.waktu_mulai)} - {formatTime(jadwal.waktu_selesai)} WIB</span>
-                                                        </div>
+                                                        {/* Footer Info: Date & Mentors (or Actions) */}
+                                                        <div className="flex items-center justify-between mt-2">
+                                                            <div className="flex items-center gap-3">
+                                                                {/* Dark Icon Container */}
+                                                                <div className="bg-[#1b5e20] text-white w-10 h-10 rounded-[0.85rem] flex items-center justify-center shrink-0">
+                                                                    <Calendar size={18} />
+                                                                </div>
+                                                                <span className="font-medium text-sm">
+                                                                    {jadwal.tanggal ? new Date(jadwal.tanggal).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Belum Ditentukan'}
+                                                                </span>
+                                                            </div>
 
-                                                        {/* Location */}
-                                                        <div className="flex items-center gap-3 text-[11px] sm:text-xs font-semibold text-slate-600">
-                                                            <SecondIcon icon={MapPin} iconSize={14} className="w-6 h-6 rounded-lg" />
-                                                            <span>{jadwal.lokasi || 'Online / Zoom'}</span>
-                                                        </div>
-
-                                                        {/* Actions */}
-                                                        <div className="pt-4 border-t border-slate-100 flex flex-col gap-2 mt-2">
-                                                            <button
-                                                                onClick={() => toggleAlarm(jadwal.id_jadwal)}
-                                                                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-xs transition-all active:scale-95 border ${alarms[jadwal.id_jadwal]
-                                                                    ? 'bg-green-50 text-[#1b5e20] border-green-200'
-                                                                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200'
-                                                                    }`}
-                                                            >
-                                                                {alarms[jadwal.id_jadwal] ? (
-                                                                    <>
-                                                                        <CheckCircle2 size={14} className="animate-pulse text-[#1b5e20]" />
-                                                                        Pengingat Email Aktif
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        <Bell size={14} />
-                                                                        Set Alarm ke Email
-                                                                    </>
-                                                                )}
-                                                            </button>
-                                                            <SecondaryButton
-                                                                as="a"
-                                                                href={jadwal.google_calendar_url || '#'}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="w-full text-xs py-2.5 px-4 rounded-xl font-bold gap-2"
-                                                            >
-                                                                <Calendar size={14} />
-                                                                Tambahkan ke Calendar
-                                                            </SecondaryButton>
+                                                            {/* Actions / Avatars Area */}
+                                                            <div className="flex items-center gap-1.5">
+                                                                <a
+                                                                    href={jadwal.google_calendar_url || '#'}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="p-2.5 rounded-xl transition-all hover:text-[#1b5e20]/50 text-[#1b5e20]"
+                                                                    title="Tambahkan ke Calendar"
+                                                                >
+                                                                    {/* Plus icon inside calendar manually drawn to avoid import issues, or just use Calendar icon */}
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                                                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                                                                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                                                                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                                                                        <line x1="12" y1="14" x2="12" y2="18"></line>
+                                                                        <line x1="10" y1="16" x2="14" y2="16"></line>
+                                                                    </svg>
+                                                                </a>
+                                                                <button
+                                                                    onClick={() => toggleAlarm(jadwal.id_jadwal)}
+                                                                    className={`p-2.5 rounded-xl transition-all ${alarms[jadwal.id_jadwal] ? 'text-[#1b5e20]' : 'text-[#1b5e20]'} hover:text-[#1b5e20]/50`}
+                                                                    title={alarms[jadwal.id_jadwal] ? "Alarm Aktif" : "Set Alarm"}
+                                                                >
+                                                                    <Bell size={18} className={alarms[jadwal.id_jadwal] ? 'fill-current text-[#1b5e20]' : ''} />
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </ContainerWhite>
@@ -369,102 +380,115 @@ export default function Index({ auth, jadwals, activeAlarms }) {
                 </div>
 
                 {/* RIGHT COLUMN: Calendar view (8/12 width) */}
-                <div className="xl:col-span-8">
+                <div className="xl:col-span-8 flex flex-col">
                     <motion.div
                         variants={cardVariants}
                         initial="hidden"
                         animate="show"
-                        className="h-full"
+                        className="h-full flex-1"
                     >
-                        <ContainerWhite className="!rounded-[2.5rem] !p-6 md:!p-8 h-full">
+                        <ContainerWhite className="!rounded-[2.5rem] !p-6 md:!p-10 h-full flex flex-col items-center justify-center">
                             {/* Calendar Controls */}
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-48 shrink-0">
-                                        <h3 className="text-2xl font-bold text-slate-800 capitalize whitespace-nowrap">
-                                            {monthNames[month]} {year}
-                                        </h3>
-                                    </div>
+                            <div className="flex justify-between items-center w-full mb-10 px-4">
+                                <button
+                                    type="button"
+                                    onClick={handlePrevMonth}
+                                    className="text-slate-400 hover:text-slate-800 p-2 transition-colors"
+                                    aria-label="Bulan sebelumnya"
+                                >
+                                    &lt;
+                                </button>
 
-                                    <div className="flex items-center gap-1 shrink-0">
-                                        <button
-                                            type="button"
-                                            onClick={handlePrevMonth}
-                                            className="text-slate-400 hover:text-slate-700 text-xl font-bold px-2 py-1 transition-colors"
-                                            aria-label="Bulan sebelumnya"
-                                        >
-                                            &lt;
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={handleNextMonth}
-                                            className="text-slate-400 hover:text-slate-700 text-xl font-bold px-2 py-1 transition-colors"
-                                            aria-label="Bulan selanjutnya"
-                                        >
-                                            &gt;
-                                        </button>
-                                    </div>
-                                </div>
+                                <h3 className="text-2xl font-bold text-slate-800 capitalize">
+                                    {monthNames[month]} {year}
+                                </h3>
+
+                                <button
+                                    type="button"
+                                    onClick={handleNextMonth}
+                                    className="text-slate-400 hover:text-slate-800 p-2 transition-colors"
+                                    aria-label="Bulan selanjutnya"
+                                >
+                                    &gt;
+                                </button>
                             </div>
 
                             {/* Calendar Grid */}
-                            <div className="grid grid-cols-7 bg-white rounded-2xl overflow-hidden border-t border-l border-[#1b5e20]">
-                                {/* Weekday headers */}
-                                {["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"].map((dayName, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="bg-[#1b5e20] py-3 text-center text-white font-bold text-xs border-r border-b border-[#1b5e20]"
-                                    >
-                                        {dayName}
-                                    </div>
-                                ))}
-
-                                {/* Grid days */}
-                                {daysArray.map((cell, idx) => {
-                                    const isToday = new Date().toDateString() === cell.dateObj.toDateString();
-                                    const dateEvents = getEventsForDate(cell.dateObj);
-
-                                    return (
+                            <div className="w-full">
+                                <div className="grid grid-cols-7 mb-6">
+                                    {/* Weekday headers */}
+                                    {["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"].map((dayName, idx) => (
                                         <div
                                             key={idx}
-                                            className={`bg-white min-h-[95px] p-2 flex flex-col justify-between group/cell hover:bg-slate-100 transition-colors border-r border-b border-[#1b5e20] ${cell.isCurrentMonth ? '' : 'bg-slate-50'
-                                                }`}
+                                            className="text-center text-slate-400 font-medium text-base py-2"
                                         >
-                                            {/* Day number */}
-                                            <div className="flex justify-between items-center mb-1">
-                                                <span className={`text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center ${isToday
-                                                    ? 'bg-[#1b5e20] text-white shadow-sm'
-                                                    : cell.isCurrentMonth ? 'text-slate-700' : 'text-slate-300'
-                                                    }`}>
-                                                    {cell.day}
-                                                </span>
-                                            </div>
-
-                                            {/* Events */}
-                                            <div className="space-y-1 flex-1 flex flex-col justify-start">
-                                                {dateEvents.map((evt, eIdx) => {
-                                                    const evtPast = isPastEvent(evt.tanggal);
-                                                    return (
-                                                        <div
-                                                            key={evt.id_jadwal}
-                                                            onClick={() => {
-                                                                const el = document.getElementById(`jadwal-card-${evt.id_jadwal}`);
-                                                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                                            }}
-                                                            className={`text-[9px] p-1.5 rounded-lg border font-bold leading-tight shadow-sm transition-all duration-200 cursor-pointer
-                                                            ${evtPast ? '' : 'hover:scale-105 hover:!bg-[#fcc526] hover:!text-yellow-900 hover:!border-yellow-400 hover:shadow-md'} hover:z-10 relative
-                                                            ${getEventColorClass(eIdx, evtPast)}`}
-                                                            title={`${evt.nama_jadwal} (${formatTime(evt.waktu_mulai)} - ${formatTime(evt.waktu_selesai)})`}
-                                                        >
-                                                            <div className="font-extrabold truncate">{evt.nama_jadwal}</div>
-                                                            <div className="opacity-80 text-[8px] mt-0.5">{formatTime(evt.waktu_mulai)} - {formatTime(evt.waktu_selesai)}</div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
+                                            {dayName}
                                         </div>
-                                    );
-                                })}
+                                    ))}
+                                </div>
+
+                                <div className="grid grid-cols-7 gap-y-6 gap-x-2">
+                                    {/* Grid days */}
+                                    {daysArray.map((cell, idx) => {
+                                        const isToday = new Date().toDateString() === cell.dateObj.toDateString();
+                                        const dateEvents = getEventsForDate(cell.dateObj);
+                                        const hasEvents = dateEvents.length > 0;
+
+                                        // Cek apakah semua jadwal di hari itu sudah lewat
+                                        const isAllPast = hasEvents && dateEvents.every(evt => isPastEvent(evt.tanggal));
+
+                                        return (
+                                            <div
+                                                key={idx}
+                                                className="flex justify-center items-center"
+                                            >
+                                                <div className="relative flex justify-center hover:z-50">
+                                                    {/* The circle marker */}
+                                                    <div
+                                                        onClick={() => {
+                                                            if (hasEvents) {
+                                                                const el = document.getElementById(`jadwal-card-${dateEvents[0].id_jadwal}`);
+                                                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                            }
+                                                        }}
+                                                        className={`peer w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-full text-base sm:text-lg font-bold transition-all duration-200 cursor-pointer
+                                                            ${hasEvents
+                                                                ? isAllPast
+                                                                    ? 'bg-slate-200 text-slate-500' // Abu mati, hover warna tetap
+                                                                    : 'bg-[#fcc526] text-slate-900 hover:bg-[#fef8e7] hover:text-yellow-800' // Active events
+                                                                : cell.isCurrentMonth
+                                                                    ? isToday
+                                                                        ? 'text-slate-800 border-2 border-yellow-400 hover:bg-[#fef8e7]'
+                                                                        : 'text-slate-700 hover:bg-[#1b5e20]/10 hover:text-[#1b5e20]' // Hijau pudar on hover
+                                                                    : 'text-slate-300'
+                                                            }
+                                                        `}
+                                                    >
+                                                        {cell.day}
+                                                    </div>
+
+                                                    {/* Tooltip popup */}
+                                                    {hasEvents && (
+                                                        <div className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 border rounded-2xl p-4 opacity-0 invisible peer-hover:opacity-100 peer-hover:visible hover:opacity-100 hover:visible transition-all duration-300 z-50 ${isAllPast ? 'bg-slate-100 border-slate-200' : 'bg-[#fef8e7] border-yellow-100'}`}>
+                                                            <div className={`absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 border-t border-l rotate-45 ${isAllPast ? 'bg-slate-100 border-slate-200' : 'bg-[#fef8e7] border-yellow-100'}`}></div>
+                                                            <div className="relative z-10 flex flex-col gap-3">
+                                                                {dateEvents.map(evt => (
+                                                                    <div key={evt.id_jadwal} className="flex flex-col gap-0.5">
+                                                                        <p className={`font-bold text-sm leading-tight ${isAllPast ? 'text-slate-600' : 'text-slate-800'}`}>{evt.nama_jadwal}</p>
+                                                                        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+                                                                            <Clock size={12} className={isAllPast ? 'text-slate-400' : 'text-yellow-600'} />
+                                                                            <span>{formatTime(evt.waktu_mulai)} - {formatTime(evt.waktu_selesai)}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </ContainerWhite>
                     </motion.div>

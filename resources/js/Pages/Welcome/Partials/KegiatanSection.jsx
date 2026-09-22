@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, ArrowRight } from 'lucide-react';
 
 const fadeInUp = {
@@ -16,7 +16,32 @@ const stripHtml = (html) => {
 export default function KegiatanSection({ kegiatans, onSelectKegiatan }) {
     const hasKegiatans = kegiatans && kegiatans.length > 0;
     const mainKegiatan = hasKegiatans ? kegiatans[0] : null;
-    const secondaryKegiatans = hasKegiatans ? kegiatans.slice(1, 3) : [];
+    const secondaryKegiatans = hasKegiatans ? kegiatans.slice(1) : [];
+
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [isHovered, setIsHovered] = useState(false);
+
+    // Auto-slide per 4 detik jika item lebih dari 2
+    useEffect(() => {
+        if (secondaryKegiatans.length <= 2) return;
+
+        const interval = setInterval(() => {
+            if (!isHovered) {
+                setCurrentIndex(prev => (prev + 1) % secondaryKegiatans.length);
+            }
+        }, 4000);
+
+        return () => clearInterval(interval);
+    }, [isHovered, secondaryKegiatans.length]);
+
+    // Mengambil 2 item untuk ditampilkan di grid
+    let visibleItems = [];
+    if (secondaryKegiatans.length > 0) {
+        visibleItems.push(secondaryKegiatans[currentIndex]);
+        if (secondaryKegiatans.length > 1) {
+            visibleItems.push(secondaryKegiatans[(currentIndex + 1) % secondaryKegiatans.length]);
+        }
+    }
 
     return (
         <div className="relative">
@@ -173,57 +198,67 @@ export default function KegiatanSection({ kegiatans, onSelectKegiatan }) {
                                 </motion.div>
                             )}
 
-                            {/* Secondary Kegiatan (2 side-by-side cards below) */}
-                            {secondaryKegiatans.length > 0 && (
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    {secondaryKegiatans.map((kegiatan, idx) => (
-                                        <motion.div
-                                            key={kegiatan.id_kegiatan}
-                                            initial={{ opacity: 0, y: 30 }}
-                                            whileInView={{ opacity: 1, y: 0 }}
-                                            viewport={{ once: true }}
-                                            transition={{ duration: 0.6, delay: idx * 0.1 }}
-                                        >
-                                            <button
-                                                onClick={() => onSelectKegiatan(kegiatan)}
-                                                className="text-left w-full bg-white rounded-[1rem] border border-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.01)] hover:shadow-[0_14px_35px_rgba(0,0,0,0.035)] flex flex-row gap-5 p-5 transition-all duration-300 hover:-translate-y-0.5 group h-full"
+                            {/* Secondary Kegiatan (2 columns, auto-cycling) */}
+                            {visibleItems.length > 0 && (
+                                <div 
+                                    className="grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-hidden"
+                                    onMouseEnter={() => setIsHovered(true)}
+                                    onMouseLeave={() => setIsHovered(false)}
+                                    onTouchStart={() => setIsHovered(true)}
+                                    onTouchEnd={() => setIsHovered(false)}
+                                >
+                                    <AnimatePresence mode="popLayout">
+                                        {visibleItems.map((kegiatan, idx) => (
+                                            <motion.div
+                                                key={`${kegiatan.id_kegiatan}-${idx}`} // Pastikan unik saat rotasi
+                                                layout
+                                                initial={{ opacity: 0, x: 50, scale: 0.95 }}
+                                                animate={{ opacity: 1, x: 0, scale: 1 }}
+                                                exit={{ opacity: 0, x: -50, scale: 0.95 }}
+                                                transition={{ duration: 0.5, type: 'spring', stiffness: 200, damping: 20 }}
+                                                className="w-full"
                                             >
-                                                {/* Small Image */}
-                                                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden relative flex-shrink-0 bg-slate-50 border border-slate-100/50">
-                                                    {kegiatan.gambar_url ? (
-                                                        <img
-                                                            src={kegiatan.gambar_url}
-                                                            alt={kegiatan.nama_kegiatan}
-                                                            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-300">
-                                                            <Calendar size={32} opacity={0.3} />
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                <button
+                                                    onClick={() => onSelectKegiatan(kegiatan)}
+                                                    className="text-left w-full bg-white rounded-[1rem] border border-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.01)] hover:shadow-[0_14px_35px_rgba(0,0,0,0.035)] flex flex-row gap-5 p-5 transition-all duration-300 hover:-translate-y-0.5 group h-full"
+                                                >
+                                                    {/* Small Image */}
+                                                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden relative flex-shrink-0 bg-slate-50 border border-slate-100/50">
+                                                        {kegiatan.gambar_url ? (
+                                                            <img
+                                                                src={kegiatan.gambar_url}
+                                                                alt={kegiatan.nama_kegiatan}
+                                                                className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-300">
+                                                                <Calendar size={32} opacity={0.3} />
+                                                            </div>
+                                                        )}
+                                                    </div>
 
-                                                {/* Text */}
-                                                <div className="flex-1 flex flex-col justify-between min-w-0">
-                                                    <div>
-                                                        <span className="text-[10px] sm:text-xs text-slate-400 font-semibold block mb-1">
-                                                            {new Date(kegiatan.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                                        </span>
-                                                        <h4 className="font-['Poppins'] font-bold text-base sm:text-lg text-slate-800 mb-2 line-clamp-1 group-hover:text-[#1b5e20] transition-colors leading-tight">
-                                                            {kegiatan.nama_kegiatan}
-                                                        </h4>
-                                                        <p className="text-slate-500 font-light text-xs sm:text-sm line-clamp-2 leading-relaxed">
-                                                            {stripHtml(kegiatan.deskripsi)}
-                                                        </p>
+                                                    {/* Text */}
+                                                    <div className="flex-1 flex flex-col justify-between min-w-0">
+                                                        <div>
+                                                            <span className="text-[10px] sm:text-xs text-slate-400 font-semibold block mb-1">
+                                                                {new Date(kegiatan.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                            </span>
+                                                            <h4 className="font-['Poppins'] font-bold text-base sm:text-lg text-slate-800 mb-2 line-clamp-2 group-hover:text-[#1b5e20] transition-colors leading-tight">
+                                                                {kegiatan.nama_kegiatan}
+                                                            </h4>
+                                                            <p className="text-slate-500 font-light text-xs sm:text-sm line-clamp-2 leading-relaxed">
+                                                                {stripHtml(kegiatan.deskripsi)}
+                                                            </p>
+                                                        </div>
+                                                        <div className="mt-2 text-xs font-bold text-[#1b5e20] inline-flex items-center gap-1">
+                                                            <span>Baca Selengkapnya</span>
+                                                            <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform duration-300" />
+                                                        </div>
                                                     </div>
-                                                    <div className="mt-2 text-xs font-bold text-[#1b5e20] inline-flex items-center gap-1">
-                                                        <span>Baca Selengkapnya</span>
-                                                        <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform duration-300" />
-                                                    </div>
-                                                </div>
-                                            </button>
-                                        </motion.div>
-                                    ))}
+                                                </button>
+                                            </motion.div>
+                                        ))}
+                                    </AnimatePresence>
                                 </div>
                             )}
 

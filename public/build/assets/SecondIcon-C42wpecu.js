@@ -1,1 +1,0 @@
-import{j as s}from"./app-1aB7OWce.js";function c({icon:e,children:t,className:n="",iconSize:r=20,strokeWidth:i=2,...o}){return s.jsx("div",{className:`flex-shrink-0 w-10 h-10 rounded-xl bg-[#fef8e7] text-[#d99b00] flex items-center justify-center shadow-sm transition-colors duration-300 ${n}`,...o,children:e?s.jsx(e,{size:r,strokeWidth:i}):t})}export{c as S};

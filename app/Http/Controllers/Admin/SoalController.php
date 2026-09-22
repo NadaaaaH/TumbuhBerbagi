@@ -44,8 +44,9 @@ class SoalController extends Controller
     {
         $pakets = PaketLatihan::orderBy('nama_paket')->get();
         return Inertia::render('Admin/Soal/Create', [
-            'pakets' => $pakets,
-            'defaultPaketId' => $request->query('paket_id', '')
+            'pakets'         => $pakets,
+            'defaultPaketId' => $request->query('paket_id', ''),
+            'defaultSubtes'  => $request->query('subtes', ''),
         ]);
     }
 
@@ -89,7 +90,17 @@ class SoalController extends Controller
             ]);
 
             // Sinkronkan relasi pivot many-to-many
-            $soal->paket_latihan()->sync($validated['id_paket']);
+            // Jika paket adalah tryout, sertakan subtes di pivot
+            $pivotData = [];
+            foreach ($validated['id_paket'] as $pid) {
+                $paketItem = PaketLatihan::find($pid);
+                $subtes    = null;
+                if ($paketItem && $paketItem->tipe === 'tryout') {
+                    $subtes = $request->input('subtes') ?: null;
+                }
+                $pivotData[$pid] = ['subtes' => $subtes];
+            }
+            $soal->paket_latihan()->sync($pivotData);
 
             if ($validated['jenis_soal'] === 'pilihan_ganda' && !empty($validated['pilihan'])) {
                 foreach ($validated['pilihan'] as $pilihan) {

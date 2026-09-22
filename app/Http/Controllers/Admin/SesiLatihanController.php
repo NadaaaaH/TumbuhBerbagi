@@ -345,4 +345,12 @@ class SesiLatihanController extends Controller
 
         return $pdf->stream("preview_siswa.pdf");
     }
+
+    public function hitungIrt(string $id)
+    {
+        $paket = PaketLatihan::findOrFail($id);
+        \App\Services\IrtService::recalculateIrtScores($paket->id_paket);
+
+        return back()->with('success', 'Skor IRT dan tingkat kesulitan soal berhasil dihitung ulang!');
+    }
 }

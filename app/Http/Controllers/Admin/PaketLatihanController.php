@@ -69,13 +69,48 @@ class PaketLatihanController extends Controller
 
     public function store(Request $request)
     {
+        $isTryout = $request->input('tipe') === 'tryout';
+
         $validated = $request->validate([
-            'nama_paket' => 'required|string|max:150',
-            'deskripsi' => 'nullable|string',
-            'tipe' => 'required|string|in:latihan,tryout',
-            'status' => 'required|in:aktif,nonaktif',
-            'waktu_ujian' => 'required|integer|min:0',
+            'nama_paket'           => 'required|string|max:150',
+            'deskripsi'            => 'nullable|string',
+            'tipe'                 => 'required|string|in:latihan,tryout',
+            'status'               => 'required|in:aktif,nonaktif',
+            'waktu_ujian'          => 'required|integer|min:0',
+            'tanggal_aktif'        => 'nullable|date',
+            // Tryout fields
+            'tanggal_mulai'        => ($isTryout ? 'required' : 'nullable') . '|date',
+            'tanggal_selesai'      => ($isTryout ? 'required' : 'nullable') . '|date|after:tanggal_mulai',
+            'is_random'            => 'boolean',
+            'bisa_pause'           => 'boolean',
+            'tampil_hasil'         => 'in:setelah_selesai,terjadwal',
+            'tanggal_tampil_hasil' => 'nullable|date|required_if:tampil_hasil,terjadwal',
         ]);
+
+        // Kalau ada jadwal aktif, paksa status nonaktif sampai scheduler mengaktifkan
+        if (!empty($validated['tanggal_aktif'])) {
+            $validated['status'] = 'nonaktif';
+        }
+
+        // Kalau status manual aktif, hapus jadwal
+        if ($validated['status'] === 'aktif') {
+            $validated['tanggal_aktif'] = null;
+        }
+
+        // Bersihkan field tryout jika tipe = latihan
+        if (!$isTryout) {
+            $validated['tanggal_mulai']        = null;
+            $validated['tanggal_selesai']      = null;
+            $validated['is_random']            = false;
+            $validated['bisa_pause']           = true;
+            $validated['tampil_hasil']         = 'setelah_selesai';
+            $validated['tanggal_tampil_hasil'] = null;
+        }
+
+        // Bersihkan tanggal tampil hasil jika bukan mode terjadwal
+        if (($validated['tampil_hasil'] ?? '') !== 'terjadwal') {
+            $validated['tanggal_tampil_hasil'] = null;
+        }
 
         $paket = PaketLatihan::create($validated);
 
@@ -84,17 +119,17 @@ class PaketLatihanController extends Controller
             $labelNotif = $paket->tipe === 'tryout' ? 'Try Out' : 'Latihan Soal';
             foreach ($siswas as $siswa) {
                 \App\Models\Notifikasi::create([
-                    'id_siswa' => $siswa->id_siswa,
-                    'judul' => $labelNotif . ' Baru',
-                    'pesan' => 'Paket ' . strtolower($labelNotif) . ' baru "' . $paket->nama_paket . '" sekarang sudah aktif. Yuk dikerjakan!',
-                    'tipe' => $paket->tipe === 'tryout' ? 'tryout' : 'latihan',
+                    'id_siswa'     => $siswa->id_siswa,
+                    'judul'        => $labelNotif . ' Baru',
+                    'pesan'        => 'Paket ' . strtolower($labelNotif) . ' baru "' . $paket->nama_paket . '" sekarang sudah aktif. Yuk dikerjakan!',
+                    'tipe'         => $paket->tipe === 'tryout' ? 'tryout' : 'latihan',
                     'id_referensi' => $paket->id_paket,
-                    'is_dibaca' => false,
+                    'is_dibaca'    => false,
                 ]);
             }
         }
 
-        return redirect()->route('paket-latihan.index')->with('success', 'Paket Paket berhasil dibuat.');
+        return redirect()->route('paket-latihan.show', $paket->id_paket)->with('success', 'Paket berhasil dibuat! Sekarang tambahkan soal ke paket ini.');
     }
 
     public function edit(string $id)
@@ -118,36 +153,70 @@ class PaketLatihanController extends Controller
 
     public function update(Request $request, string $id)
     {
-        $paket = PaketLatihan::findOrFail($id);
+        $paket    = PaketLatihan::findOrFail($id);
+        $isTryout = $request->input('tipe') === 'tryout';
 
         $validated = $request->validate([
-            'nama_paket' => 'required|string|max:150',
-            'deskripsi' => 'nullable|string',
-            'tipe' => 'required|string|in:latihan,tryout',
-            'status' => 'required|in:aktif,nonaktif',
-            'waktu_ujian' => 'required|integer|min:0',
+            'nama_paket'           => 'required|string|max:150',
+            'deskripsi'            => 'nullable|string',
+            'tipe'                 => 'required|string|in:latihan,tryout',
+            'status'               => 'required|in:aktif,nonaktif',
+            'waktu_ujian'          => 'required|integer|min:0',
+            'tanggal_aktif'        => 'nullable|date',
+            // Tryout fields
+            'tanggal_mulai'        => ($isTryout ? 'required' : 'nullable') . '|date',
+            'tanggal_selesai'      => ($isTryout ? 'required' : 'nullable') . '|date|after:tanggal_mulai',
+            'is_random'            => 'boolean',
+            'bisa_pause'           => 'boolean',
+            'tampil_hasil'         => 'in:setelah_selesai,terjadwal',
+            'tanggal_tampil_hasil' => 'nullable|date|required_if:tampil_hasil,terjadwal',
         ]);
+
+        // Kalau ada jadwal aktif, paksa status nonaktif sampai scheduler mengaktifkan
+        if (!empty($validated['tanggal_aktif'])) {
+            $validated['status'] = 'nonaktif';
+        }
+
+        // Kalau status manual aktif, hapus jadwal
+        if ($validated['status'] === 'aktif') {
+            $validated['tanggal_aktif'] = null;
+        }
+
+        // Bersihkan field tryout jika tipe = latihan
+        if (!$isTryout) {
+            $validated['tanggal_mulai']        = null;
+            $validated['tanggal_selesai']      = null;
+            $validated['is_random']            = false;
+            $validated['bisa_pause']           = true;
+            $validated['tampil_hasil']         = 'setelah_selesai';
+            $validated['tanggal_tampil_hasil'] = null;
+        }
+
+        // Bersihkan tanggal tampil hasil jika bukan mode terjadwal
+        if (($validated['tampil_hasil'] ?? '') !== 'terjadwal') {
+            $validated['tanggal_tampil_hasil'] = null;
+        }
 
         $oldStatus = $paket->status;
         $paket->update($validated);
 
         if ($paket->status === 'aktif' && $oldStatus !== 'aktif') {
-            $siswas = \App\Models\Siswa::all();
+            $siswas     = \App\Models\Siswa::all();
+            $labelNotif = $paket->tipe === 'tryout' ? 'Try Out' : 'Latihan Soal';
             foreach ($siswas as $siswa) {
-                // Hindari duplikasi notifikasi untuk paket yang sama jika sudah ada
                 $exists = \App\Models\Notifikasi::where('id_siswa', $siswa->id_siswa)
-                    ->where('tipe', 'latihan')
+                    ->where('tipe', $paket->tipe === 'tryout' ? 'tryout' : 'latihan')
                     ->where('id_referensi', $paket->id_paket)
                     ->exists();
-                
+
                 if (!$exists) {
                     \App\Models\Notifikasi::create([
-                        'id_siswa' => $siswa->id_siswa,
-                        'judul' => 'Latihan Soal Baru',
-                        'pesan' => 'Paket latihan baru "' . $paket->nama_paket . '" sekarang sudah aktif. Yuk dikerjakan!',
-                        'tipe' => 'latihan',
+                        'id_siswa'     => $siswa->id_siswa,
+                        'judul'        => $labelNotif . ' Baru',
+                        'pesan'        => 'Paket ' . strtolower($labelNotif) . ' "' . $paket->nama_paket . '" sekarang sudah aktif. Yuk dikerjakan!',
+                        'tipe'         => $paket->tipe === 'tryout' ? 'tryout' : 'latihan',
                         'id_referensi' => $paket->id_paket,
-                        'is_dibaca' => false,
+                        'is_dibaca'    => false,
                     ]);
                 }
             }
@@ -166,14 +235,25 @@ class PaketLatihanController extends Controller
 
     public function addSoal(Request $request, string $id_paket)
     {
+        $paket = PaketLatihan::findOrFail($id_paket);
+
+        $validSubtes = ['PU', 'PPU', 'PK', 'PBM', 'LBI', 'LBIng', 'PM'];
+        $isTryout    = $paket->tipe === 'tryout';
+
         $request->validate([
             'soal_ids'   => 'required|array|min:1',
             'soal_ids.*' => 'exists:soal,id_soal',
+            'subtes'     => ($isTryout ? 'required' : 'nullable') . '|string|in:' . implode(',', $validSubtes),
         ]);
 
-        $paket = PaketLatihan::findOrFail($id_paket);
-        // syncWithoutDetaching agar soal yang sudah ada tidak terhapus
-        $paket->soal()->syncWithoutDetaching($request->soal_ids);
+        $subtes = $request->input('subtes'); // null untuk latihan soal
+
+        // Buat array pivot: setiap id_soal disertai subtes
+        $pivotData = collect($request->soal_ids)
+            ->mapWithKeys(fn($id) => [$id => ['subtes' => $subtes]])
+            ->all();
+
+        $paket->soal()->syncWithoutDetaching($pivotData);
 
         return back()->with('success', count($request->soal_ids) . ' soal berhasil ditambahkan ke paket.');
     }

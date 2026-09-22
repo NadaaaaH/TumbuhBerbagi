@@ -1,0 +1,19 @@
+Ran command: `type tailwind.config.js`
+Searched for "#1b5e20"
+Searched for "#fcc526"
+
+Berdasarkan pencarian pada * source code * project Anda(terutama di file - file React / Tailwind), berikut adalah palet warna utama(khususnya hijau dan kuning) yang sering digunakan secara * custom * (di luar warna bawaan Tailwind):
+
+### 🟢 Palet Warna Hijau(Green)
+Warna hijau ini sangat dominan sebagai identitas utama(misalnya untuk background, tombol, navbar, dsb).
+- ** Primary Green:** `#1b5e20` * (Paling sering dipakai, warna hijau gelap elegan)*
+- ** Darker Green(Hover):** `#144718` * (Sering dipakai untuk efek hover tombol agar lebih gelap)*
+- ** Lighter Green(Aksen):** `#508953` * (Dipakai untuk border atau efek gradient)*
+
+### 🟡 Palet Warna Kuning(Yellow)
+Warna kuning biasanya dipakai sebagai aksen kontras(tombol peringatan, * badge *, notifikasi, ikon).
+- ** Primary Yellow:** `#fcc526` * (Kuning cerah, sering dipakai untuk tombol, ikon notifikasi, dan aksen hover)*
+- ** Dark Yellow(Teks / Hover):** `#d99b00` * (Versi kuning yang lebih gelap, sering untuk teks di atas background kuning pucat)*
+- ** Pale Yellow(Background):** `#fef8e7` * (Kuning sangat pudar / pastel, sering dipakai sebagai warna latar belakang(background) untuk elemen beraksen kuning agar tidak terlalu menyilaukan)*
+
+    Semuanya ditulis menggunakan * arbitrary values * Tailwind, contoh penggunaannya di dalam * class*: `bg-[#1b5e20]` atau`text-[#fcc526]`.

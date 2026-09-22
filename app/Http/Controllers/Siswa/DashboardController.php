@@ -16,7 +16,13 @@ class DashboardController extends Controller
     {
         $siswa = auth()->user();
 
-        // 1. Jadwal Terdekat (tanggal >= hari ini)
+        // 1. Jadwals (Semua jadwal aktif untuk kalender)
+        $jadwals = Jadwal::where('status', 'aktif')
+            ->orderBy('tanggal', 'asc')
+            ->orderBy('waktu_mulai', 'asc')
+            ->get();
+
+        // Jadwal Terdekat
         $jadwalTerdekat = Jadwal::where('tanggal', '>=', now()->toDateString())
             ->where('status', 'aktif')
             ->orderBy('tanggal', 'asc')
@@ -28,14 +34,33 @@ class DashboardController extends Controller
             ->take(3)
             ->get();
 
-        // 3. Latihan Soal yang Aktif (ambil 3 paket terbaru)
-        $pakets = PaketLatihan::where('status', 'aktif')
-            ->withCount(['soal' => function ($query) {
-                $query->where('status', 'aktif');
-            }])
-            ->orderBy('id_paket', 'desc')
-            ->take(3)
+        // 3. Statistik (Indicators)
+        // Ambil sesi yang sudah selesai beserta relasi paket_latihan dan hasil_latihan
+        $completedSessions = SesiLatihan::where('id_siswa', $siswa->id_siswa)
+            ->whereHas('hasil_latihan')
+            ->with(['hasil_latihan', 'paket_latihan'])
             ->get();
+
+        $totalLatsolDikerjakan = 0;
+        $totalTryoutDikerjakan = 0;
+        $skorTerbesarTO = null;
+
+        foreach ($completedSessions as $session) {
+            if ($session->paket_latihan) {
+                if ($session->paket_latihan->tipe === 'tryout') {
+                    $totalTryoutDikerjakan++;
+                    $nilaiAkhir = $session->hasil_latihan->nilai_akhir;
+                    if ($skorTerbesarTO === null || $nilaiAkhir > $skorTerbesarTO) {
+                        $skorTerbesarTO = $nilaiAkhir;
+                    }
+                } else {
+                    $totalLatsolDikerjakan++;
+                }
+            }
+        }
+
+        // 4. Latihan Aktif (Belum Selesai)
+        $completedPackageIds = $completedSessions->pluck('id_paket')->toArray();
 
         $ongoingPackages = SesiLatihan::where('id_siswa', $siswa->id_siswa)
             ->where('status', 'aktif')
@@ -43,21 +68,19 @@ class DashboardController extends Controller
             ->pluck('id_paket')
             ->toArray();
 
-        $completedSessions = SesiLatihan::where('id_siswa', $siswa->id_siswa)
-            ->whereHas('hasil_latihan')
-            ->with('hasil_latihan')
-            ->get()
-            ->keyBy('id_paket');
+        $pakets = PaketLatihan::where('status', 'aktif')
+            ->whereNotIn('id_paket', $completedPackageIds)
+            ->withCount(['soal' => function ($query) {
+                $query->where('status', 'aktif');
+            }])
+            ->orderBy('id_paket', 'desc')
+            ->take(15)
+            ->get();
 
-        $latihanAktif = $pakets->map(function ($paket) use ($ongoingPackages, $completedSessions) {
+        $latihanAktif = $pakets->map(function ($paket) use ($ongoingPackages) {
             $status = 'belum_mulai';
-            $nilai = null;
-
             if (in_array($paket->id_paket, $ongoingPackages)) {
                 $status = 'sedang_dikerjakan';
-            } elseif (isset($completedSessions[$paket->id_paket])) {
-                $status = 'selesai';
-                $nilai = $completedSessions[$paket->id_paket]->hasil_latihan->nilai_akhir;
             }
 
             return [
@@ -67,14 +90,19 @@ class DashboardController extends Controller
                 'waktu_ujian' => $paket->waktu_ujian,
                 'soal_count' => $paket->soal_count,
                 'status' => $status,
-                'nilai' => $nilai,
+                'tipe' => $paket->tipe ?? 'latihan',
+                'nilai' => null,
             ];
         });
 
         return Inertia::render('Siswa/Dashboard', [
+            'jadwals' => $jadwals,
             'jadwalTerdekat' => $jadwalTerdekat,
             'kegiatanTerbaru' => $kegiatanTerbaru,
             'latihanAktif' => $latihanAktif,
+            'totalLatsolDikerjakan' => $totalLatsolDikerjakan,
+            'totalTryoutDikerjakan' => $totalTryoutDikerjakan,
+            'skorTerbesarTO' => $skorTerbesarTO,
         ]);
     }
 }

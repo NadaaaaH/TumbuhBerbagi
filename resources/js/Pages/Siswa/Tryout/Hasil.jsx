@@ -4,13 +4,97 @@ import SiswaLayout from '@/Layouts/SiswaLayout';
 import { ArrowLeft, ArrowRight, Trophy, CheckCircle2, XCircle, Clock, Info, Award } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export default function Hasil({ auth, paket, sesi, hasil, jawabanSiswa = [], questionStats = [], peringkat, totalPeserta, rataRata, nilaiTertinggi }) {
+export default function Hasil({
+    auth,
+    paket,
+    sesi,
+    hasil,
+    jawabanSiswa = [],
+    questionStats = [],
+    peringkat,
+    totalPeserta,
+    rataRata,
+    nilaiTertinggi,
+    isHasilTerkunci = false,
+    tanggalRilisStr = null,
+    tanggalTampilHasil = null,
+}) {
     const [activeTab, setActiveTab] = useState('statistik');
     const [filterKategori, setFilterKategori] = useState('Semua');
 
     const totalNilai = useMemo(() => {
         return Math.round((hasil?.nilai_akhir || 0) * 10);
     }, [hasil?.nilai_akhir]);
+
+    if (isHasilTerkunci) {
+        return (
+            <SiswaLayout user={auth.user} header="Hasil Try Out">
+                <Head title={`Hasil Try Out - ${paket.nama_paket}`} />
+
+                <div className="space-y-8 pb-16 max-w-4xl mx-auto">
+                    <div className="flex items-center justify-between">
+                        <Link
+                            href={route('siswa.tryout.index')}
+                            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-[#1b5e20] transition-colors"
+                        >
+                            <ArrowLeft size={16} /> Kembali ke Daftar Try Out
+                        </Link>
+                    </div>
+
+                    {/* Waiting Hero Card */}
+                    <div className="bg-white p-8 sm:p-10 rounded-[2.5rem] border border-slate-100 shadow-xl text-center space-y-6 relative overflow-hidden">
+                        <div className="w-20 h-20 rounded-3xl bg-emerald-50 text-[#1b5e20] flex items-center justify-center mx-auto border border-emerald-100 shadow-inner">
+                            <CheckCircle2 size={40} />
+                        </div>
+
+                        <div className="space-y-2 max-w-lg mx-auto">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-[#1b5e20] text-xs font-bold border border-emerald-100">
+                                Ujian Berhasil Dikumpulkan
+                            </span>
+                            <h2 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">
+                                {paket.nama_paket}
+                            </h2>
+                            <p className="text-sm text-slate-500 leading-relaxed">
+                                Jawaban Anda telah berhasil tersimpan di sistem. Sesuai jadwal, skor akhir dan pembahasan lengkap akan dirilis setelah proses kalibrasi tingkat kesulitan soal (IRT) selesai.
+                            </p>
+                        </div>
+
+                        {/* Release Date Box */}
+                        <div className="bg-gradient-to-br from-emerald-50 to-teal-50/50 border border-emerald-200/80 p-6 rounded-3xl max-w-md mx-auto space-y-2">
+                            <div className="flex items-center justify-center gap-2 text-xs font-bold text-emerald-800 uppercase tracking-wider">
+                                <Clock size={15} /> Jadwal Pengumuman Hasil
+                            </div>
+                            <div className="text-xl sm:text-2xl font-black text-[#1b5e20]">
+                                {tanggalRilisStr || 'Sesuai Jadwal Penyelenggara'}
+                            </div>
+                            <p className="text-[11px] text-emerald-700/80">
+                                Skor IRT & Analisis Pembahasan akan otomatis terbuka pada tanggal tersebut.
+                            </p>
+                        </div>
+
+                        {/* Info Note on IRT */}
+                        <div className="bg-slate-50 border border-slate-200/70 p-5 rounded-2xl max-w-xl mx-auto text-left space-y-2">
+                            <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                                <Info size={15} className="text-[#1b5e20]" /> Mengapa Hasil Tidak Langsung Muncul?
+                            </div>
+                            <p className="text-xs text-slate-500 leading-relaxed">
+                                Try Out ini menggunakan metode <strong>Item Response Theory (IRT)</strong> standar resmi UTBK. Bobot nilai setiap butir soal dinilai berdasarkan tingkat kesulitan empiris yang dihitung dari statistik seluruh peserta setelah periode pengerjaan berakhir.
+                            </p>
+                        </div>
+
+                        <div className="pt-2">
+                            <Link
+                                href={route('siswa.tryout.index')}
+                                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-[#1b5e20] hover:bg-[#2d7e32] text-white rounded-2xl text-sm font-bold shadow-md shadow-emerald-900/10 transition-all active:scale-98"
+                            >
+                                Kembali ke Halaman Try Out <ArrowRight size={16} />
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </SiswaLayout>
+        );
+    }
 
     const duration = useMemo(() => {
         const actualSesi = sesi || {};

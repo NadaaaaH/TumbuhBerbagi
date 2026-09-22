@@ -53,6 +53,10 @@ class LatihanController extends Controller
 
         $paket = PaketLatihan::where('id_paket', $id)
             ->where('status', 'aktif')
+            ->where(function ($query) {
+                $query->where('tipe', 'latihan')
+                      ->orWhereNull('tipe');
+            })
             ->with(['soal' => function ($query) {
                 $query->where('status', 'aktif')
                       ->orderBy('kategori', 'asc')
@@ -90,6 +94,10 @@ class LatihanController extends Controller
 
         $paket = PaketLatihan::where('id_paket', $id)
             ->where('status', 'aktif')
+            ->where(function ($query) {
+                $query->where('tipe', 'latihan')
+                      ->orWhereNull('tipe');
+            })
             ->firstOrFail();
 
         $sesi = SesiLatihan::where('id_siswa', $siswa->id_siswa)
@@ -195,6 +203,10 @@ class LatihanController extends Controller
         $siswa = auth()->user();
 
         $paket = PaketLatihan::where('id_paket', $id)
+            ->where(function ($query) {
+                $query->where('tipe', 'latihan')
+                      ->orWhereNull('tipe');
+            })
             ->with(['soal' => function ($query) {
                 $query->where('status', 'aktif')->with('pilihan_jawaban');
             }])

@@ -1,0 +1,1 @@
+import{j as l}from"./app-AQk-AMWl.js";function n({value:t,className:e="",children:s,...o}){return l.jsx("label",{...o,className:"block text-sm font-semibold text-slate-700 mb-1.5 "+e,children:t||s})}export{n as I};

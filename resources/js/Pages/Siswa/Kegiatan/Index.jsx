@@ -5,13 +5,28 @@ import ContainerWhite from '@/Components/ContainerWhite';
 import { Newspaper, Calendar, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import KegiatanModal from '@/Pages/Welcome/Partials/KegiatanModal';
+import SearchBar from '@/Components/SearchBar';
 export default function Index({ auth, kegiatans }) {
     const [selectedKegiatan, setSelectedKegiatan] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
 
-    const sortedKegiatans = kegiatans || [];
+    // Strip HTML tags untuk preview deskripsi
+    const stripHtml = (html) => {
+        if (!html) return '';
+        return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    };
 
-    const mainKegiatan = sortedKegiatans.length > 0 ? sortedKegiatans[0] : null;
-    const secondaryKegiatans = sortedKegiatans.length > 1 ? sortedKegiatans.slice(1) : [];
+    const filteredKegiatans = useMemo(() => {
+        if (!kegiatans) return [];
+        if (!searchQuery) return kegiatans;
+        return kegiatans.filter(k => 
+            k.nama_kegiatan?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            stripHtml(k.deskripsi)?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [kegiatans, searchQuery]);
+
+    const mainKegiatan = filteredKegiatans.length > 0 ? filteredKegiatans[0] : null;
+    const secondaryKegiatans = filteredKegiatans.length > 1 ? filteredKegiatans.slice(1) : [];
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -28,29 +43,30 @@ export default function Index({ auth, kegiatans }) {
         show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 120, damping: 14 } }
     };
 
-    // Strip HTML tags untuk preview deskripsi
-    const stripHtml = (html) => {
-        if (!html) return '';
-        return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-    };
-
     return (
         <SiswaLayout user={auth.user} header="Kegiatan & Informasi">
             <Head title="Kegiatan Siswa" />
 
-            <div className="space-y-2 mb-10">
-                <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 font-['Poppins'] tracking-tight">
-                    Berita dari
-                    <span className="text-[#1b5e20]">
-                        {" "}Tumbuh Berbagi
-                    </span>
-                </h1>
-                <p className="text-slate-400 text-sm mt-1 font-light">
-                    Kegiatan dan informasi terkini dari Tumbuh Berbagi.
-                </p>
+            <div className="space-y-2 mb-10 flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 font-['Poppins'] tracking-tight">
+                        Berita dari
+                        <span className="text-[#1b5e20]">
+                            {" "}Tumbuh Berbagi
+                        </span>
+                    </h1>
+                    <p className="text-slate-400 text-sm mt-1 font-light">
+                        Kegiatan dan informasi terkini dari Tumbuh Berbagi.
+                    </p>
+                </div>
+                <SearchBar 
+                    className='w-full md:w-[500px]' 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
             </div>
 
-            {sortedKegiatans && sortedKegiatans.length > 0 ? (
+            {filteredKegiatans && filteredKegiatans.length > 0 ? (
                 <motion.div
                     variants={containerVariants}
                     initial="hidden"

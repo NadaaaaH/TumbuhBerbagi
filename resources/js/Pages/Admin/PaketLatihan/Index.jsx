@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import TextInput from '@/Components/TextInput';
-import { Search } from 'lucide-react';
+import { Search, Clock } from 'lucide-react';
 
 
 export default function Index({ auth, pakets, filters }) {
@@ -99,6 +99,12 @@ export default function Index({ auth, pakets, filters }) {
                                             }`}>
                                             {paket.status === 'aktif' ? 'Aktif' : 'Nonaktif'}
                                         </span>
+                                        {paket.tanggal_aktif && (
+                                            <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-medium bg-amber-100 text-amber-700 border border-amber-200">
+                                                <Clock size={11} />
+                                                Aktif {new Date(paket.tanggal_aktif).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
