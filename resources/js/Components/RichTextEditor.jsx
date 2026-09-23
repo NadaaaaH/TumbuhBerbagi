@@ -231,17 +231,14 @@ export default function RichTextEditor({
         },
     });
 
-    // ── Sync konten editor saat value berubah dari luar (misal: data dari DB sudah siap) ──
     useEffect(() => {
         if (!editor) return;
         const current = editor.getHTML();
-        // Hanya update jika konten berbeda agar tidak loop tak terbatas
         if (value && value !== current) {
             editor.commands.setContent(value, false);
         }
     }, [editor, value]);
 
-    // ── Upload gambar ──────────────────────────────────────────────────────────
     const handleImageUpload = useCallback(async () => {
         if (!editor || uploading) return;
         const input = document.createElement('input');

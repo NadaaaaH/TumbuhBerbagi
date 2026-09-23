@@ -1,7 +1,6 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { Mail, RefreshCw, LogOut, ShieldAlert } from 'lucide-react';
 
 export default function VerifyEmail({ auth, status }) {
     const { post, processing } = useForm({});
@@ -14,76 +13,63 @@ export default function VerifyEmail({ auth, status }) {
     const targetEmail = auth?.user?.email || 'email Anda';
 
     return (
-        <GuestLayout>
+        <GuestLayout maxWidth="sm:max-w-xl">
             <Head title="Verifikasi Email" />
 
-            <div className="max-w-md w-full mx-auto text-center space-y-6 py-4">
-                {/* Visual Icon Header */}
-                <div className="flex justify-center">
-                    <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 rounded-full text-emerald-600 dark:text-emerald-400 shadow-sm animate-bounce">
-                        <Mail size={40} className="stroke-[1.5]" />
-                    </div>
-                </div>
-
+            <div className="w-full mx-auto text-center space-y-6 py-2">
                 {/* Title */}
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">
+                    <h2 className="text-2xl sm:text-3xl font-black text-slate-850 font-['Poppins'] tracking-tight">
                         Verifikasi Email Anda
                     </h2>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+                    <p className="text-slate-500 text-sm mt-1">
                         Satu langkah lagi untuk memulai belajar
                     </p>
                 </div>
 
-                {/* Main Notification Banner */}
-                <div className="flex items-start gap-3 bg-amber-50/80 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 p-4 rounded-2xl text-left shadow-sm">
-                    <ShieldAlert className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" size={20} />
-                    <p className="text-sm font-medium text-amber-800 dark:text-amber-300 leading-relaxed">
-                        Silakan verifikasi email Anda terlebih dahulu untuk mengakses seluruh fitur aplikasi.
-                    </p>
-                </div>
+                {/* Notifikasi Verifikasi (Tanpa bg dan border) */}
+                <p className="text-sm font-medium text-amber-800 leading-relaxed max-w-md mx-auto">
+                    Silakan verifikasi email Anda terlebih dahulu untuk mengakses seluruh fitur aplikasi.
+                </p>
 
-                {/* Email Destination Info */}
-                <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-5 border border-slate-100 dark:border-slate-800/80 text-left space-y-2">
-                    <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                {/* Email Tujuan Verifikasi (Tanpa bg dan border) */}
+                <div className="space-y-1.5 text-center">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
                         Email Tujuan Verifikasi
                     </span>
-                    <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-semibold truncate bg-white dark:bg-slate-900 px-3 py-2.5 rounded-xl border border-slate-200/50 dark:border-slate-800 shadow-inner">
-                        <Mail size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
-                        <span className="truncate">{targetEmail}</span>
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed pt-1">
+                    <p className="text-lg sm:text-xl font-extrabold text-[#1b5e20] tracking-tight">
+                        {targetEmail}
+                    </p>
+                    <p className="text-xs text-slate-500 leading-relaxed pt-1 max-w-md mx-auto">
                         Kami telah mengirimkan tautan verifikasi otomatis ke alamat email di atas. Silakan periksa kotak masuk atau folder spam Anda.
                     </p>
                 </div>
 
                 {/* Status Alert */}
                 {status === 'verification-link-sent' && (
-                    <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 p-3.5 rounded-xl text-sm font-medium text-emerald-800 dark:text-emerald-300 animate-pulse text-left">
+                    <div className="text-sm font-semibold text-[#1b5e20] bg-emerald-50/60 py-2.5 px-4 rounded-xl">
                         Tautan verifikasi baru berhasil dikirim ke email Anda. Silakan periksa kembali kotak masuk Anda.
                     </div>
                 )}
 
                 {/* Action Buttons */}
                 <form onSubmit={submit} className="pt-2">
-                    <div className="flex flex-col sm:flex-row items-center gap-3">
-                        <button
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                        <PrimaryButton
                             type="submit"
                             disabled={processing}
-                            className="w-full inline-flex items-center justify-center gap-2 bg-[#1b5e20] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#144718] transition-all shadow-sm hover:shadow-md disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+                            className="w-full sm:w-auto px-6 py-3.5 text-sm font-bold shadow-md whitespace-nowrap"
                         >
-                            <RefreshCw size={18} className={`shrink-0 ${processing ? 'animate-spin' : ''}`} />
-                            Kirim Ulang Email Verifikasi
-                        </button>
+                            {processing ? 'Mengirim...' : 'Kirim Ulang Email Verifikasi'}
+                        </PrimaryButton>
 
                         <Link
                             href={route('logout')}
                             method="post"
                             as="button"
-                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+                            className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3.5 rounded-full border border-slate-200 bg-white text-slate-700 font-bold text-sm hover:bg-slate-50 hover:text-slate-900 transition-all shadow-xs whitespace-nowrap"
                         >
-                            <LogOut size={18} className="shrink-0" />
-                            Keluar
+                            Kembali
                         </Link>
                     </div>
                 </form>

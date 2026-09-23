@@ -3,10 +3,29 @@ import { Head, Link } from '@inertiajs/react';
 import SiswaLayout from '@/Layouts/SiswaLayout';
 import { ArrowLeft, ArrowRight, Trophy, CheckCircle2, XCircle, Clock, Info, Award } from 'lucide-react';
 import { motion } from 'framer-motion';
+import PrimaryButton from '@/Components/PrimaryButton';
+import TertiaryButton from '@/Components/TertiaryButton';
+import NavigasiPembahasan from './Partials/NavigasiPembahasan';
+import PembahasanCard from './Partials/PembahasanCard';
 
 export default function Hasil({ auth, paket, sesi, hasil, jawabanSiswa, questionStats, peringkat, totalPeserta, rataRata, nilaiTertinggi }) {
     const [activeTab, setActiveTab] = useState('statistik'); // 'statistik' or 'pembahasan'
+    const [pembahasanIndex, setPembahasanIndex] = useState(0);
     const [filterKategori, setFilterKategori] = useState('Semua');
+
+    const soals = useMemo(() => {
+        return (jawabanSiswa || []).map((j) => {
+            const soalFromPaket = paket?.soal?.find((s) => s.id_soal === j.id_soal);
+            return {
+                ...(j.soal || {}),
+                ...(soalFromPaket || {}),
+                pilihan_jawaban:
+                    (soalFromPaket?.pilihan_jawaban && soalFromPaket.pilihan_jawaban.length > 0)
+                        ? soalFromPaket.pilihan_jawaban
+                        : (j.soal?.pilihan_jawaban || []),
+            };
+        });
+    }, [paket?.soal, jawabanSiswa]);
 
     const totalNilai = useMemo(() => {
         return Math.round((hasil.nilai_akhir || 0) * 10);
@@ -59,38 +78,41 @@ export default function Hasil({ auth, paket, sesi, hasil, jawabanSiswa, question
         <SiswaLayout user={auth.user} header={paket.nama_paket}>
             <Head title={`Hasil ${paket.nama_paket}`} />
 
-            {/* Navigation & Tab Selection */}
+            {/* Navigation & Tab Selection: Tombol Kembali di kiri, Tab Statistik & Pembahasan di kanan */}
             <div className="flex justify-between items-center flex-wrap gap-4 mb-8">
-                <div className="flex gap-2">
-                    <button
+                {/* Kiri: Tombol Kembali menggunakan PrimaryButton */}
+                <Link href={route('siswa.latihan.index')}>
+                    <PrimaryButton className="gap-2 px-5 py-2.5 text-sm font-semibold shadow-md">
+                        <ArrowLeft size={16} />
+                        Kembali
+                    </PrimaryButton>
+                </Link>
+
+                {/* Kanan: Tab Statistik & Pembahasan menggunakan TertiaryButton */}
+                <div className="flex items-center gap-2.5">
+                    <TertiaryButton
+                        type="button"
                         onClick={() => setActiveTab('statistik')}
-                        className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                        className={`!px-5 !py-2.5 !text-sm !font-semibold transition-all ${
                             activeTab === 'statistik'
-                                ? 'bg-slate-900 text-white shadow-md'
-                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                                ? '!bg-[#fcc526] hover:!bg-[#eab522] !text-white !border-[#fcc526] shadow-md'
+                                : ''
                         }`}
                     >
                         Statistik Hasil
-                    </button>
-                    <button
+                    </TertiaryButton>
+                    <TertiaryButton
+                        type="button"
                         onClick={() => setActiveTab('pembahasan')}
-                        className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                        className={`!px-5 !py-2.5 !text-sm !font-semibold transition-all ${
                             activeTab === 'pembahasan'
-                                ? 'bg-slate-900 text-white shadow-md'
-                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                                ? '!bg-[#fcc526] hover:!bg-[#eab522] !text-white !border-[#fcc526] shadow-md'
+                                : ''
                         }`}
                     >
                         Pembahasan Soal
-                    </button>
+                    </TertiaryButton>
                 </div>
-
-                <Link
-                    href={route('siswa.latihan.index')}
-                    className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 transition-colors text-sm font-medium bg-white px-4 py-2.5 rounded-xl border border-slate-200"
-                >
-                    <ArrowLeft size={16} />
-                    Kembali
-                </Link>
             </div>
 
             {activeTab === 'statistik' ? (
@@ -303,127 +325,46 @@ export default function Hasil({ auth, paket, sesi, hasil, jawabanSiswa, question
                     </div>
                 </div>
             ) : (
-                /* Pembahasan Detail View */
-                <div className="space-y-6 animate-fade-in">
-                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                            <div>
-                                <h2 className="text-xl font-bold text-slate-850 font-['Poppins']">Pembahasan Soal</h2>
-                                <p className="text-slate-500 text-sm mt-1">Pelajari kembali soal-soal latihan ini untuk mengasah kemampuan Anda.</p>
-                            </div>
-                            {/* Filter Kategori */}
-                            <div className="flex flex-wrap gap-2">
-                                {kategoriList.map((kat) => (
-                                    <button
-                                        key={kat}
-                                        onClick={() => setFilterKategori(kat)}
-                                        className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-all duration-200 ${
-                                            filterKategori === kat
-                                                ? 'bg-[#1b5e20] text-white border-[#1b5e20] shadow-md shadow-[#1b5e20]/20'
-                                                : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300'
-                                        }`}
-                                    >
-                                        {kat}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                        {filterKategori !== 'Semua' && (
-                            <div className="mt-3 text-xs text-slate-400 font-medium">
-                                Menampilkan <span className="font-bold text-slate-600">{filteredJawaban.length}</span> soal kategori <span className="font-bold text-emerald-700">{filterKategori}</span>
-                            </div>
-                        )}
+                /* Pembahasan Detail View (Mirip Ujian / Interaktif) */
+                soals.length === 0 ? (
+                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 text-center text-slate-500">
+                        Tidak ada soal untuk pembahasan ini.
                     </div>
+                ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-fade-in">
+                        {/* DESKTOP ONLY: Kolom Kiri - Navigasi Pembahasan (Sticky) */}
+                        <div className="hidden lg:block lg:col-span-4 sticky top-28 self-start z-30">
+                            <NavigasiPembahasan
+                                soals={soals}
+                                jawabanSiswa={jawabanSiswa}
+                                activeIndex={pembahasanIndex}
+                                onNavigate={setPembahasanIndex}
+                            />
+                        </div>
 
-                    {filteredJawaban.map((jawaban, idx) => {
-                        const soal = jawaban.soal;
-                        const benar = jawaban.is_benar;
-                        return (
-                            <div key={jawaban.id_jawaban} className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
-                                <div className="flex items-start justify-between gap-4 flex-wrap sm:flex-nowrap">
-                                    <div>
-                                        <span className="inline-block px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold mb-3">
-                                            Soal #{idx + 1} - Kategori: {soal?.kategori || 'Umum'}
-                                        </span>
-                                        <div 
-                                            className="text-base font-semibold text-slate-800 leading-relaxed prose prose-slate max-w-none prose-img:rounded-xl prose-img:shadow-sm"
-                                            dangerouslySetInnerHTML={{ __html: soal?.konten_soal }}
-                                        />
-                                    </div>
-                                    <div className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold shadow-sm whitespace-nowrap self-start ${benar ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
-                                        {benar ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
-                                        {benar ? 'Benar' : 'Salah'}
-                                    </div>
-                                </div>
+                        {/* ALWAYS: Kolom Kanan - Kartu Soal & Pembahasan */}
+                        <div className="lg:col-span-8">
+                            <PembahasanCard
+                                soal={soals[pembahasanIndex]}
+                                jawaban={jawabanSiswa[pembahasanIndex]}
+                                soalIndex={pembahasanIndex}
+                                totalSoal={soals.length}
+                                onPrev={() => setPembahasanIndex((i) => Math.max(0, i - 1))}
+                                onNext={() => setPembahasanIndex((i) => Math.min(soals.length - 1, i + 1))}
+                            />
+                        </div>
 
-                                {soal?.jenis_soal === 'pilihan_ganda' ? (
-                                    <div className="mt-6 space-y-2">
-                                        {soal.pilihan_jawaban?.map((pilihan) => {
-                                            const isSelected = pilihan.id_pilihan === jawaban.id_pilihan;
-                                            const isCorrectKey = pilihan.kode_pilihan.toUpperCase() === soal.kunci_jawaban.toUpperCase();
-                                            
-                                            let borderClass = "border-slate-200 bg-white hover:bg-slate-50";
-                                            let textClass = "text-slate-700";
-                                            let badge = null;
-
-                                            if (isSelected && isCorrectKey) {
-                                                borderClass = "border-emerald-300 bg-emerald-50/50";
-                                                textClass = "text-emerald-800 font-semibold";
-                                                badge = <span className="ml-auto px-2.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-bold shadow-sm">Jawaban Anda (Benar)</span>;
-                                            } else if (isSelected && !isCorrectKey) {
-                                                borderClass = "border-rose-300 bg-rose-50/50";
-                                                textClass = "text-rose-800 font-semibold";
-                                                badge = <span className="ml-auto px-2.5 py-0.5 bg-rose-100 text-rose-700 rounded text-xs font-bold shadow-sm">Jawaban Anda (Salah)</span>;
-                                            } else if (isCorrectKey) {
-                                                borderClass = "border-emerald-300 bg-emerald-50/20";
-                                                textClass = "text-emerald-700 font-semibold";
-                                                badge = <span className="ml-auto px-2.5 py-0.5 bg-emerald-50 text-emerald-600 rounded text-xs font-bold shadow-sm">Kunci Jawaban</span>;
-                                            }
-
-                                            return (
-                                                <div key={pilihan.id_pilihan} className={`flex items-center gap-3 px-4 py-3 rounded-2xl border text-sm transition-all ${borderClass} ${textClass}`}>
-                                                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                                                        isSelected ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-500'
-                                                    }`}>
-                                                        {pilihan.kode_pilihan}
-                                                    </span>
-                                                    <span>{pilihan.teks_pilihan}</span>
-                                                    {badge}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                ) : (
-                                    <div className="mt-6 space-y-3">
-                                        <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 text-sm">
-                                            <div className="text-slate-400 font-semibold mb-1">Jawaban Anda:</div>
-                                            <div className="text-slate-800 font-bold">{jawaban.teks_jawaban || '-'}</div>
-                                        </div>
-                                        <div className="bg-emerald-50/30 rounded-2xl p-4 border border-emerald-100 text-sm">
-                                            <div className="text-emerald-600 font-semibold mb-1">Kunci Jawaban:</div>
-                                            <div className="text-emerald-800 font-bold">{soal?.kunci_jawaban}</div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="mt-6 rounded-2xl bg-[#fafafa] border border-slate-200 p-5 text-sm text-slate-700 leading-relaxed shadow-sm">
-                                    <div className="font-bold text-slate-800 flex items-center gap-1.5 mb-2">
-                                        <Info size={16} className="text-slate-500" />
-                                        Pembahasan
-                                    </div>
-                                    {soal?.pembahasan ? (
-                                        <div 
-                                            className="text-slate-600 prose prose-slate max-w-none prose-img:rounded-xl prose-img:shadow-sm"
-                                            dangerouslySetInnerHTML={{ __html: soal.pembahasan }}
-                                        />
-                                    ) : (
-                                        <p className="text-slate-500 italic">Pembahasan belum disediakan.</p>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                        {/* MOBILE ONLY: Navigasi Pembahasan di Bawah */}
+                        <div className="block lg:hidden w-full">
+                            <NavigasiPembahasan
+                                soals={soals}
+                                jawabanSiswa={jawabanSiswa}
+                                activeIndex={pembahasanIndex}
+                                onNavigate={setPembahasanIndex}
+                            />
+                        </div>
+                    </div>
+                )
             )}
         </SiswaLayout>
     );

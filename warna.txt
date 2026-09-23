@@ -1,6 +1,3 @@
-Ran command: `type tailwind.config.js`
-Searched for "#1b5e20"
-Searched for "#fcc526"
 
 Berdasarkan pencarian pada * source code * project Anda(terutama di file - file React / Tailwind), berikut adalah palet warna utama(khususnya hijau dan kuning) yang sering digunakan secara * custom * (di luar warna bawaan Tailwind):
 

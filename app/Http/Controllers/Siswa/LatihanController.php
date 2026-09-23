@@ -19,6 +19,10 @@ class LatihanController extends Controller
     {
         $siswa = auth()->user();
         $pakets = PaketLatihan::where('status', 'aktif')
+            ->where(function ($q) {
+                $q->whereNull('tanggal_aktif')
+                  ->orWhere('tanggal_aktif', '<=', now());
+            })
             ->where(function ($query) {
                 $query->where('tipe', 'latihan')
                       ->orWhereNull('tipe');
@@ -35,10 +39,15 @@ class LatihanController extends Controller
             ->pluck('id_paket')
             ->toArray();
 
-        $completedPackages = SesiLatihan::where('id_siswa', $siswa->id_siswa)
+        $completedSessions = SesiLatihan::where('id_siswa', $siswa->id_siswa)
             ->whereHas('hasil_latihan')
-            ->pluck('id_paket')
-            ->toArray();
+            ->with('hasil_latihan:id_sesi,nilai_akhir')
+            ->get();
+            
+        $completedPackages = [];
+        foreach ($completedSessions as $sesi) {
+            $completedPackages[$sesi->id_paket] = $sesi->hasil_latihan ? $sesi->hasil_latihan->nilai_akhir : 0;
+        }
 
         return Inertia::render('Siswa/Latihan/Index', [
             'pakets' => $pakets,
@@ -53,6 +62,10 @@ class LatihanController extends Controller
 
         $paket = PaketLatihan::where('id_paket', $id)
             ->where('status', 'aktif')
+            ->where(function ($q) {
+                $q->whereNull('tanggal_aktif')
+                  ->orWhere('tanggal_aktif', '<=', now());
+            })
             ->where(function ($query) {
                 $query->where('tipe', 'latihan')
                       ->orWhereNull('tipe');
@@ -214,7 +227,7 @@ class LatihanController extends Controller
 
         $sesi = SesiLatihan::where('id_siswa', $siswa->id_siswa)
             ->where('id_paket', $paket->id_paket)
-            ->with(['jawaban_siswa.pilihan_jawaban', 'jawaban_siswa.soal'])
+            ->with(['jawaban_siswa.pilihan_jawaban', 'jawaban_siswa.soal.pilihan_jawaban'])
             ->firstOrFail();
 
         if (! $sesi->hasil_latihan) {

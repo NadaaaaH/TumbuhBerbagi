@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 
 /**
  * CustomScrollbar Component
@@ -6,17 +6,24 @@ import React from 'react';
  * 
  * Props:
  * - theme: 'dark' | 'light' | 'emerald' | 'amber' (default: 'light')
+ * - direction: 'vertical' | 'horizontal' | 'both' (default: 'vertical')
  * - className: additional Tailwind classes
  * - maxHeight: optional inline CSS max-height
+ * - maxWidth: optional inline CSS max-width
  */
-export default function CustomScrollbar({
-    children,
-    className = '',
-    theme = 'light',
-    maxHeight,
-    style,
-    ...props
-}) {
+const CustomScrollbar = forwardRef(function CustomScrollbar(
+    {
+        children,
+        className = '',
+        theme = 'light',
+        direction = 'vertical',
+        maxHeight,
+        maxWidth,
+        style,
+        ...props
+    },
+    ref
+) {
     const themeClasses = {
         light: 'scrollbar-custom-light',
         dark: 'scrollbar-custom-dark',
@@ -26,13 +33,23 @@ export default function CustomScrollbar({
 
     const selectedTheme = themeClasses[theme] || themeClasses.light;
 
+    const overflowClass =
+        direction === 'horizontal'
+            ? 'overflow-x-auto overflow-y-hidden'
+            : direction === 'both'
+            ? 'overflow-auto'
+            : 'overflow-y-auto';
+
     return (
         <div
+            ref={ref}
             {...props}
-            style={{ maxHeight, ...style }}
-            className={`overflow-y-auto ${selectedTheme} ${className}`}
+            style={{ maxHeight, maxWidth, ...style }}
+            className={`${overflowClass} ${selectedTheme} ${className}`}
         >
             {children}
         </div>
     );
-}
+});
+
+export default CustomScrollbar;

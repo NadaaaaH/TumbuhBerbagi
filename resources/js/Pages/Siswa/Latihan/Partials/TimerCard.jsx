@@ -1,4 +1,6 @@
 import React from 'react';
+import ContainerWhite from '@/Components/ContainerWhite';
+import { Clock } from 'lucide-react';
 
 /**
  * TimerCard
@@ -13,28 +15,27 @@ export default function TimerCard({ timeLeft }) {
     const s = String(timeLeft % 60).padStart(2, '0');
 
     return (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="bg-slate-200 text-slate-700 font-semibold text-center py-3 text-sm">
-                Sisa Waktu
+        <ContainerWhite className="w-full">
+            <div className="flex items-center justify-center gap-2 pb-3 border-b border-slate-100 mb-4">
+                <Clock size={16} className="text-[#1b5e20]" />
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Sisa Waktu</span>
             </div>
-            <div className="p-6">
-                <div className="flex justify-center items-center gap-4 text-center">
-                    <div>
-                        <span className="text-3xl font-extrabold text-slate-800 tracking-tight">{h}</span>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Jam</p>
-                    </div>
-                    <span className="text-2xl font-bold text-slate-300 animate-pulse pb-4">:</span>
-                    <div>
-                        <span className="text-3xl font-extrabold text-slate-800 tracking-tight">{m}</span>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Menit</p>
-                    </div>
-                    <span className="text-2xl font-bold text-slate-300 animate-pulse pb-4">:</span>
-                    <div>
-                        <span className="text-3xl font-extrabold text-slate-800 tracking-tight">{s}</span>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Detik</p>
-                    </div>
+            <div className="flex justify-center items-center gap-3 md:gap-4 text-center">
+                <div>
+                    <span className="text-3xl font-black text-slate-800 tracking-tight">{h}</span>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Jam</p>
+                </div>
+                <span className="text-2xl font-bold text-slate-300 animate-pulse pb-4">:</span>
+                <div>
+                    <span className="text-3xl font-black text-slate-800 tracking-tight">{m}</span>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Menit</p>
+                </div>
+                <span className="text-2xl font-bold text-slate-300 animate-pulse pb-4">:</span>
+                <div>
+                    <span className="text-3xl font-black text-slate-800 tracking-tight">{s}</span>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Detik</p>
                 </div>
             </div>
-        </div>
+        </ContainerWhite>
     );
 }

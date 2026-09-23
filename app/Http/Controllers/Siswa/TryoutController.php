@@ -22,6 +22,10 @@ class TryoutController extends Controller
         $siswa = auth()->user();
 
         $pakets = PaketLatihan::where('status', 'aktif')
+            ->where(function ($q) {
+                $q->whereNull('tanggal_aktif')
+                  ->orWhere('tanggal_aktif', '<=', now());
+            })
             ->where('tipe', 'tryout')
             ->withCount(['soal' => function ($query) {
                 $query->where('status', 'aktif');
@@ -37,7 +41,11 @@ class TryoutController extends Controller
 
         $completedPackages = SesiLatihan::where('id_siswa', $siswa->id_siswa)
             ->whereHas('hasil_latihan')
-            ->pluck('id_paket')
+            ->with('hasil_latihan')
+            ->get()
+            ->mapWithKeys(function ($sesi) {
+                return [$sesi->id_paket => $sesi->hasil_latihan->nilai_akhir];
+            })
             ->toArray();
 
         return Inertia::render('Siswa/Tryout/Index', [
@@ -53,6 +61,10 @@ class TryoutController extends Controller
 
         $paket = PaketLatihan::where('id_paket', $id)
             ->where('status', 'aktif')
+            ->where(function ($q) {
+                $q->whereNull('tanggal_aktif')
+                  ->orWhere('tanggal_aktif', '<=', now());
+            })
             ->where('tipe', 'tryout')
             ->with(['soal' => function ($query) {
                 $query->where('status', 'aktif')
@@ -301,7 +313,7 @@ class TryoutController extends Controller
             ]);
         }
 
-        return back();
+        return redirect()->route('siswa.tryout.show', $paket->id_paket);
     }
 
     public function submit(Request $request, string $id)

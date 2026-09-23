@@ -1,7 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 
-export default function GuestLayout({ children }) {
+export default function GuestLayout({ children, maxWidth = 'sm:max-w-md' }) {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#1b5e20] to-[#124216] pt-6 sm:pt-0 font-['Inter',sans-serif] relative overflow-hidden">
             {/* Subtle Background Lighting Elements */}
@@ -70,7 +70,7 @@ export default function GuestLayout({ children }) {
                     </Link>
                 </div>
 
-                <div className="w-full sm:max-w-md overflow-hidden bg-white/95 backdrop-blur-xl px-8 py-10 shadow-[0_20px_60px_rgba(0,0,0,0.25)] sm:rounded-[2.5rem] border border-white/20 relative z-20">
+                <div className={`w-full ${maxWidth} overflow-hidden bg-white/95 backdrop-blur-xl px-8 py-10 shadow-[0_20px_60px_rgba(0,0,0,0.25)] sm:rounded-[2.5rem] border border-white/20 relative z-20`}>
                     {children}
                 </div>
             </div>

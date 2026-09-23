@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, X, Send } from 'lucide-react';
+import { X, Send } from 'lucide-react';
+import PrimaryButton from '@/Components/PrimaryButton';
 
 /**
  * ConfirmModal
@@ -45,20 +46,14 @@ export default function ConfirmModal({ isOpen, soals, jawaban, processing, onClo
                         {/* Tombol tutup */}
                         <button
                             onClick={onClose}
-                            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
+                            className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white/90 backdrop-blur-md shadow-md border border-slate-100 text-slate-500 hover:text-slate-900 transition-all active:scale-95"
+                            aria-label="Tutup"
                         >
                             <X size={18} />
                         </button>
 
-                        {/* Ikon peringatan */}
-                        <div className="flex justify-center mb-5">
-                            <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center">
-                                <AlertTriangle size={32} className="text-amber-500" />
-                            </div>
-                        </div>
-
                         {/* Judul & deskripsi */}
-                        <h3 className="font-['Poppins'] text-xl font-bold text-slate-900 text-center mb-2">
+                        <h3 className="font-['Poppins'] text-xl font-bold text-slate-900 text-center mb-2 mt-2">
                             Kirim Jawaban?
                         </h3>
                         <p className="text-sm text-slate-500 text-center leading-relaxed mb-6">
@@ -67,14 +62,14 @@ export default function ConfirmModal({ isOpen, soals, jawaban, processing, onClo
                             <span className="font-semibold text-slate-700">tidak dapat diubah</span>.
                         </p>
 
-                        {/* Ringkasan terjawab vs belum */}
-                        <div className="flex gap-3 mb-7">
-                            <div className="flex-1 bg-green-50 border border-green-100 rounded-2xl p-4 text-center">
-                                <p className="text-2xl font-bold text-[#1b5e20]">{dijawab}</p>
+                        {/* Ringkasan terjawab vs belum: Tanpa background dan border */}
+                        <div className="flex gap-4 justify-center mb-7 py-1">
+                            <div className="flex-1 text-center">
+                                <p className="text-3xl font-extrabold text-[#1b5e20]">{dijawab}</p>
                                 <p className="text-xs text-slate-500 mt-1 font-medium">Terjawab</p>
                             </div>
-                            <div className="flex-1 bg-red-50 border border-red-100 rounded-2xl p-4 text-center">
-                                <p className="text-2xl font-bold text-red-500">{belumDijawab}</p>
+                            <div className="flex-1 text-center">
+                                <p className="text-3xl font-extrabold text-red-500">{belumDijawab}</p>
                                 <p className="text-xs text-slate-500 mt-1 font-medium">Belum Dijawab</p>
                             </div>
                         </div>
@@ -82,19 +77,21 @@ export default function ConfirmModal({ isOpen, soals, jawaban, processing, onClo
                         {/* Aksi */}
                         <div className="flex gap-3">
                             <button
+                                type="button"
                                 onClick={onClose}
-                                className="flex-1 py-3 px-4 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors"
+                                className="flex-1 py-3 px-5 rounded-full border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors shadow-xs active:scale-95"
                             >
                                 Batal
                             </button>
-                            <button
+                            <PrimaryButton
+                                type="button"
                                 onClick={onConfirm}
                                 disabled={processing}
-                                className="flex-1 py-3 px-4 rounded-xl bg-[#1b5e20] hover:bg-[#144718] text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2 shadow-md disabled:opacity-60"
+                                className="flex-1 !py-3 !px-5 !rounded-full gap-2 shadow-md text-sm font-semibold"
                             >
                                 <Send size={15} />
                                 {processing ? 'Mengirim...' : 'Ya, Kirim'}
-                            </button>
+                            </PrimaryButton>
                         </div>
                     </motion.div>
                 </motion.div>

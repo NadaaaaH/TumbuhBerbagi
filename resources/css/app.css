@@ -95,15 +95,15 @@ html {
 
 /* Amber/Yellow Theme */
 .scrollbar-custom-amber::-webkit-scrollbar-thumb {
-    background-color: rgba(252, 197, 38, 0.45);
+    background-color: rgba(180, 83, 9, 0.4);
     border-radius: 9999px;
 }
 .scrollbar-custom-amber::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(252, 197, 38, 0.75);
+    background-color: rgba(180, 83, 9, 0.7);
 }
 .scrollbar-custom-amber {
     scrollbar-width: thin;
-    scrollbar-color: rgba(252, 197, 38, 0.45) transparent;
+    scrollbar-color: rgba(180, 83, 9, 0.4) transparent;
 }
 
 /* Hide scrollbar utility */

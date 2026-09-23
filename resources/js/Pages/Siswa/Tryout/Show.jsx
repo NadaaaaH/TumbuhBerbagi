@@ -119,7 +119,7 @@ export default function Show({
     const handleTogglePause = () => {
         router.post(route('siswa.tryout.toggle-pause', paket.id_paket), {}, {
             preserveScroll: true,
-            preserveState: true,
+            preserveState: false,
         });
     };
 
@@ -187,7 +187,7 @@ export default function Show({
     const currentSoal = soals[activeIndex];
 
     return (
-        <SiswaLayout user={auth.user} header={`Try Out: ${paket.nama_paket}`}>
+        <SiswaLayout user={auth.user} header={paket.nama_paket} examMode={true}>
             <Head title={`Try Out - ${paket.nama_paket}`} />
 
             {/* OVERLAY MODAL JIKA UJIAN SEDANG DI-PAUSE */}
@@ -260,8 +260,8 @@ export default function Show({
 
                 {/* MAIN EXAM GRID */}
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-                    {/* LEFT SIDEBAR: TIMER & NAVIGASI */}
-                    <div className="lg:col-span-1 space-y-4">
+                    {/* LEFT SIDEBAR: TIMER & NAVIGASI - Sticky tetap di layar saat di-scroll */}
+                    <div className="lg:col-span-1 space-y-4 sticky top-28 self-start z-30">
                         {/* TIMER CARD KHUSUS SUBTES */}
                         <div className={`p-6 rounded-[2rem] border transition-all text-center relative overflow-hidden ${
                             isUrgent

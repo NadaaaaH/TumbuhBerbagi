@@ -114,33 +114,8 @@ export default function Show({ auth, paket, soals = [], sesi, errors }) {
     // ─── Render ───────────────────────────────────────────────────────────
     return (
         <>
-            <SiswaLayout user={auth.user} header="Kerjakan Latihan">
+            <SiswaLayout user={auth.user} header={paket.nama_paket} examMode={true}>
                 <Head title={`Latihan ${paket.nama_paket}`} />
-
-                {/* Info paket */}
-                <div className="mb-6">
-                    <Link
-                        href={route('siswa.latihan.index')}
-                        className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 transition-colors text-sm mb-4"
-                    >
-                        <ArrowLeft size={16} />
-                        Kembali ke Daftar Latihan
-                    </Link>
-                    <h1 className="text-2xl font-bold text-slate-900">{paket.nama_paket}</h1>
-                    {paket.deskripsi && (
-                        <p className="text-slate-500 text-sm mt-1">{paket.deskripsi}</p>
-                    )}
-                    <div className="flex items-center gap-3 mt-3">
-                        <span className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-semibold">
-                            <Clock size={14} className="text-slate-400" />
-                            {paket.waktu_ujian > 0 ? `${paket.waktu_ujian} Menit` : 'Tidak Dibatasi'}
-                        </span>
-                        <span className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-semibold">
-                            <BookOpen size={14} className="text-slate-400" />
-                            {soals.length} Soal
-                        </span>
-                    </div>
-                </div>
 
                 {/* Layout adaptif: pada mobile (Timer -> Soal -> Navigasi), pada desktop (Kiri: Timer + Navigasi, Kanan: Soal) */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -152,8 +127,8 @@ export default function Show({ auth, paket, soals = [], sesi, errors }) {
                         </div>
                     )}
 
-                    {/* DESKTOP ONLY: Kolom kiri (Timer + Navigasi) */}
-                    <div className="hidden lg:block lg:col-span-4 space-y-6">
+                    {/* DESKTOP ONLY: Kolom kiri (Timer + Navigasi) - Sticky tetap di layar saat di-scroll */}
+                    <div className="hidden lg:block lg:col-span-4 space-y-6 sticky top-28 self-start z-30">
                         {paket.waktu_ujian > 0 && <TimerCard timeLeft={timeLeft} />}
                         <NavigasiSoal
                             soals={soals}
