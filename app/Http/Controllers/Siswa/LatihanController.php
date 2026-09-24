@@ -72,8 +72,7 @@ class LatihanController extends Controller
             })
             ->with(['soal' => function ($query) {
                 $query->where('status', 'aktif')
-                      ->orderBy('kategori', 'asc')
-                      ->orderBy('id_soal', 'asc')
+                      ->orderBySubtesUtbk()
                       ->with('pilihan_jawaban');
             }])
             ->firstOrFail();
@@ -128,8 +127,7 @@ class LatihanController extends Controller
         $jawabanData = $validated['jawaban'] ?? [];
         $soals = $paket->soal()
             ->where('status', 'aktif')
-            ->orderBy('kategori', 'asc')
-            ->orderBy('soal.id_soal', 'asc')
+            ->orderBySubtesUtbk()
             ->with('pilihan_jawaban')
             ->get();
 
@@ -221,7 +219,9 @@ class LatihanController extends Controller
                       ->orWhereNull('tipe');
             })
             ->with(['soal' => function ($query) {
-                $query->where('status', 'aktif')->with('pilihan_jawaban');
+                $query->where('status', 'aktif')
+                      ->orderBySubtesUtbk()
+                      ->with('pilihan_jawaban');
             }])
             ->firstOrFail();
 
@@ -237,7 +237,7 @@ class LatihanController extends Controller
         // Hitung peringkat dan total peserta
         $scores = HasilLatihan::join('sesi_latihan', 'hasil_latihan.id_sesi', '=', 'sesi_latihan.id_sesi')
             ->where('sesi_latihan.id_paket', $id)
-            ->select('sesi_latihan.id_siswa', 'hasil_latihan.nilai_akhir')
+            ->select('sesi_latihan.id_siswa', 'hasil_latihan.nilai_akhir', 'hasil_latihan.id_sesi')
             ->orderBy('hasil_latihan.nilai_akhir', 'desc')
             ->get();
 
@@ -253,13 +253,31 @@ class LatihanController extends Controller
         $rataRata = round($scores->avg('nilai_akhir') * 10, 0);
         $nilaiTertinggi = round($scores->max('nilai_akhir') * 10, 0);
 
-        $questionStats = $paket->soal->map(function ($soal) {
+        $completedSesiIds = $scores->pluck('id_sesi')->filter()->values();
+
+        $questionStats = $paket->soal->map(function ($soal) use ($completedSesiIds) {
+            $baseQuery = JawabanSiswa::whereIn('id_sesi', $completedSesiIds)
+                ->where('id_soal', $soal->id_soal);
+
             return [
                 'id_soal' => $soal->id_soal,
                 'konten_soal' => $soal->konten_soal,
                 'kategori' => $soal->kategori,
-                'jumlah_benar' => JawabanSiswa::where('id_soal', $soal->id_soal)->where('is_benar', true)->count(),
-                'jumlah_salah' => JawabanSiswa::where('id_soal', $soal->id_soal)->where('is_benar', false)->count(),
+                'jumlah_benar' => (clone $baseQuery)->where('is_benar', true)->count(),
+                'jumlah_salah' => (clone $baseQuery)
+                    ->where('is_benar', false)
+                    ->where(function ($q) {
+                        $q->whereNotNull('id_pilihan')
+                          ->orWhere(function ($q2) {
+                              $q2->whereNotNull('teks_jawaban')->where('teks_jawaban', '!=', '');
+                          });
+                    })->count(),
+                'jumlah_kosong' => (clone $baseQuery)
+                    ->where('is_benar', false)
+                    ->whereNull('id_pilihan')
+                    ->where(function ($q) {
+                        $q->whereNull('teks_jawaban')->orWhere('teks_jawaban', '');
+                    })->count(),
                 'pembahasan' => $soal->pembahasan,
             ];
         });

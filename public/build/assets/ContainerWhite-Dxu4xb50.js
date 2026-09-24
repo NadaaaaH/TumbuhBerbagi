@@ -1,1 +1,0 @@
-import{j as s}from"./app-DSjAhOWd.js";function d({children:r,className:o="",...e}){return s.jsx("div",{className:`group p-6 sm:p-7 rounded-2xl sm:rounded-3xl bg-white border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden ${o}`,...e,children:r})}export{d as C};

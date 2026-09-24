@@ -222,7 +222,7 @@ export default function NavigasiSoal({
                         Pilih nomor untuk melihat soal
                     </p>
                 </div>
-                <span className="text-xs font-bold text-[#1b5e20] bg-green-50 border border-green-200/80 px-2.5 py-1 rounded-full shadow-xs">
+                <span className="text-xl font-bold text-[#1b5e20] px-2.5 py-1 rounded-full shadow-xs">
                     {soals.length} Soal
                 </span>
             </div>
@@ -269,11 +269,10 @@ export default function NavigasiSoal({
                                     ref={isActive ? activeTabRef : null}
                                     type="button"
                                     onClick={() => handleTabClick(tab)}
-                                    className={`px-4 py-2.5 rounded-t-xl text-xs flex items-center gap-1.5 whitespace-nowrap relative shrink-0 transition-colors duration-200 cursor-pointer ${
-                                        isActive
-                                            ? 'bg-white text-slate-900 font-black shadow-[0_-2px_8px_rgba(0,0,0,0.04)] z-10'
-                                            : 'text-slate-900/85 hover:text-slate-950 hover:bg-black/5 font-extrabold'
-                                    }`}
+                                    className={`px-4 py-2.5 rounded-t-xl text-xs flex items-center gap-1.5 whitespace-nowrap relative shrink-0 transition-colors duration-200 cursor-pointer ${isActive
+                                        ? 'bg-white text-slate-900 font-black shadow-[0_-2px_8px_rgba(0,0,0,0.04)] z-10'
+                                        : 'text-slate-900/85 hover:text-slate-950 hover:bg-black/5 font-extrabold'
+                                        }`}
                                 >
                                     {/* Active indicator: Transisi meluncur lembut antar tab */}
                                     {isActive && (
@@ -292,17 +291,16 @@ export default function NavigasiSoal({
                                         <span>{tab}</span>
                                         {hasRaguInTab && (
                                             <span
-                                                className="w-2 h-2 rounded-full bg-[#fcc526] ring-1.5 ring-white shrink-0 shadow-xs"
+                                                className="w-2 h-2 rounded-full bg-[#1b5e20] ring-1.5 ring-white shrink-0 shadow-xs"
                                                 title="Ada soal ragu-ragu di subtes ini"
                                             />
                                         )}
                                     </span>
                                     <span
-                                        className={`relative z-10 pointer-events-none text-[10px] px-1.5 py-0.2 rounded-full font-bold transition-colors ${
-                                            isActive
-                                                ? 'bg-slate-100 text-slate-700'
-                                                : 'bg-black/10 text-slate-900'
-                                        }`}
+                                        className={`relative z-10 pointer-events-none text-[10px] px-1.5 py-0.2 rounded-full font-bold transition-colors ${isActive
+                                            ? 'bg-slate-100 text-slate-700'
+                                            : 'bg-black/10 text-slate-900'
+                                            }`}
                                     >
                                         {answeredCount}/{tabSoals.length}
                                     </span>
@@ -380,6 +378,8 @@ export default function NavigasiSoal({
                         )}
                     </motion.div>
                 </AnimatePresence>
+
+
 
                 {/* Legenda Warna */}
                 <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs font-medium text-slate-600">

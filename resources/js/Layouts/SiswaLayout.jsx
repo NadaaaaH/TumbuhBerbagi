@@ -18,10 +18,12 @@ import {
 import Footer from '../Pages/Welcome/Partials/Footer';
 import CustomScrollbar from '@/Components/CustomScrollbar';
 import PrimaryButton from '@/Components/PrimaryButton';
+import PopupModal from '@/Components/PopupModal';
 
 export default function SiswaLayout({ user, header, children, examMode = false }) {
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
+    const [showLeaveModal, setShowLeaveModal] = useState(false);
     const [sidebarBottom, setSidebarBottom] = useState(16);
     const [scrolled, setScrolled] = useState(false);
     const { url } = usePage();
@@ -389,11 +391,10 @@ export default function SiswaLayout({ user, header, children, examMode = false }
                             initial={{ y: -35, opacity: 0, scale: 0.98 }}
                             animate={{ y: 0, opacity: 1, scale: 1 }}
                             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                            className={`max-w-7xl mx-auto px-5 sm:px-8 flex justify-between items-center pointer-events-auto rounded-full transition-all duration-500 ${
-                                scrolled
-                                    ? 'bg-white/95 backdrop-blur-xl border border-slate-200/90 shadow-[0_12px_40px_rgba(0,0,0,0.09)] py-2.5'
-                                    : 'bg-white/85 backdrop-blur-xl border border-slate-200/60 shadow-[0_8px_32px_rgba(0,0,0,0.06)] py-3'
-                            }`}
+                            className={`max-w-7xl mx-auto px-5 sm:px-8 flex justify-between items-center pointer-events-auto rounded-full transition-all duration-500 ${scrolled
+                                ? 'bg-white/95 backdrop-blur-xl border border-slate-200/90 shadow-[0_12px_40px_rgba(0,0,0,0.09)] py-2.5'
+                                : 'bg-white/85 backdrop-blur-xl border border-slate-200/60 shadow-[0_8px_32px_rgba(0,0,0,0.06)] py-3'
+                                }`}
                         >
                             {/* Left: Logo & Tombol Kembali (Fixed di sebelah kanan logo pakai PrimaryButton) */}
                             <div className="flex items-center gap-3 sm:gap-4 shrink-0">
@@ -408,13 +409,9 @@ export default function SiswaLayout({ user, header, children, examMode = false }
                                 <div className="h-6 w-px bg-slate-200 shrink-0"></div>
 
                                 {/* Tombol Navigasi Kembali Fixed di Sebelah Kanan Logo (PrimaryButton) */}
-                                <Link
-                                    href={url.startsWith('/tryout') ? route('siswa.tryout.index') : route('siswa.latihan.index')}
-                                    onClick={(e) => {
-                                        if (!confirm('Apakah Anda yakin ingin kembali? Sesi ujian akan tetap tersimpan atau ditutup.')) {
-                                            e.preventDefault();
-                                        }
-                                    }}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowLeaveModal(true)}
                                     className="shrink-0"
                                 >
                                     <PrimaryButton className="px-4 sm:px-5 py-2 text-xs gap-2 shrink-0 shadow-md hover:shadow-[0_4px_20px_rgba(27,94,32,0.3)] active:scale-95 transition-all duration-300">
@@ -424,7 +421,7 @@ export default function SiswaLayout({ user, header, children, examMode = false }
                                         </span>
                                         <span className="sm:hidden">Kembali</span>
                                     </PrimaryButton>
-                                </Link>
+                                </button>
                             </div>
 
                             {/* Center Title (Digedein & bersih tanpa kata 'Latihan') */}
@@ -436,10 +433,6 @@ export default function SiswaLayout({ user, header, children, examMode = false }
 
                             {/* Right: Status badge & Student profile (Locked navigation, no dropdowns) */}
                             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                                <div className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-[#1b5e20] border border-emerald-200/60 shadow-2xs">
-                                    <span className="w-2 h-2 rounded-full bg-[#1b5e20] animate-pulse"></span>
-                                    <span>Navigasi Terkunci</span>
-                                </div>
 
                                 <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
                                     <div className="h-8 w-8 rounded-full bg-[#fcc526] text-slate-950 flex items-center justify-center font-black shadow-xs shrink-0 text-xs">
@@ -486,6 +479,44 @@ export default function SiswaLayout({ user, header, children, examMode = false }
                     </div>
                 )}
             </div>
+
+            {/* Modal Konfirmasi Kembali saat Ujian / Latihan */}
+            <PopupModal
+                isOpen={showLeaveModal}
+                onClose={() => setShowLeaveModal(false)}
+                maxWidth="md"
+                padding="p-8"
+                showCloseButton={true}
+            >
+                {/* Judul & Deskripsi */}
+                <h3 className="font-['Poppins'] text-xl font-bold text-slate-900 text-center mb-2 mt-2">
+                    Yakin Ingin Kembali?
+                </h3>
+                <p className="text-sm text-slate-500 text-center leading-relaxed mb-6">
+                    Apakah Anda yakin ingin kembali? Sesi ujian akan tetap tersimpan atau ditutup.
+                </p>
+
+                {/* Aksi */}
+                <div className="flex gap-3">
+                    <button
+                        type="button"
+                        onClick={() => setShowLeaveModal(false)}
+                        className="flex-1 py-3 px-5 rounded-full border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors shadow-xs active:scale-95"
+                    >
+                        Batal
+                    </button>
+                    <PrimaryButton
+                        type="button"
+                        onClick={() => {
+                            setShowLeaveModal(false);
+                            router.visit(url.startsWith('/tryout') ? route('siswa.tryout.index') : route('siswa.latihan.index'));
+                        }}
+                        className="flex-1 !py-3 !px-5 !rounded-full justify-center shadow-md text-sm font-semibold"
+                    >
+                        Ya, Kembali
+                    </PrimaryButton>
+                </div>
+            </PopupModal>
         </div>
     );
 }

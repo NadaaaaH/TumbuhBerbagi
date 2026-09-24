@@ -1,6 +1,7 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { motion } from 'framer-motion';
 
 export default function VerifyEmail({ auth, status }) {
     const { post, processing } = useForm({});
@@ -17,6 +18,26 @@ export default function VerifyEmail({ auth, status }) {
             <Head title="Verifikasi Email" />
 
             <div className="w-full mx-auto text-center space-y-6 py-2">
+                {/* Logo / Ilustrasi Pesan */}
+                <motion.div
+                    initial={{ scale: 0.85, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.45, ease: "easeOut" }}
+                    className="flex justify-center -mb-1"
+                >
+                    <motion.div
+                        animate={{ y: [0, -6, 0] }}
+                        transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+                        className="relative"
+                    >
+                        <img
+                            src="/images/Verifimg.svg"
+                            alt="Verifikasi Email"
+                            className="w-14 sm:w-16 h-auto drop-shadow-md select-none my-5 mx-auto"
+                        />
+                    </motion.div>
+                </motion.div>
+
                 {/* Title */}
                 <div>
                     <h2 className="text-2xl sm:text-3xl font-black text-slate-850 font-['Poppins'] tracking-tight">
@@ -27,20 +48,16 @@ export default function VerifyEmail({ auth, status }) {
                     </p>
                 </div>
 
-                {/* Notifikasi Verifikasi (Tanpa bg dan border) */}
-                <p className="text-sm font-medium text-amber-800 leading-relaxed max-w-md mx-auto">
-                    Silakan verifikasi email Anda terlebih dahulu untuk mengakses seluruh fitur aplikasi.
-                </p>
 
                 {/* Email Tujuan Verifikasi (Tanpa bg dan border) */}
                 <div className="space-y-1.5 text-center">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                    <span className="text-xs font-bold text-black uppercase tracking-wider block">
                         Email Tujuan Verifikasi
                     </span>
                     <p className="text-lg sm:text-xl font-extrabold text-[#1b5e20] tracking-tight">
                         {targetEmail}
                     </p>
-                    <p className="text-xs text-slate-500 leading-relaxed pt-1 max-w-md mx-auto">
+                    <p className="text-xs text-black leading-relaxed pt-1 max-w-md mx-auto">
                         Kami telah mengirimkan tautan verifikasi otomatis ke alamat email di atas. Silakan periksa kotak masuk atau folder spam Anda.
                     </p>
                 </div>

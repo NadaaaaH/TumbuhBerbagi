@@ -84,4 +84,33 @@ class Soal extends Model
             ]);
         }
     }
+
+    /**
+     * SQL CASE statement untuk mengurutkan kategori soal sesuai urutan standar subtes UTBK:
+     * PU -> PPU -> PBM -> PK -> LBI -> LBE -> PM
+     */
+    public static function getKategoriOrderSql(string $column = 'kategori'): string
+    {
+        return "
+        CASE 
+          WHEN {$column} = 'PU' OR LOWER({$column}) LIKE '%penalaran%umum%' THEN 1
+          WHEN {$column} = 'PPU' OR LOWER({$column}) LIKE '%pemahaman%umum%' OR LOWER({$column}) LIKE '%pengetahuan%umum%' THEN 2
+          WHEN {$column} = 'PBM' OR (LOWER({$column}) LIKE '%bacaan%' AND LOWER({$column}) LIKE '%menulis%') THEN 3
+          WHEN {$column} = 'PK' OR LOWER({$column}) LIKE '%kuantitatif%' THEN 4
+          WHEN {$column} = 'LBI' OR LOWER({$column}) LIKE '%indonesia%' THEN 5
+          WHEN {$column} IN ('LBE', 'LBIng') OR LOWER({$column}) LIKE '%inggris%' OR LOWER({$column}) LIKE '%english%' THEN 6
+          WHEN {$column} = 'PM' OR LOWER({$column}) LIKE '%matematika%' THEN 7
+          ELSE 99
+        END
+        ";
+    }
+
+    /**
+     * Scope untuk mengurutkan soal berdasarkan subtes UTBK dari kiri ke kanan, lalu id_soal
+     */
+    public function scopeOrderBySubtesUtbk($query, string $column = 'kategori')
+    {
+        return $query->orderByRaw(static::getKategoriOrderSql($column) . ' ASC')
+                     ->orderBy('soal.id_soal', 'asc');
+    }
 }

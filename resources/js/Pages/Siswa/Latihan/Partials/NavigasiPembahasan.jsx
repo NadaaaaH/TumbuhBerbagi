@@ -199,7 +199,7 @@ export default function NavigasiPembahasan({
                         Klik nomor untuk membuka pembahasan
                     </p>
                 </div>
-                <span className="text-xs font-bold text-[#1b5e20] bg-green-50 border border-green-200/80 px-2.5 py-1 rounded-full shadow-xs">
+                <span className="text-xl font-bold text-[#1b5e20] px-2.5 py-1 rounded-full shadow-xs">
                     {soals.length} Soal
                 </span>
             </div>
@@ -308,7 +308,7 @@ export default function NavigasiPembahasan({
 
                                 if (isCurrent) {
                                     btnClass +=
-                                        'ring-2 ring-offset-2 ring-[#fcc526] font-black scale-[1.05] z-10 shadow-md ';
+                                        'ring-2 ring-offset-2 ring-[#1b5e20] font-black scale-[1.03] z-10 shadow-md ';
                                 }
 
                                 return (
@@ -341,7 +341,7 @@ export default function NavigasiPembahasan({
                         <span>Salah ({totalSalah})</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                        <span className="w-3.5 h-3.5 rounded-md border-2 border-[#fcc526] bg-white ring-1 ring-[#fcc526]/50 shrink-0" />
+                        <span className="w-3.5 h-3.5 rounded-md border-2 border-[#1b5e20] bg-white ring-1 ring-[#1b5e20]/20 shrink-0" />
                         <span>Sedang Dibuka</span>
                     </div>
                 </div>

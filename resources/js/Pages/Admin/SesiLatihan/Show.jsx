@@ -234,8 +234,8 @@ export default function Show({ auth, paket, pesertaSudah, pesertaBelum, question
                                                 return (
                                                     <tr key={sesi.id_sesi} className="hover:bg-slate-50/30 transition-colors">
                                                         <td className="py-4 pr-4">
-                                                            <div className="font-semibold text-slate-900">{sesi.siswa?.nama}</div>
-                                                            <div className="text-xs text-slate-500">{sesi.siswa?.email}</div>
+                                                            <div className="font-semibold text-slate-900">{sesi.siswa?.nama || 'Siswa (Akun Dihapus)'}</div>
+                                                            <div className="text-xs text-slate-500">{sesi.siswa?.email || '-'}</div>
                                                         </td>
                                                         <td className="py-4 px-4 whitespace-nowrap">
                                                             <span className="text-sm font-bold text-[#1b5e20]">

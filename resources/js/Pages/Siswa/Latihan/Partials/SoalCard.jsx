@@ -63,7 +63,7 @@ export default function SoalCard({
                     </span>
                     {/* Teks subtes: background kuning pudar (#fef8e7) */}
                     {soal.kategori && (
-                        <span className="text-xs font-bold text-amber-900 uppercase tracking-wider bg-[#fef8e7] border border-[#f5e6c4] px-2.5 py-1 rounded-lg">
+                        <span className="text-xs font-bold text-white uppercase tracking-wider bg-[#fcc526] border border-[#f5e6c4] px-2.5 py-1 rounded-lg">
                             {soal.kategori}
                         </span>
                     )}
@@ -101,18 +101,16 @@ export default function SoalCard({
                                                 String(pilihan.id_pilihan)
                                             )
                                         }
-                                        className={`group w-full text-left flex items-start gap-4 p-4 sm:p-5 rounded-2xl border bg-white transition-all duration-300 relative overflow-hidden ${
-                                            isSelected
-                                                ? 'border-2 border-[#1b5e20] shadow-md ring-2 ring-[#1b5e20]/15'
-                                                : 'border-slate-100 hover:border-slate-200 shadow-sm hover:shadow-md'
-                                        }`}
+                                        className={`group w-full text-left flex items-start gap-4 p-4 sm:p-5 rounded-2xl border bg-white transition-all duration-300 relative overflow-hidden ${isSelected
+                                            ? 'border-2 border-[#1b5e20] shadow-md ring-2 ring-[#1b5e20]/15'
+                                            : 'border-slate-100 hover:border-slate-200 shadow-sm hover:shadow-md'
+                                            }`}
                                     >
                                         <span
-                                            className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 border transition-all duration-200 ${
-                                                isSelected
-                                                    ? 'bg-[#1b5e20] border-[#1b5e20] text-white shadow-xs'
-                                                    : 'bg-slate-100 border-slate-200 text-slate-600 group-hover:bg-[#1b5e20]/10 group-hover:text-[#1b5e20] group-hover:border-[#1b5e20]/30'
-                                            }`}
+                                            className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 border transition-all duration-200 ${isSelected
+                                                ? 'bg-[#1b5e20] border-[#1b5e20] text-white shadow-xs'
+                                                : 'bg-slate-100 border-slate-200 text-slate-600 group-hover:bg-[#1b5e20]/10 group-hover:text-[#1b5e20] group-hover:border-[#1b5e20]/30'
+                                                }`}
                                         >
                                             {pilihan.kode_pilihan}
                                         </span>
@@ -168,11 +166,10 @@ export default function SoalCard({
                 <TertiaryButton
                     type="button"
                     onClick={() => onRagu(soal.id_soal)}
-                    className={`inline-flex items-center gap-1.5 !px-4 md:!px-5 !py-2.5 sm:!py-3 !rounded-xl !text-xs md:!text-sm font-semibold transition-all border shadow-sm ${
-                        raguRagu[soal.id_soal]
-                            ? '!bg-[#fcc526] hover:!bg-[#eab522] !text-white !border-[#fcc526] shadow-md'
-                            : ''
-                    }`}
+                    className={`inline-flex items-center gap-1.5 !px-4 md:!px-5 !py-2.5 sm:!py-3 !rounded-xl !text-xs md:!text-sm font-semibold transition-all border shadow-sm ${raguRagu[soal.id_soal]
+                        ? '!bg-[#fcc526] hover:!bg-[#eab522] !text-white !border-[#fcc526] shadow-md'
+                        : ''
+                        }`}
                 >
                     <HelpCircle size={16} />
                     Ragu-Ragu
