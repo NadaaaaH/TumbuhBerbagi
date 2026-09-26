@@ -63,7 +63,7 @@ export default function Hasil({ auth, paket, sesi, hasil, jawabanSiswa, question
     const [activeTab, setActiveTab] = useState('statistik'); // 'statistik' or 'pembahasan'
     const [pembahasanIndex, setPembahasanIndex] = useState(0);
     const [filterKategori, setFilterKategori] = useState('Semua');
-    const [hoveredBarIndex, setHoveredBarIndex] = useState(null);
+    const [hoveredSoalId, setHoveredSoalId] = useState(null);
     const [activeChartTab, setActiveChartTab] = useState('Semua');
 
     const enrichedStats = useMemo(() => {
@@ -338,8 +338,8 @@ export default function Hasil({ auth, paket, sesi, hasil, jawabanSiswa, question
                                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar shrink-0">
                                     {chartTabs.map((tab) => {
                                         const isActive = activeChartTab === tab;
-                                        const count = tab === 'Semua' 
-                                            ? enrichedStats.length 
+                                        const count = tab === 'Semua'
+                                            ? enrichedStats.length
                                             : enrichedStats.filter(s => s.kategoriCode === tab).length;
 
                                         return (
@@ -348,18 +348,16 @@ export default function Hasil({ auth, paket, sesi, hasil, jawabanSiswa, question
                                                 type="button"
                                                 onClick={() => {
                                                     setActiveChartTab(tab);
-                                                    setHoveredBarIndex(null);
+                                                    setHoveredSoalId(null);
                                                 }}
-                                                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                                                    isActive
-                                                        ? 'bg-[#1b5e20] text-white shadow-xs'
-                                                        : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
-                                                }`}
+                                                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${isActive
+                                                    ? 'bg-[#1b5e20] text-white shadow-xs'
+                                                    : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                                                    }`}
                                             >
                                                 <span>{tab}</span>
-                                                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                                                    isActive ? 'bg-white/20 text-white' : 'bg-white text-slate-500'
-                                                }`}>
+                                                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${isActive ? 'bg-white/20 text-white' : 'bg-white text-slate-500'
+                                                    }`}>
                                                     {count}
                                                 </span>
                                             </button>
@@ -433,37 +431,26 @@ export default function Hasil({ auth, paket, sesi, hasil, jawabanSiswa, question
                                         const pctSalah = total > 0 ? Math.max(0, 100 - pctBenar - pctKosong) : 0;
 
                                         const accuracy = total > 0 ? Math.round(pctBenar) : 0;
-                                        const isHovered = hoveredBarIndex === i;
-
-                                        const isFirst = indexInDisplayed === 0;
-                                        const isLast = indexInDisplayed === displayedStats.length - 1 && displayedStats.length > 2;
-
-                                        let tooltipAlign = "left-1/2 -translate-x-1/2";
-                                        let arrowAlign = "mx-auto";
-                                        if (isFirst) {
-                                            tooltipAlign = "left-0 -translate-x-2";
-                                            arrowAlign = "ml-4";
-                                        } else if (isLast) {
-                                            tooltipAlign = "right-0 translate-x-2";
-                                            arrowAlign = "mr-4";
-                                        }
+                                        const isHovered = hoveredSoalId === stat.id_soal;
 
                                         return (
                                             <div
                                                 key={stat.id_soal}
                                                 className="flex flex-col items-center relative h-full w-12 sm:w-14 shrink-0 cursor-pointer group"
-                                                onMouseEnter={() => setHoveredBarIndex(i)}
-                                                onMouseLeave={() => setHoveredBarIndex(null)}
+                                                onMouseEnter={() => setHoveredSoalId(stat.id_soal)}
+                                                onMouseLeave={() => setHoveredSoalId(null)}
                                             >
-                                                {/* Tooltip Popup: Absolute, estetik ringkas, langsung di atas batang yang dihover */}
+                                                {/* Tooltip Popup: Absolute, estetik ringkas, persis terpusat di atas batang yang dihover */}
                                                 <AnimatePresence>
                                                     {isHovered && (
                                                         <motion.div
-                                                            initial={{ opacity: 0, y: 6, scale: 0.95 }}
-                                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                            exit={{ opacity: 0, y: 4, scale: 0.95 }}
+                                                            key={`tooltip-${stat.id_soal}`}
+                                                            initial={{ opacity: 0, y: 6, scale: 0.95, x: "-50%" }}
+                                                            animate={{ opacity: 1, y: 0, scale: 1, x: "-50%" }}
+                                                            exit={{ opacity: 0, y: 4, scale: 0.95, x: "-50%" }}
                                                             transition={{ duration: 0.15 }}
-                                                            className={`absolute bottom-[calc(100%+6px)] ${tooltipAlign} z-50 w-48 pointer-events-none text-center`}
+                                                            style={{ left: "50%" }}
+                                                            className="absolute bottom-[calc(100%+6px)] z-50 w-48 pointer-events-none text-center"
                                                         >
                                                             <div className="bg-white text-slate-800 rounded-2xl p-2.5 shadow-xl border border-slate-200 ring-4 ring-black/5">
                                                                 <div className="flex items-center justify-between gap-1 mb-1 pb-1 border-b border-slate-100">
@@ -497,18 +484,17 @@ export default function Hasil({ auth, paket, sesi, hasil, jawabanSiswa, question
                                                                 {/* Status Jawaban Siswa */}
                                                                 <div className="pt-0.5 flex items-center justify-between text-[9.5px]">
                                                                     <span className="text-slate-400 font-medium">{total} Peserta</span>
-                                                                    <span className={`font-bold inline-flex items-center gap-0.5 ${
-                                                                        isUserCorrect 
-                                                                            ? 'text-[#10B981]' 
-                                                                            : (!isUserAnswered ? 'text-slate-400' : 'text-[#EF4444]')
-                                                                    }`}>
+                                                                    <span className={`font-bold inline-flex items-center gap-0.5 ${isUserCorrect
+                                                                        ? 'text-[#10B981]'
+                                                                        : (!isUserAnswered ? 'text-slate-400' : 'text-[#EF4444]')
+                                                                        }`}>
                                                                         {isUserCorrect ? '✓ Benar' : (!isUserAnswered ? '— Kosong' : '✗ Salah')}
                                                                     </span>
                                                                 </div>
                                                             </div>
 
                                                             {/* Segitiga Panah Putih Tooltip */}
-                                                            <div className={`w-2.5 h-2.5 bg-white border-b border-r border-slate-200 rotate-45 ${arrowAlign} -mt-1.5 shadow-2xs`} />
+                                                            <div className="w-2.5 h-2.5 bg-white border-b border-r border-slate-200 rotate-45 mx-auto -mt-1.5 shadow-2xs" />
                                                         </motion.div>
                                                     )}
                                                 </AnimatePresence>
@@ -546,18 +532,16 @@ export default function Hasil({ auth, paket, sesi, hasil, jawabanSiswa, question
 
                                                 {/* X-Label: Nomor Soal + Di Bawahnya Tulisan Kategori sebagai Pembeda */}
                                                 <div className={`absolute top-full mt-2 flex flex-col items-center text-center transition-all ${isHovered ? 'scale-110' : ''}`}>
-                                                    <span className={`text-xs font-black transition-colors ${
-                                                        isUserCorrect 
-                                                            ? 'text-[#10B981]' 
-                                                            : (!isUserAnswered ? 'text-slate-400' : 'text-[#EF4444]')
-                                                    }`}>
+                                                    <span className={`text-xs font-black transition-colors ${isUserCorrect
+                                                        ? 'text-[#10B981]'
+                                                        : (!isUserAnswered ? 'text-slate-400' : 'text-[#EF4444]')
+                                                        }`}>
                                                         #{i + 1}
                                                     </span>
-                                                    <span className={`text-[10px] font-bold uppercase tracking-tight mt-0.5 px-1.5 py-0.5 rounded-md border transition-colors ${
-                                                        isHovered 
-                                                            ? 'bg-slate-800 text-white border-slate-800 shadow-2xs' 
-                                                            : 'bg-slate-100 text-slate-500 border-slate-200/50'
-                                                    }`}>
+                                                    <span className={`text-[10px] font-bold uppercase tracking-tight mt-0.5 px-1.5 py-0.5 rounded-md border transition-colors ${isHovered
+                                                        ? 'bg-[#fcc526] text-white'
+                                                        : 'bg-slate-100 text-slate-500'
+                                                        }`}>
                                                         {stat.kategoriCode}
                                                     </span>
                                                 </div>

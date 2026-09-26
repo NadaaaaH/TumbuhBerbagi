@@ -1,16 +1,143 @@
+================================================================================
+                    PALET WARNA PROJEK TUMBUH BERBAGI
+================================================================================
 
-Berdasarkan pencarian pada * source code * project Anda(terutama di file - file React / Tailwind), berikut adalah palet warna utama(khususnya hijau dan kuning) yang sering digunakan secara * custom * (di luar warna bawaan Tailwind):
+Projek Tumbuh Berbagi menggunakan palet warna bertema Islami/Edukasi modern:
+didominasi warna Hijau (Forest Green) sebagai warna identitas brand, dikombinasikan
+dengan aksen Kuning Emas (Warm Gold/Amber) untuk indikator prestasi, nilai, dan tombol
+sekunder, serta palet netral Slate untuk teks dan tata letak yang bersih (clean & modern).
 
-### 🟢 Palet Warna Hijau(Green)
-Warna hijau ini sangat dominan sebagai identitas utama(misalnya untuk background, tombol, navbar, dsb).
-- ** Primary Green:** `#1b5e20` * (Paling sering dipakai, warna hijau gelap elegan)*
-- ** Darker Green(Hover):** `#144718` * (Sering dipakai untuk efek hover tombol agar lebih gelap)*
-- ** Lighter Green(Aksen):** `#508953` * (Dipakai untuk border atau efek gradient)*
+--------------------------------------------------------------------------------
+1. WARNA UTAMA / BRAND COLOR (HIJAU TUMBUH BERBAGI)
+--------------------------------------------------------------------------------
+Warna inti identitas sistem, tombol utama, sidebar, status aktif, dan aksen penting.
 
-### 🟡 Palet Warna Kuning(Yellow)
-Warna kuning biasanya dipakai sebagai aksen kontras(tombol peringatan, * badge *, notifikasi, ikon).
-- ** Primary Yellow:** `#fcc526` * (Kuning cerah, sering dipakai untuk tombol, ikon notifikasi, dan aksen hover)*
-- ** Dark Yellow(Teks / Hover):** `#d99b00` * (Versi kuning yang lebih gelap, sering untuk teks di atas background kuning pucat)*
-- ** Pale Yellow(Background):** `#fef8e7` * (Kuning sangat pudar / pastel, sering dipakai sebagai warna latar belakang(background) untuk elemen beraksen kuning agar tidak terlalu menyilaukan)*
+• #1b5e20 (Forest Green / Hijau Utama)
+  - Penggunaan: PrimaryButton, Navbar, Sidebar aktif, Heading aksen, Border fokus input,
+                ikon utama, dan warna brand dominan.
+• #144718 (Deep Forest Green / Hijau Hover)
+  - Penggunaan: State hover & focus pada PrimaryButton dan tombol hijau lainnya.
+• #0d2e0f (Darkest Green / Hijau Aktif)
+  - Penggunaan: State active/klik ditekan pada PrimaryButton.
+• #2e7d32 (Medium Green / Hijau Sekunder)
+  - Penggunaan: Gradasi ContainerGreen (from-[#1b5e20] to-[#2e7d32]), hover link hijau,
+                vektor wave separator halaman utama.
+• #2d7e32 (Vibrant Green Hover)
+  - Penggunaan: Hover tombol "Lanjutkan Ujian" saat modal jeda aktif.
+• #329a39 (Mid Green / Gelombang Ombak)
+  - Penggunaan: Layer svg gelombang ombak transparan pemisah section landing page.
+• #124216 (Dark Moss Green / Hijau Latar Gelap)
+  - Penggunaan: Akhir gradasi background hero & footer (to-[#124216]).
+• #508953 (Sage Forest Green / Hijau Lanjutkan)
+  - Penggunaan: Tombol "Lanjutkan" (latihan & tryout in-progress), aksen border lembut.
+• #10b981 / emerald-500 / emerald-600 (Emerald Green)
+  - Penggunaan: Indikator akurasi jawaban benar, badge status sukses / aktif.
+• #e8f5e9 / #f0faf0 / emerald-50 (Soft Green Tint)
+  - Penggunaan: Latar belakang badge 'Aktif' / 'Latsol', kartu highlight, ring glow.
 
-    Semuanya ditulis menggunakan * arbitrary values * Tailwind, contoh penggunaannya di dalam * class*: `bg-[#1b5e20]` atau`text-[#fcc526]`.
+
+--------------------------------------------------------------------------------
+2. WARNA SEKUNDER & PRESTASI (KUNING EMAS / AMBER)
+--------------------------------------------------------------------------------
+Digunakan untuk Tryout, skor, piala/award, nilai terbaik, dan tombol aksi sekunder.
+
+• #fcc526 (Warm Golden Yellow / Kuning Emas Utama)
+  - Penggunaan: SecondaryButton, tanggal kalender hari ini/ada agenda, kartu statistik skor,
+                ikon Award/Trophy, grafik tren nilai tryout, badge highlight.
+• #eab522 (Gold Hover)
+  - Penggunaan: Hover state pada tombol dan ikon bernuansa emas/kuning.
+• #d99b00 (Deep Gold / Emas Tua)
+  - Penggunaan: Teks ikon FirstIcon, teks skor nilai akhir tertinggi, teks nilai siswa.
+• #f5e6c4 (Cream Gold Border)
+  - Penggunaan: Border tipis pada SecondaryButton.
+• #fef8e7 / #fef8dd / #fff8e1 (Warm Cream / Soft Gold Tint)
+  - Penggunaan: Background ikon FirstIcon, hover state SecondaryButton, pill badge gold.
+• #f59e0b / amber-500 / amber-600 (Amber / Oranye Lembut)
+  - Penggunaan: Badge status 'sedang_dikerjakan', timer countdown ujian, warning alert.
+• #fffbeb / amber-50 (Amber Tint)
+  - Penggunaan: Background badge 'Dikerjakan' dan alert informasi.
+
+
+--------------------------------------------------------------------------------
+3. WARNA NETRAL & LATAR BELAKANG (NEUTRALS & BACKGROUNDS)
+--------------------------------------------------------------------------------
+Struktur UI modern menggunakan nuansa Slate agar tampilan nyaman di mata.
+
+• #ffffff (Pure White)
+  - Penggunaan: ContainerWhite, card konten, input field, modal, teks di atas latar hijau.
+• #fafbfc / #fafafa / #f8f9fa / slate-50 (Off-White / Soft Gray Canvas)
+  - Penggunaan: Latar belakang seluruh halaman (Dashboard Siswa, Admin, Auth, Landing).
+• #f1f5f9 / slate-100 (Border & Track)
+  - Penggunaan: Garis pembatas kartu, track scrollbar jendela, divider halaman.
+• #e2e8f0 / slate-200 (Subtle Border & Inactive)
+  - Penggunaan: Border form input default, tombol disabled, bulatan tanggal kalender lalu.
+• #cbd5e1 / slate-300 (Light Gray)
+  - Penggunaan: Thumb scrollbar default, ikon placeholder kosong, garis tepi opsi soal.
+• #94a3b8 / slate-400 (Muted Text)
+  - Penggunaan: Teks tanggal, subtitle, label kecil, placeholder input, teks kosong/empty state.
+• #64748b / slate-500 (Secondary Body Text)
+  - Penggunaan: Deskripsi kegiatan, deskripsi paket soal, durasi waktu & jumlah soal.
+• #475569 / slate-600 & #334155 / slate-700 (Dark Slate)
+  - Penggunaan: Label form, teks pilihan opsi soal, sub-heading kartu.
+• #1e293b / slate-800 & #0f172a / slate-900 (Deep Slate / Dark Charcoal)
+  - Penggunaan: Judul utama halaman (H1, H2, H3), angka metrik utama, teks nama pengguna.
+• #1a2530 (Navy Charcoal)
+  - Penggunaan: Judul tebal pada kartu paket latihan dan kartu kegiatan.
+
+
+--------------------------------------------------------------------------------
+4. WARNA STATUS & INDIKATOR FEEDBACK (STATUS COLORS)
+--------------------------------------------------------------------------------
+Digunakan untuk navigasi pengerjaan soal, pembahasan, dan notifikasi.
+
+• Jawaban Benar / Sukses:
+  - Background: bg-emerald-500, bg-emerald-50, #e8f5e9
+  - Text: text-emerald-700, text-[#1b5e20]
+  - Border: border-emerald-500, border-emerald-200
+  - Penggunaan: Butir nomor terjawab di navigasi soal, pembahasan jawaban benar.
+
+• Jawaban Salah / Hapus / Bahaya:
+  - Hex Utama: #ef4444 (Red-500)
+  - Hex PDF / Gelap: #c62828, #9b2c2c
+  - Background Tint: bg-red-50, bg-rose-50, #ffebee, #fed7d7
+  - Text: text-red-600, text-rose-600
+  - Border: border-red-200, border-rose-400
+  - Penggunaan: Tombol Hapus (Admin), butir nomor salah (pembahasan), alert error formulir.
+
+• Kategori Try Out / Tag Indigo:
+  - Hex: #1565c0, #4f46e5 (indigo-600)
+  - Background Tint: bg-indigo-50, #e3f2fd
+  - Text: text-indigo-700, text-indigo-600
+  - Border: border-indigo-100, border-indigo-200
+  - Penggunaan: Badge tipe 'Tryout', subtes Penalaran Umum / Literasi, tag kategori.
+
+• Ragu-ragu / Ditandai / Pending:
+  - Background: bg-amber-400, bg-yellow-400, #f59e0b
+  - Text: text-amber-800, text-white
+  - Penggunaan: Butir nomor ragu-ragu di navigasi ujian, status nilai pending.
+
+• Belum Dijawab:
+  - Background: bg-white, bg-slate-100
+  - Text: text-slate-600, text-slate-400
+  - Border: border-slate-200
+  - Penggunaan: Butir soal yang belum dikerjakan pada grid nomor soal.
+
+
+================================================================================
+                    RINGKASAN KODE WARNA UTAMA (CHEAT SHEET)
+================================================================================
+• Brand Hijau Utama      : #1b5e20
+• Brand Hijau Hover      : #144718
+• Brand Hijau Aktif      : #0d2e0f
+• Hijau Sekunder/Gradasi : #2e7d32
+• Hijau Lanjutkan        : #508953 (hover: #3d6b40)
+• Emas / Kuning Utama    : #fcc526
+• Emas Hover             : #eab522
+• Emas Tua (Teks Skor)   : #d99b00
+• Putih Dasar            : #ffffff
+• Abu Latar Belakang     : #fafbfc / #f8f9fa
+• Teks Gelap Utama       : #1e293b / #0f172a
+• Teks Sekunder          : #64748b / #94a3b8
+• Merah (Salah / Hapus)  : #ef4444
+• Indigo (Tryout Tag)    : #4f46e5 / bg-indigo-50
+================================================================================

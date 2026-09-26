@@ -260,7 +260,7 @@ export default function Edit({ auth, soal, pakets, referrer }) {
                         {/* Pertanyaan */}
                         <div>
                             <InputLabel htmlFor="konten_soal" value="Pertanyaan (Konten Soal)" />
-                            <div className="mt-1 bg-white rounded-md">
+                            <div className="mt-1">
                                 <RichTextEditor
                                     value={data.konten_soal}
                                     onChange={(value) => setData('konten_soal', value)}
@@ -344,7 +344,7 @@ export default function Edit({ auth, soal, pakets, referrer }) {
                         {/* Pembahasan */}
                         <div>
                             <InputLabel htmlFor="pembahasan" value="Pembahasan Soal" />
-                            <div className="mt-1 bg-white rounded-md">
+                            <div className="mt-1">
                                 <RichTextEditor
                                     value={data.pembahasan || ''}
                                     onChange={(value) => setData('pembahasan', value)}

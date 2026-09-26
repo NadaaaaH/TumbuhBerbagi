@@ -31,9 +31,9 @@ export default function Login({ status, canResetPassword }) {
             </div>
 
             {status && (
-                <div className="mb-6 text-sm font-medium text-[#1b5e20] bg-green-50 p-4 rounded-xl border border-green-100">
+                <p className="mb-6 text-sm font-medium text-[#1b5e20] text-center">
                     {status}
-                </div>
+                </p>
             )}
 
             <form onSubmit={submit}>

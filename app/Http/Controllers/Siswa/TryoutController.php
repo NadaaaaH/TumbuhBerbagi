@@ -364,8 +364,11 @@ class TryoutController extends Controller
             }
         }
 
+        // Hitung peringkat dan total peserta (hanya dari siswa yang akunnya aktif / tidak dihapus)
         $scores = HasilLatihan::join('sesi_latihan', 'hasil_latihan.id_sesi', '=', 'sesi_latihan.id_sesi')
+            ->join('siswa', 'sesi_latihan.id_siswa', '=', 'siswa.id_siswa')
             ->where('sesi_latihan.id_paket', $id)
+            ->whereNotNull('sesi_latihan.id_siswa')
             ->select('sesi_latihan.id_siswa', 'hasil_latihan.nilai_akhir', 'hasil_latihan.id_sesi')
             ->orderBy('hasil_latihan.nilai_akhir', 'desc')
             ->get();
@@ -384,29 +387,31 @@ class TryoutController extends Controller
 
         $completedSesiIds = $scores->pluck('id_sesi')->filter()->values();
 
-        $questionStats = $paket->soal->map(function ($soal) use ($completedSesiIds) {
-            $baseQuery = JawabanSiswa::whereIn('id_sesi', $completedSesiIds)
-                ->where('id_soal', $soal->id_soal);
+        // Agregasi jawaban peserta dalam 1 query efisien untuk semua soal
+        $statsMap = [];
+        if ($completedSesiIds->isNotEmpty()) {
+            $statsMap = JawabanSiswa::whereIn('id_sesi', $completedSesiIds)
+                ->selectRaw("
+                    id_soal,
+                    SUM(CASE WHEN is_benar = true THEN 1 ELSE 0 END) as jumlah_benar,
+                    SUM(CASE WHEN is_benar = false AND (id_pilihan IS NOT NULL OR (teks_jawaban IS NOT NULL AND TRIM(teks_jawaban) != '')) THEN 1 ELSE 0 END) as jumlah_salah,
+                    SUM(CASE WHEN is_benar = false AND id_pilihan IS NULL AND (teks_jawaban IS NULL OR TRIM(teks_jawaban) = '') THEN 1 ELSE 0 END) as jumlah_kosong
+                ")
+                ->groupBy('id_soal')
+                ->get()
+                ->keyBy('id_soal');
+        }
+
+        $questionStats = $paket->soal->map(function ($soal) use ($statsMap) {
+            $stat = $statsMap[$soal->id_soal] ?? null;
 
             return [
                 'id_soal' => $soal->id_soal,
                 'konten_soal' => $soal->konten_soal,
                 'kategori' => $soal->kategori,
-                'jumlah_benar' => (clone $baseQuery)->where('is_benar', true)->count(),
-                'jumlah_salah' => (clone $baseQuery)
-                    ->where('is_benar', false)
-                    ->where(function ($q) {
-                        $q->whereNotNull('id_pilihan')
-                          ->orWhere(function ($q2) {
-                              $q2->whereNotNull('teks_jawaban')->where('teks_jawaban', '!=', '');
-                          });
-                    })->count(),
-                'jumlah_kosong' => (clone $baseQuery)
-                    ->where('is_benar', false)
-                    ->whereNull('id_pilihan')
-                    ->where(function ($q) {
-                        $q->whereNull('teks_jawaban')->orWhere('teks_jawaban', '');
-                    })->count(),
+                'jumlah_benar' => $stat ? (int) $stat->jumlah_benar : 0,
+                'jumlah_salah' => $stat ? (int) $stat->jumlah_salah : 0,
+                'jumlah_kosong' => $stat ? (int) $stat->jumlah_kosong : 0,
                 'pembahasan' => $soal->pembahasan,
             ];
         });

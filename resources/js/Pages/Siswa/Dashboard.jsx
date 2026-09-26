@@ -78,6 +78,13 @@ export default function Dashboard({
     };
     const utbkTarget = getUTBKTarget();
 
+    // Tampilkan jumlah latihan aktif dinamis menyesuaikan tinggi kolom jadwal (1 baris / 2 card jika tidak ada jadwal terdekat, 2 baris / 4 card jika ada jadwal)
+    const displayedLatihan = useMemo(() => {
+        const hasJadwal = Boolean(jadwalTerdekat && (jadwalTerdekat.id_jadwal || jadwalTerdekat.nama_jadwal));
+        const limit = hasJadwal ? 4 : 2;
+        return latihanAktif.slice(0, limit);
+    }, [latihanAktif, jadwalTerdekat]);
+
     // CALENDAR LOGIC
     const isPastEvent = (tanggal) => {
         const today = new Date();
@@ -336,8 +343,8 @@ export default function Dashboard({
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {latihanAktif.length > 0 ? (
-                                    latihanAktif.map((paket) => (
+                                {displayedLatihan.length > 0 ? (
+                                    displayedLatihan.map((paket) => (
                                         <ContainerWhite
                                             key={paket.id_paket}
                                             className="hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group min-h-[180px]"
@@ -384,7 +391,7 @@ export default function Dashboard({
 
                                             <div className="mt-auto pt-5">
                                                 <Link href={route('siswa.latihan.show', paket.id_paket)} className="block w-full">
-                                                    <PrimaryButton className="w-full justify-center py-2.5">
+                                                    <PrimaryButton className={`w-full justify-center py-2.5 ${paket.status === 'sedang_dikerjakan' ? '!bg-[#508953] hover:!bg-[#3d6b40] !border-[#508953] shadow-sm' : ''}`}>
                                                         {paket.status === 'sedang_dikerjakan' ? 'Lanjutkan' : 'Mulai Kerjakan'}
                                                     </PrimaryButton>
                                                 </Link>
@@ -400,124 +407,129 @@ export default function Dashboard({
                                 )}
                             </div>
                         </div>
-                        {/* === SECTION: Statistik TO + Riwayat Dikerjakan === */}
-                        <ContainerWhite className="flex flex-col md:flex-row gap-6">
-
-                            {/* Kiri: Grafik Tren Nilai TO */}
-                            <div className="flex flex-col md:w-1/2">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <FirstIcon icon={Award} iconSize={16} />
-                                    <div>
-                                        <p className="text-[15px] font-bold text-slate-700 leading-none">Tren Nilai Tryout</p>
-                                        <p className="text-[11px] text-slate-400 mt-0.5">Perkembangan skor TO kamu</p>
-                                    </div>
-                                </div>
-
-                                {statistikNilaiTO.length >= 2 ? (() => {
-                                    const vals = statistikNilaiTO.map(d => d.nilai);
-                                    const minVal = Math.min(...vals);
-                                    const maxVal = Math.max(...vals);
-                                    const range = maxVal - minVal || 1;
-                                    const W = 100; const H = 100; const pad = 4;
-                                    const pts = vals.map((v, i) => ({
-                                        x: pad + (i / (vals.length - 1)) * (W - pad * 2),
-                                        y: H - pad - ((v - minVal) / range) * (H - pad * 2),
-                                        label: statistikNilaiTO[i].tanggal,
-                                    }));
-                                    const polyline = pts.map(p => `${p.x},${p.y}`).join(' ');
-                                    const areaPath = `M${pts[0].x},${H} ` + pts.map(p => `L${p.x},${p.y}`).join(' ') + ` L${pts[pts.length - 1].x},${H} Z`;
-                                    return (
-                                        <div className="w-full">
-                                            <div className="relative w-full h-28">
-                                                <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-full absolute inset-0" preserveAspectRatio="none">
-                                                    <defs>
-                                                        <linearGradient id="toGrad" x1="0" y1="0" x2="0" y2="1">
-                                                            <stop offset="0%" stopColor="#fcc526" stopOpacity="0.3" />
-                                                            <stop offset="100%" stopColor="#fcc526" stopOpacity="0" />
-                                                        </linearGradient>
-                                                    </defs>
-                                                    <path d={areaPath} fill="url(#toGrad)" />
-                                                    <polyline points={polyline} fill="none" stroke="#fcc526" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-                                                </svg>
-                                                {/* Titik dirender sebagai HTML div agar tidak lonjong saat di-stretch */}
-                                                {pts.map((p, i) => (
-                                                    <div
-                                                        key={i}
-                                                        className="absolute w-2 h-2 bg-[#fcc526] rounded-full border border-white"
-                                                        style={{ left: `${p.x}%`, top: `${p.y}%`, transform: 'translate(-50%, -50%)' }}
-                                                    />
-                                                ))}
-                                            </div>
-                                            <div className="flex justify-between mt-1 px-1">
-                                                {pts.map((p, i) => <span key={i} className="text-[9px] text-slate-400 font-medium">{p.label}</span>)}
-                                            </div>
-                                            <div className="flex justify-between mt-3">
-                                                <div className="text-center"><p className="text-[10px] text-slate-400">Terendah</p><p className="text-sm font-black text-slate-700">{minVal}</p></div>
-                                                <div className="text-center"><p className="text-[10px] text-slate-400">Tertinggi</p><p className="text-sm font-black text-[#1b5e20]">{maxVal}</p></div>
-                                                <div className="text-center"><p className="text-[10px] text-slate-400">Terakhir</p><p className="text-sm font-black text-slate-700">{vals[vals.length - 1]}</p></div>
-                                            </div>
-                                        </div>
-                                    );
-                                })() : statistikNilaiTO.length === 1 ? (
-                                    <div className="flex-1 flex flex-col items-center justify-center py-4 text-center">
-                                        <p className="text-3xl font-black text-[#1b5e20]">{statistikNilaiTO[0].nilai}</p>
-                                        <p className="text-xs text-slate-400 mt-1">Skor TO pertama kamu</p>
-                                        <p className="text-[10px] text-slate-300 mt-3">Kerjakan lebih banyak TO untuk melihat tren</p>
-                                    </div>
-                                ) : (
-                                    <div className="flex-1 flex flex-col items-center justify-center py-6 text-center">
-                                        <Award size={32} className="text-slate-200 mb-2" />
-                                        <p className="text-xs text-slate-400 font-medium">Belum ada data tryout</p>
-                                        <p className="text-[10px] text-slate-300 mt-1">Selesaikan tryout untuk melihat grafik tren</p>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Divider vertikal */}
-                            <div className="hidden md:block w-px bg-slate-100 self-stretch" />
-
-                            {/* Kanan: Riwayat card langsung */}
-                            <div className="flex flex-col md:w-1/2 overflow-y-auto max-h-72 gap-2 pr-1">
-                                {riwayatDikerjakan.length > 0 ? riwayatDikerjakan.map((item) => (
-                                    <div key={item.id_sesi} className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-[#1b5e20]">
-                                        <div className="min-w-0">
-                                            <p className="text-xs font-semibold text-white truncate leading-snug">{item.nama_paket}</p>
-                                            <div className="flex items-center gap-2 mt-0.5">
-                                                <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${item.tipe === 'tryout'
-                                                        ? 'bg-indigo-500/30 text-indigo-200'
-                                                        : 'bg-amber-400/30 text-amber-200'
-                                                    }`}>
-                                                    {item.tipe === 'tryout' ? 'Tryout' : 'Latsol'}
-                                                </span>
-                                                {item.nilai_akhir !== null && (
-                                                    <span className="text-[9px] text-white/60">Nilai: <span className="font-bold text-white/90">{item.nilai_akhir}</span></span>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <Link
-                                            href={item.tipe === 'tryout'
-                                                ? route('siswa.tryout.hasil', item.id_paket)
-                                                : route('siswa.latihan.hasil', item.id_paket)
-                                            }
-                                            className="flex-shrink-0 text-[10px] font-bold text-[#1b5e20] bg-white hover:bg-emerald-50 px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap"
-                                        >
-                                            Lihat Hasil
-                                        </Link>
-                                    </div>
-                                )) : (
-                                    <div className="flex-1 flex flex-col items-center justify-center py-6 text-center">
-                                        <CheckCircle2 size={28} className="text-slate-200 mb-2" />
-                                        <p className="text-xs text-slate-400 font-medium">Belum ada riwayat</p>
-                                        <p className="text-[10px] text-slate-300 mt-1">Selesaikan latihan atau tryout pertama kamu</p>
-                                    </div>
-                                )}
-                            </div>
-
-                        </ContainerWhite>
-
-
                     </div>
                 </div>
+
+                {/* === SECTION: Statistik TO + Riwayat Dikerjakan === */}
+                <ContainerGreen className="flex flex-col md:flex-row gap-6 cursor-default hover:translate-y-0">
+
+                    {/* Kiri: Grafik Tren Nilai TO */}
+                    <div className="flex flex-col md:w-1/2">
+                        <div className="flex items-center gap-3 mb-4">
+                            <FirstIcon
+                                icon={Award}
+                                iconSize={18}
+                                className="!bg-[#fcc526] !text-slate-900 shadow-md group-hover:!bg-[#eab522] group-hover:!text-slate-950"
+                            />
+                            <div>
+                                <p className="text-[15px] font-bold text-white leading-none">Tren Nilai Tryout</p>
+                                <p className="text-[11px] text-emerald-100/80 mt-1">Perkembangan skor TO kamu</p>
+                            </div>
+                        </div>
+
+                        {statistikNilaiTO.length >= 2 ? (() => {
+                            const vals = statistikNilaiTO.map(d => d.nilai);
+                            const minVal = Math.min(...vals);
+                            const maxVal = Math.max(...vals);
+                            const range = maxVal - minVal || 1;
+                            const W = 100; const H = 100; const pad = 4;
+                            const pts = vals.map((v, i) => ({
+                                x: pad + (i / (vals.length - 1)) * (W - pad * 2),
+                                y: H - pad - ((v - minVal) / range) * (H - pad * 2),
+                                label: statistikNilaiTO[i].tanggal,
+                            }));
+                            const polyline = pts.map(p => `${p.x},${p.y}`).join(' ');
+                            const areaPath = `M${pts[0].x},${H} ` + pts.map(p => `L${p.x},${p.y}`).join(' ') + ` L${pts[pts.length - 1].x},${H} Z`;
+                            return (
+                                <div className="w-full">
+                                    <div className="relative w-full h-28">
+                                        <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-full absolute inset-0" preserveAspectRatio="none">
+                                            <defs>
+                                                <linearGradient id="toGrad" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="0%" stopColor="#fcc526" stopOpacity="0.4" />
+                                                    <stop offset="100%" stopColor="#fcc526" stopOpacity="0.05" />
+                                                </linearGradient>
+                                            </defs>
+                                            <path d={areaPath} fill="url(#toGrad)" />
+                                            <polyline points={polyline} fill="none" stroke="#fcc526" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+                                        </svg>
+                                        {/* Titik dirender sebagai HTML div agar tidak lonjong saat di-stretch */}
+                                        {pts.map((p, i) => (
+                                            <div
+                                                key={i}
+                                                className="absolute w-2.5 h-2.5 bg-[#fcc526] rounded-full border-2 border-[#1b5e20] shadow-sm"
+                                                style={{ left: `${p.x}%`, top: `${p.y}%`, transform: 'translate(-50%, -50%)' }}
+                                            />
+                                        ))}
+                                    </div>
+                                    <div className="flex justify-between mt-1 px-1">
+                                        {pts.map((p, i) => <span key={i} className="text-[9px] text-emerald-100/70 font-medium">{p.label}</span>)}
+                                    </div>
+                                    <div className="flex justify-between mt-3">
+                                        <div className="text-center"><p className="text-[10px] text-emerald-100/70">Terendah</p><p className="text-sm font-black text-white">{minVal}</p></div>
+                                        <div className="text-center"><p className="text-[10px] text-emerald-100/70">Tertinggi</p><p className="text-sm font-black text-[#fcc526]">{maxVal}</p></div>
+                                        <div className="text-center"><p className="text-[10px] text-emerald-100/70">Terakhir</p><p className="text-sm font-black text-white">{vals[vals.length - 1]}</p></div>
+                                    </div>
+                                </div>
+                            );
+                        })() : statistikNilaiTO.length === 1 ? (
+                            <div className="flex-1 flex flex-col items-center justify-center py-4 text-center">
+                                <p className="text-3xl font-black text-[#fcc526]">{statistikNilaiTO[0].nilai}</p>
+                                <p className="text-xs text-emerald-100/80 mt-1">Skor TO pertama kamu</p>
+                                <p className="text-[10px] text-emerald-100/60 mt-3">Kerjakan lebih banyak TO untuk melihat tren</p>
+                            </div>
+                        ) : (
+                            <div className="flex-1 flex flex-col items-center justify-center py-6 text-center">
+                                <Award size={32} className="text-white/30 mb-2" />
+                                <p className="text-xs text-white/80 font-medium">Belum ada data tryout</p>
+                                <p className="text-[10px] text-emerald-100/60 mt-1">Selesaikan tryout untuk melihat grafik tren</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Divider vertikal */}
+                    <div className="hidden md:block w-px bg-white/15 self-stretch" />
+
+                    {/* Kanan: Riwayat card langsung (Background Putih) */}
+                    <div className="flex flex-col md:w-1/2 overflow-y-auto max-h-72 gap-2.5 pr-1">
+                        {riwayatDikerjakan.length > 0 ? riwayatDikerjakan.map((item) => (
+                            <div key={item.id_sesi} className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-white shadow-sm border border-emerald-50">
+                                <div className="min-w-0">
+                                    <p className="text-xs font-bold text-slate-800 truncate leading-snug">{item.nama_paket}</p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${item.tipe === 'tryout'
+                                                ? 'bg-indigo-50 text-indigo-700 border border-indigo-100'
+                                                : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                            }`}>
+                                            {item.tipe === 'tryout' ? 'Tryout' : 'Latsol'}
+                                        </span>
+                                        {item.nilai_akhir !== null && (
+                                            <span className="text-[9px] text-slate-500 font-medium">Nilai: <span className="font-bold text-slate-800">{item.nilai_akhir}</span></span>
+                                        )}
+                                    </div>
+                                </div>
+                                <Link
+                                    href={item.tipe === 'tryout'
+                                        ? route('siswa.tryout.hasil', item.id_paket)
+                                        : route('siswa.latihan.hasil', item.id_paket)
+                                    }
+                                    className="flex-shrink-0"
+                                >
+                                    <PrimaryButton className="!px-3.5 !py-1.5 !text-[10px] whitespace-nowrap shadow-sm">
+                                        Lihat Hasil
+                                    </PrimaryButton>
+                                </Link>
+                            </div>
+                        )) : (
+                            <div className="flex-1 flex flex-col items-center justify-center py-6 text-center">
+                                <CheckCircle2 size={28} className="text-white/30 mb-2" />
+                                <p className="text-xs text-white/80 font-medium">Belum ada riwayat</p>
+                                <p className="text-[10px] text-emerald-100/60 mt-1">Selesaikan latihan atau tryout pertama kamu</p>
+                            </div>
+                        )}
+                    </div>
+
+                </ContainerGreen>
 
                 {/* Kegiatan Terbaru - Full Width */}
                 <div className="space-y-4 pt-2">

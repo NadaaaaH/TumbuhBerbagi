@@ -117,7 +117,7 @@ export default function Index({ auth, pakets = [], ongoingPackages = [], complet
 
                                                     {isOngoing ? (
                                                         <Link href={route('siswa.tryout.show', paket.id_paket)}>
-                                                            <PrimaryButton className="px-4 py-2 text-xs bg-amber-500 hover:bg-amber-600 focus:ring-amber-500 focus:border-amber-500 text-white border border-amber-500 gap-1.5 shrink-0">
+                                                            <PrimaryButton className="px-4 py-2 text-xs bg-[#508953] hover:bg-[#3d6b40] focus:ring-[#508953] focus:border-[#508953] text-white border border-[#508953] gap-1.5 shrink-0 shadow-sm">
                                                                 <PlayCircle size={13} /> Lanjutkan
                                                             </PrimaryButton>
                                                         </Link>
