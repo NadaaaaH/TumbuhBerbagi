@@ -1,8 +1,67 @@
 import React, { useState, useMemo } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import SiswaLayout from '@/Layouts/SiswaLayout';
-import { ArrowLeft, ArrowRight, Trophy, CheckCircle2, XCircle, Clock, Info, Award } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ArrowLeft, Trophy, CheckCircle2, Clock, Info, Award } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import PrimaryButton from '@/Components/PrimaryButton';
+import TertiaryButton from '@/Components/TertiaryButton';
+import ContainerGreen from '@/Components/ContainerGreen';
+import ContainerWhite from '@/Components/ContainerWhite';
+import FirstIcon from '@/Components/FirstIcon';
+import NavigasiPembahasan from '../Latihan/Partials/NavigasiPembahasan';
+import PembahasanCard from '../Latihan/Partials/PembahasanCard';
+
+/**
+ * Pemetaan kategori soal ke dalam tab UTBK standar:
+ * PU, PPU, PBM, PK, LBI, LBE, PM
+ */
+function mapKategoriToTab(kategori) {
+    const k = (kategori || '').trim();
+    const lower = k.toLowerCase();
+
+    if (k === 'PU' || lower === 'penalaran umum' || (lower.includes('penalaran') && lower.includes('umum'))) {
+        return 'PU';
+    }
+    if (
+        k === 'PPU' ||
+        (lower.includes('pemahaman') && lower.includes('umum')) ||
+        (lower.includes('pengetahuan') && lower.includes('umum'))
+    ) {
+        return 'PPU';
+    }
+    if (k === 'PBM' || (lower.includes('bacaan') && lower.includes('menulis'))) {
+        return 'PBM';
+    }
+    if (k === 'PK' || lower.includes('kuantitatif')) {
+        return 'PK';
+    }
+    if (
+        k === 'LBI' ||
+        lower === 'literasi bahasa indonesia' ||
+        (lower.includes('indonesia') && lower.includes('literasi')) ||
+        lower.includes('bahasa indonesia')
+    ) {
+        return 'LBI';
+    }
+    if (
+        k === 'LBE' ||
+        k === 'LBIng' ||
+        lower === 'literasi bahasa inggris' ||
+        lower.includes('inggris') ||
+        lower.includes('english') ||
+        lower.includes('bahasa inggris')
+    ) {
+        return 'LBE';
+    }
+    if (k === 'PM' || lower.includes('matematika')) {
+        return 'PM';
+    }
+    if (lower.includes('literasi')) {
+        return 'LBI';
+    }
+
+    return k || 'Umum';
+}
 
 export default function Hasil({
     auth,
@@ -19,38 +78,85 @@ export default function Hasil({
     tanggalRilisStr = null,
     tanggalTampilHasil = null,
 }) {
-    const [activeTab, setActiveTab] = useState('statistik');
-    const [filterKategori, setFilterKategori] = useState('Semua');
+    const [activeTab, setActiveTab] = useState('statistik'); // 'statistik' or 'pembahasan'
+    const [pembahasanIndex, setPembahasanIndex] = useState(0);
+    const [hoveredSoalId, setHoveredSoalId] = useState(null);
+    const [activeChartTab, setActiveChartTab] = useState('Semua');
+
+    const soals = useMemo(() => {
+        if (paket?.soal && paket.soal.length > 0) {
+            return paket.soal;
+        }
+        return (jawabanSiswa || []).map((j) => {
+            const soalFromPaket = paket?.soal?.find((s) => s.id_soal === j.id_soal);
+            return {
+                ...(j.soal || {}),
+                ...(soalFromPaket || {}),
+                pilihan_jawaban:
+                    (soalFromPaket?.pilihan_jawaban && soalFromPaket.pilihan_jawaban.length > 0)
+                        ? soalFromPaket.pilihan_jawaban
+                        : (j.soal?.pilihan_jawaban || []),
+            };
+        });
+    }, [paket?.soal, jawabanSiswa]);
 
     const totalNilai = useMemo(() => {
         return Math.round((hasil?.nilai_akhir || 0) * 10);
     }, [hasil?.nilai_akhir]);
 
+    const enrichedStats = useMemo(() => {
+        return (questionStats || []).map((stat, idx) => ({
+            ...stat,
+            globalIndex: idx,
+            kategoriCode: mapKategoriToTab(stat.kategori),
+        }));
+    }, [questionStats]);
+
+    const chartTabs = useMemo(() => {
+        const STANDARD_TABS = ['PU', 'PPU', 'PBM', 'PK', 'LBI', 'LBE', 'PM'];
+        const presentCodes = new Set(enrichedStats.map(s => s.kategoriCode));
+        const ordered = STANDARD_TABS.filter(t => presentCodes.has(t));
+        presentCodes.forEach(t => {
+            if (!STANDARD_TABS.includes(t)) ordered.push(t);
+        });
+        return ['Semua', ...ordered];
+    }, [enrichedStats]);
+
+    const displayedStats = useMemo(() => {
+        if (activeChartTab === 'Semua') {
+            return enrichedStats;
+        }
+        return enrichedStats.filter(s => s.kategoriCode === activeChartTab);
+    }, [enrichedStats, activeChartTab]);
+
     if (isHasilTerkunci) {
         return (
-            <SiswaLayout user={auth.user} header="Hasil Try Out">
+            <SiswaLayout user={auth.user} header={paket.nama_paket}>
                 <Head title={`Hasil Try Out - ${paket.nama_paket}`} />
 
-                <div className="space-y-8 pb-16 max-w-4xl mx-auto">
-                    <div className="flex items-center justify-between">
-                        <Link
-                            href={route('siswa.tryout.index')}
-                            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-[#1b5e20] transition-colors"
-                        >
-                            <ArrowLeft size={16} /> Kembali ke Daftar Try Out
+                <div className="space-y-6 pb-16 max-w-4xl mx-auto">
+                    {/* Header: Tombol Kembali seperti halaman lain dengan PrimaryButton */}
+                    <div className="flex justify-between items-center mb-6">
+                        <Link href={route('siswa.tryout.index')}>
+                            <PrimaryButton className="gap-2 px-5 py-2.5 text-sm font-semibold shadow-md">
+                                <ArrowLeft size={16} />
+                                Kembali
+                            </PrimaryButton>
                         </Link>
                     </div>
 
-                    {/* Waiting Hero Card */}
-                    <div className="bg-white p-8 sm:p-10 rounded-[2.5rem] border border-slate-100 shadow-xl text-center space-y-6 relative overflow-hidden">
-                        <div className="w-20 h-20 rounded-3xl bg-emerald-50 text-[#1b5e20] flex items-center justify-center mx-auto border border-emerald-100 shadow-inner">
-                            <CheckCircle2 size={40} />
+                    {/* Konten Utama tanpa background container besar */}
+                    <div className="text-center space-y-6 max-w-2xl mx-auto py-2">
+                        {/* Logo tanpa background */}
+                        <div className="flex justify-center pt-2">
+                            <CheckCircle2 size={64} className="text-[#1b5e20] stroke-[1.75]" />
                         </div>
 
-                        <div className="space-y-2 max-w-lg mx-auto">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-[#1b5e20] text-xs font-bold border border-emerald-100">
+                        <div className="space-y-2 max-w-xl mx-auto">
+                            {/* Kalimat Ujian Berhasil Dikumpulkan tanpa background */}
+                            <p className="text-xs sm:text-sm font-bold text-[#1b5e20] uppercase tracking-wider">
                                 Ujian Berhasil Dikumpulkan
-                            </span>
+                            </p>
                             <h2 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">
                                 {paket.nama_paket}
                             </h2>
@@ -59,36 +165,36 @@ export default function Hasil({
                             </p>
                         </div>
 
-                        {/* Release Date Box */}
-                        <div className="bg-gradient-to-br from-emerald-50 to-teal-50/50 border border-emerald-200/80 p-6 rounded-3xl max-w-md mx-auto space-y-2">
-                            <div className="flex items-center justify-center gap-2 text-xs font-bold text-emerald-800 uppercase tracking-wider">
-                                <Clock size={15} /> Jadwal Pengumuman Hasil
-                            </div>
-                            <div className="text-xl sm:text-2xl font-black text-[#1b5e20]">
-                                {tanggalRilisStr || 'Sesuai Jadwal Penyelenggara'}
-                            </div>
-                            <p className="text-[11px] text-emerald-700/80">
-                                Skor IRT & Analisis Pembahasan akan otomatis terbuka pada tanggal tersebut.
-                            </p>
-                        </div>
+                        {/* Teks tengah jadwal pengumuman hasil pake container white dengan motion */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4 }}
+                            whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                            className="max-w-md mx-auto w-full pt-1"
+                        >
+                            <ContainerWhite className="!p-6 text-center space-y-2">
+                                <div className="flex items-center justify-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                    <Clock size={15} className="text-[#1b5e20]" /> Jadwal Pengumuman Hasil
+                                </div>
+                                <div className="text-xl sm:text-2xl font-black text-[#1b5e20] font-['Poppins']">
+                                    {tanggalRilisStr || 'Sesuai Jadwal Penyelenggara'}
+                                </div>
+                                <p className="text-[11px] text-slate-400 font-medium">
+                                    Skor IRT & Analisis Pembahasan akan otomatis terbuka pada tanggal tersebut.
+                                </p>
+                            </ContainerWhite>
+                        </motion.div>
 
-                        {/* Info Note on IRT */}
-                        <div className="bg-slate-50 border border-slate-200/70 p-5 rounded-2xl max-w-xl mx-auto text-left space-y-2">
-                            <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-                                <Info size={15} className="text-[#1b5e20]" /> Mengapa Hasil Tidak Langsung Muncul?
+                        {/* Teks paling bawah mengapa hasil tidak langsung muncul ga perlu pake container */}
+                        <div className="max-w-xl mx-auto text-center space-y-1.5 pt-4">
+                            <div className="flex items-center justify-center gap-2 text-xs font-bold text-slate-700">
+                                <Info size={15} className="text-[#1b5e20] shrink-0" />
+                                <span>Mengapa Hasil Tidak Langsung Muncul?</span>
                             </div>
                             <p className="text-xs text-slate-500 leading-relaxed">
                                 Try Out ini menggunakan metode <strong>Item Response Theory (IRT)</strong> standar resmi UTBK. Bobot nilai setiap butir soal dinilai berdasarkan tingkat kesulitan empiris yang dihitung dari statistik seluruh peserta setelah periode pengerjaan berakhir.
                             </p>
-                        </div>
-
-                        <div className="pt-2">
-                            <Link
-                                href={route('siswa.tryout.index')}
-                                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-[#1b5e20] hover:bg-[#2d7e32] text-white rounded-2xl text-sm font-bold shadow-md shadow-emerald-900/10 transition-all active:scale-98"
-                            >
-                                Kembali ke Halaman Try Out <ArrowRight size={16} />
-                            </Link>
                         </div>
                     </div>
                 </div>
@@ -96,24 +202,34 @@ export default function Hasil({
         );
     }
 
+    // Format durasi: Jika >= 1 jam -> "X jam Y menit" (tanpa detik). Jika < 1 jam -> "X menit Y detik" atau "Y detik".
     const duration = useMemo(() => {
         const actualSesi = sesi || {};
         if (!actualSesi.waktu_mulai || !actualSesi.waktu_selesai) return '-';
         const start = new Date(actualSesi.waktu_mulai);
         const end = new Date(actualSesi.waktu_selesai);
-        const diffMs = end - start;
-        const diffMins = Math.floor(diffMs / 1000 / 60);
-        const diffSecs = Math.floor((diffMs / 1000) % 60);
-        if (diffMins === 0) {
-            return `${diffSecs} detik`;
+        const diffMs = Math.max(0, end - start);
+        const totalSecs = Math.floor(diffMs / 1000);
+        const hours = Math.floor(totalSecs / 3600);
+        const mins = Math.floor((totalSecs % 3600) / 60);
+        const secs = totalSecs % 60;
+
+        if (hours >= 1) {
+            return mins > 0 ? `${hours} jam ${mins} menit` : `${hours} jam`;
         }
-        return `${diffMins} menit ${diffSecs} detik`;
+
+        if (mins > 0) {
+            return secs > 0 ? `${mins} menit ${secs} detik` : `${mins} menit`;
+        }
+
+        return `${secs} detik`;
     }, [sesi]);
 
     const categoryStats = useMemo(() => {
         const stats = {};
         (jawabanSiswa || []).forEach((jawaban) => {
-            const cat = jawaban.soal?.kategori || 'Umum';
+            const soalObj = paket?.soal?.find((s) => s.id_soal === jawaban.id_soal) || jawaban.soal;
+            const cat = soalObj?.kategori || 'Umum';
             if (!stats[cat]) {
                 stats[cat] = { total: 0, benar: 0 };
             }
@@ -122,258 +238,531 @@ export default function Hasil({
                 stats[cat].benar += 1;
             }
         });
-        return Object.keys(stats).map((cat) => ({
-            name: cat,
-            score: Math.round((stats[cat].benar / stats[cat].total) * 100),
-            benar: stats[cat].benar,
-            total: stats[cat].total,
+        return Object.entries(stats).map(([name, data]) => ({
+            name,
+            total: data.total,
+            benar: data.benar,
         }));
-    }, [jawabanSiswa]);
-
-    const categories = useMemo(() => {
-        const cats = new Set(['Semua']);
-        (questionStats || []).forEach(q => {
-            if (q.kategori) cats.add(q.kategori);
-        });
-        return Array.from(cats);
-    }, [questionStats]);
-
-    const filteredQuestions = useMemo(() => {
-        if (filterKategori === 'Semua') return questionStats || [];
-        return (questionStats || []).filter(q => q.kategori === filterKategori);
-    }, [questionStats, filterKategori]);
-
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        show: { opacity: 1, transition: { staggerChildren: 0.08 } }
-    };
-
-    const itemVariants = {
-        hidden: { opacity: 0, y: 18 },
-        show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 120, damping: 16 } }
-    };
+    }, [jawabanSiswa, paket?.soal]);
 
     return (
-        <SiswaLayout user={auth.user} header="Hasil Try Out">
-            <Head title={`Hasil Try Out - ${paket.nama_paket}`} />
+        <SiswaLayout user={auth.user} header={paket.nama_paket}>
+            <Head title={`Hasil ${paket.nama_paket}`} />
 
-            <div className="space-y-8 pb-16">
-                <div className="flex items-center justify-between">
-                    <Link
-                        href={route('siswa.tryout.index')}
-                        className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-[#1b5e20] transition-colors"
+            {/* Navigation & Tab Selection: Tombol Kembali di kiri, Tab Statistik & Pembahasan di kanan */}
+            <div className="flex justify-between items-center flex-wrap gap-4 mb-8">
+                {/* Kiri: Tombol Kembali menggunakan PrimaryButton */}
+                <Link href={route('siswa.tryout.index')}>
+                    <PrimaryButton className="gap-2 px-5 py-2.5 text-sm font-semibold shadow-md">
+                        <ArrowLeft size={16} />
+                        Kembali
+                    </PrimaryButton>
+                </Link>
+
+                {/* Kanan: Tab Statistik & Pembahasan menggunakan TertiaryButton */}
+                <div className="flex items-center gap-2.5">
+                    <TertiaryButton
+                        type="button"
+                        onClick={() => setActiveTab('statistik')}
+                        className={`!px-5 !py-2.5 !text-sm !font-semibold transition-all ${
+                            activeTab === 'statistik'
+                                ? '!bg-[#fcc526] hover:!bg-[#eab522] !text-white !border-[#fcc526] shadow-md'
+                                : ''
+                        }`}
                     >
-                        <ArrowLeft size={16} /> Kembali ke Daftar Try Out
-                    </Link>
+                        Statistik Hasil
+                    </TertiaryButton>
+                    <TertiaryButton
+                        type="button"
+                        onClick={() => setActiveTab('pembahasan')}
+                        className={`!px-5 !py-2.5 !text-sm !font-semibold transition-all ${
+                            activeTab === 'pembahasan'
+                                ? '!bg-[#fcc526] hover:!bg-[#eab522] !text-white !border-[#fcc526] shadow-md'
+                                : ''
+                        }`}
+                    >
+                        Pembahasan Soal
+                    </TertiaryButton>
                 </div>
+            </div>
 
-                <motion.div 
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="show"
-                    className="space-y-8"
-                >
-                    {/* Top Hero Banner */}
-                    <motion.div 
-                        variants={itemVariants}
-                        className="bg-gradient-to-br from-[#1b5e20] via-[#236b28] to-[#124216] text-white p-8 md:p-10 rounded-[2.5rem] shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8"
-                    >
-                        <div className="space-y-3 z-10 text-center md:text-left">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/20 text-[#fcc526] text-xs font-bold border border-amber-400/30">
-                                <Trophy size={14} /> Try Out Selesai
-                            </span>
-                            <h1 className="text-2xl md:text-3xl font-extrabold font-['Poppins'] tracking-tight">
-                                {paket.nama_paket}
-                            </h1>
-                            <p className="text-white/70 text-sm font-light max-w-lg">
-                                Selamat! Anda telah menyelesaikan simulasi Try Out ini. Pelajari statistik dan pembahasan di bawah ini untuk meningkatkan skor Anda.
-                            </p>
+            {activeTab === 'statistik' ? (
+                <div className="space-y-8 animate-fade-in">
+                    {/* 3-Column Summary Cards Row */}
+                    <div className="grid gap-6 md:grid-cols-3 items-stretch">
+                        {/* Left Column: Stacked Cards (Score & Peringkat) */}
+                        <div className="flex flex-col gap-4">
+                            {/* Card Score */}
+                            <ContainerGreen className="flex-1 flex flex-col justify-between !p-5 sm:!p-6 cursor-default">
+                                <div className="relative z-10 flex justify-between items-start">
+                                    <span className="text-base font-bold text-emerald-100">Score</span>
+                                    <FirstIcon
+                                        icon={Trophy}
+                                        iconSize={18}
+                                        className="!w-10 !h-10 !rounded-xl !bg-[#fcc526] !text-slate-900 shadow-md group-hover:!bg-[#eab522] group-hover:!text-slate-950"
+                                    />
+                                </div>
+                                <div className="relative z-10 mt-1 flex items-baseline">
+                                    <span className="text-4xl sm:text-5xl font-black tracking-tight text-white drop-shadow-md">
+                                        {totalNilai}
+                                    </span>
+                                    <span className="text-emerald-100/70 text-sm ml-2 font-bold">/ 1000</span>
+                                </div>
+                                <div className="relative z-10 mt-3 pt-2.5 border-t border-emerald-400/20 flex justify-between text-xs font-semibold text-emerald-100/80">
+                                    <span className="flex items-center gap-1">
+                                        <CheckCircle2 size={12} /> Rata-rata: {rataRata}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                        <Trophy size={12} /> Tertinggi: {nilaiTertinggi}
+                                    </span>
+                                </div>
+                            </ContainerGreen>
+
+                            {/* Card Peringkat */}
+                            <ContainerWhite className="!py-3.5 !px-5 sm:!px-6 flex items-center justify-between hover:-translate-y-1 transition-all duration-300 cursor-default">
+                                <div className="flex flex-col relative z-10">
+                                    <span className="text-base font-bold text-slate-700">Peringkat Anda</span>
+                                    <div className="mt-0.5 flex items-baseline">
+                                        <span className="text-3xl sm:text-4xl font-black text-slate-800 group-hover:text-[#1b5e20] transition-colors">
+                                            {peringkat}
+                                        </span>
+                                        <span className="text-slate-400 text-xs sm:text-sm ml-1.5 font-semibold">
+                                            dari {totalPeserta}
+                                        </span>
+                                    </div>
+                                </div>
+                                <FirstIcon icon={Award} iconSize={22} className="!w-11 !h-11 !rounded-xl" />
+                            </ContainerWhite>
                         </div>
 
-                        {/* Score Display Card */}
-                        <div className="z-10 bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-[2rem] text-center min-w-[200px] shadow-inner">
-                            <p className="text-xs uppercase font-bold tracking-wider text-white/70 mb-1">Skor Akhir</p>
-                            <p className="text-5xl md:text-6xl font-black text-[#fcc526] font-['Poppins'] drop-shadow-md">
-                                {totalNilai}
-                            </p>
-                            <p className="text-xs text-white/80 mt-2 font-medium">dari {hasil.total_soal} Soal</p>
-                        </div>
-                    </motion.div>
-
-                    {/* Navigation Tabs */}
-                    <motion.div variants={itemVariants} className="flex border-b border-slate-200 gap-8">
-                        <button
-                            onClick={() => setActiveTab('statistik')}
-                            className={`pb-4 text-sm font-bold transition-all relative ${
-                                activeTab === 'statistik'
-                                    ? 'text-[#1b5e20]'
-                                    : 'text-slate-400 hover:text-slate-600'
-                            }`}
-                        >
-                            Statistik & Analisis
-                            {activeTab === 'statistik' && (
-                                <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-1 bg-[#1b5e20] rounded-full" />
-                            )}
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('pembahasan')}
-                            className={`pb-4 text-sm font-bold transition-all relative ${
-                                activeTab === 'pembahasan'
-                                    ? 'text-[#1b5e20]'
-                                    : 'text-slate-400 hover:text-slate-600'
-                            }`}
-                        >
-                            Pembahasan Soal
-                            {activeTab === 'pembahasan' && (
-                                <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-1 bg-[#1b5e20] rounded-full" />
-                            )}
-                        </button>
-                    </motion.div>
-
-                    {/* Tab 1: Statistik */}
-                    {activeTab === 'statistik' && (
-                        <motion.div variants={itemVariants} className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#1b5e20] flex items-center justify-center shrink-0">
-                                        <CheckCircle2 size={24} />
+                        {/* Middle Column: Accuracy Card */}
+                        <ContainerWhite className="h-full flex flex-col justify-between !p-5 sm:!p-6 hover:-translate-y-1 transition-all duration-300 cursor-default">
+                            <div className="flex justify-between items-start relative z-10">
+                                <span className="text-base font-bold text-slate-700">Akurasi Soal</span>
+                                <FirstIcon icon={CheckCircle2} iconSize={22} className="!w-11 !h-11 !rounded-xl" />
+                            </div>
+                            <div className="my-auto py-3 relative z-10">
+                                <div className="flex items-end gap-2">
+                                    <div className="text-6xl sm:text-7xl font-black text-slate-800 tracking-tighter">
+                                        {hasil.jumlah_benar}
                                     </div>
-                                    <div>
-                                        <p className="text-xs font-bold text-slate-400 uppercase">Jawaban Benar</p>
-                                        <p className="text-2xl font-extrabold text-slate-800">{hasil.jumlah_benar}</p>
-                                    </div>
+                                    <div className="text-2xl font-bold text-slate-400 mb-2">/ {hasil.total_soal}</div>
                                 </div>
-                                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center shrink-0">
-                                        <XCircle size={24} />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-bold text-slate-400 uppercase">Jawaban Salah</p>
-                                        <p className="text-2xl font-extrabold text-slate-800">{hasil.jumlah_salah}</p>
-                                    </div>
+                                <div className="text-sm text-slate-500 mt-1.5 font-medium">Soal dijawab dengan benar</div>
+                            </div>
+                            <div className="relative z-10">
+                                <div className="flex justify-between text-xs font-bold text-slate-500 mb-2">
+                                    <span>Tingkat Akurasi</span>
+                                    <span className="text-[#1b5e20] font-black">
+                                        {Math.round((hasil.jumlah_benar / (hasil.total_soal || 1)) * 100)}%
+                                    </span>
                                 </div>
-                                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                                        <Award size={24} />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-bold text-slate-400 uppercase">Peringkat Anda</p>
-                                        <p className="text-2xl font-extrabold text-slate-800">#{peringkat} <span className="text-xs font-medium text-slate-400">/ {totalPeserta}</span></p>
-                                    </div>
-                                </div>
-                                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                                        <Clock size={24} />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-bold text-slate-400 uppercase">Durasi Ujian</p>
-                                        <p className="text-lg font-extrabold text-slate-800">{duration}</p>
-                                    </div>
+                                <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden shadow-inner p-0.5">
+                                    <div
+                                        className="bg-[#1b5e20] h-full rounded-full transition-all duration-1000 ease-out relative"
+                                        style={{ width: `${(hasil.jumlah_benar / (hasil.total_soal || 1)) * 100}%` }}
+                                    />
                                 </div>
                             </div>
+                        </ContainerWhite>
 
-                            {/* Category Breakdown */}
-                            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6">
-                                <h3 className="text-lg font-bold text-slate-800 font-['Poppins']">Analisis Per Subtes / Kategori</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {categoryStats.map((cat) => (
-                                        <div key={cat.name} className="space-y-2">
-                                            <div className="flex justify-between items-center text-sm font-semibold">
-                                                <span className="text-slate-700">{cat.name}</span>
-                                                <span className="text-[#1b5e20]">{cat.benar} / {cat.total} Benar ({cat.score}%)</span>
+                        {/* Right Column: Duration Card */}
+                        <ContainerWhite className="h-full flex flex-col justify-between !p-5 sm:!p-6 hover:-translate-y-1 transition-all duration-300 cursor-default">
+                            <div className="flex justify-between items-start relative z-10">
+                                <span className="text-base font-bold text-slate-700">Waktu Pengerjaan</span>
+                                <FirstIcon icon={Clock} iconSize={22} className="!w-11 !h-11 !rounded-xl" />
+                            </div>
+                            <div className="my-auto py-3 relative z-10">
+                                <div className="text-2xl sm:text-3xl font-black text-[#1b5e20] leading-tight tracking-tight whitespace-nowrap">
+                                    {duration}
+                                </div>
+                                <div className="text-sm text-slate-500 mt-2 font-medium">Total waktu yang dihabiskan pada sesi ini</div>
+                            </div>
+                            <div className="relative z-10 pt-3 border-t border-slate-100 flex flex-col gap-1.5">
+                                <div className="flex justify-between items-center text-xs font-medium text-slate-500">
+                                    <span className="flex items-center gap-1.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-[#fcc526]"></span> Mulai
+                                    </span>
+                                    <span className="font-semibold text-slate-700">
+                                        {sesi?.waktu_mulai ? new Date(sesi.waktu_mulai).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center text-xs font-medium text-slate-500">
+                                    <span className="flex items-center gap-1.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-[#1b5e20]"></span> Selesai
+                                    </span>
+                                    <span className="font-semibold text-slate-700">
+                                        {sesi?.waktu_selesai ? new Date(sesi.waktu_selesai).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}
+                                    </span>
+                                </div>
+                            </div>
+                        </ContainerWhite>
+                    </div>
+
+                    {/* Subtest Analysis Card */}
+                    <ContainerWhite className="!p-6 md:!p-8">
+                        <div className="flex justify-between items-center mb-8 pb-4 border-b border-slate-100">
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-800 tracking-tight">Analisis Per Subtes</h2>
+                                <p className="text-sm text-slate-500 mt-1 font-medium">Rincian performa Anda di setiap materi uji</p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-7">
+                            {categoryStats.map((stat, i) => {
+                                const percentage = Math.round((stat.benar / (stat.total || 1)) * 100);
+                                return (
+                                    <div key={i} className="space-y-2">
+                                        <div className="flex justify-between items-baseline">
+                                            <span className="font-bold text-slate-800 text-sm sm:text-base tracking-tight">
+                                                {stat.name}
+                                            </span>
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                <span className="text-sm sm:text-base font-black text-[#1b5e20]">
+                                                    {stat.benar}
+                                                </span>
+                                                <span className="text-xs sm:text-sm font-bold text-slate-400">
+                                                    /{stat.total}
+                                                </span>
+                                                <span className="text-xs font-semibold text-slate-400 ml-1">
+                                                    ({percentage}%)
+                                                </span>
                                             </div>
-                                            <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
-                                                <div 
-                                                    className="h-full bg-[#1b5e20] rounded-full transition-all duration-500"
-                                                    style={{ width: `${cat.score}%` }}
-                                                />
-                                            </div>
+                                        </div>
+                                        <div className="w-full bg-slate-100 h-2.5 sm:h-3 rounded-full overflow-hidden">
+                                            <div
+                                                className="bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] h-full rounded-full transition-all duration-1000 ease-out"
+                                                style={{ width: `${percentage}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </ContainerWhite>
+
+                    {/* Akurasi Seluruh Peserta per Soal (Diagram Akurasi Soal) */}
+                    <ContainerWhite className="!p-6 md:!p-8">
+                        <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-800 tracking-tight">Akurasi Seluruh Peserta per Soal</h2>
+                                <p className="text-sm text-slate-500 mt-1 font-medium">Persentase peserta yang menjawab benar untuk setiap nomor soal</p>
+                            </div>
+
+                            {/* Subtest Filter Tabs */}
+                            {chartTabs.length > 2 && (
+                                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar shrink-0">
+                                    {chartTabs.map((tab) => {
+                                        const isActive = activeChartTab === tab;
+                                        const count = tab === 'Semua'
+                                            ? enrichedStats.length
+                                            : enrichedStats.filter(s => s.kategoriCode === tab).length;
+
+                                        return (
+                                            <button
+                                                key={tab}
+                                                type="button"
+                                                onClick={() => {
+                                                    setActiveChartTab(tab);
+                                                    setHoveredSoalId(null);
+                                                }}
+                                                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                                                    isActive
+                                                        ? 'bg-[#1b5e20] text-white shadow-xs'
+                                                        : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                                                }`}
+                                            >
+                                                <span>{tab}</span>
+                                                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                                                    isActive ? 'bg-white/20 text-white' : 'bg-white text-slate-500'
+                                                }`}>
+                                                    {count}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Legend */}
+                        <div className="flex flex-wrap items-center justify-between gap-4 mb-6 text-xs font-semibold text-slate-600 bg-slate-50/70 p-3.5 rounded-2xl border border-slate-100">
+                            <div className="flex flex-wrap items-center gap-5">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-3.5 h-3.5 rounded-md bg-[#10B981] block shadow-xs"></span>
+                                    <span>Persentase Benar</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-3.5 h-3.5 rounded-md bg-[#94A3B8] block shadow-xs"></span>
+                                    <span>Persentase Tidak Mengisi</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-3.5 h-3.5 rounded-md bg-[#EF4444] block shadow-xs"></span>
+                                    <span>Persentase Salah</span>
+                                </div>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-4">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-[#10B981] font-black text-sm">#1</span>
+                                    <span className="text-slate-500">Teks Hijau: Jawaban Anda Benar</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-[#94A3B8] font-black text-sm">#2</span>
+                                    <span className="text-slate-500">Teks Abu: Tidak Mengisi</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-[#EF4444] font-black text-sm">#3</span>
+                                    <span className="text-slate-500">Teks Merah: Jawaban Anda Salah</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Diagram Container */}
+                        <div className="overflow-x-auto md:overflow-visible pb-4 pt-1">
+                            <div className="h-64 sm:h-72 relative min-w-full px-4">
+                                {/* Grid lines background */}
+                                <div className="absolute inset-x-0 top-6 bottom-12 flex flex-col justify-between pointer-events-none">
+                                    {[100, 75, 50, 25, 0].map((val) => (
+                                        <div key={val} className="w-full flex items-center gap-3">
+                                            <span className="text-[11px] font-bold text-slate-400 w-8 text-right shrink-0">{val}%</span>
+                                            <div className="flex-1 border-t border-dashed border-slate-200/70"></div>
                                         </div>
                                     ))}
                                 </div>
-                            </div>
-                        </motion.div>
-                    )}
 
-                    {/* Tab 2: Pembahasan Soal */}
-                    {activeTab === 'pembahasan' && (
-                        <motion.div variants={itemVariants} className="space-y-6">
-                            {/* Filter Categories */}
-                            <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
-                                {categories.map((cat) => (
-                                    <button
-                                        key={cat}
-                                        onClick={() => setFilterKategori(cat)}
-                                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                                            filterKategori === cat
-                                                ? 'bg-[#1b5e20] text-white shadow-sm'
-                                                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-100'
-                                        }`}
-                                    >
-                                        {cat}
-                                    </button>
-                                ))}
-                            </div>
+                                {/* Bars Container */}
+                                <div className="absolute inset-x-0 top-6 bottom-12 flex items-end justify-start gap-8 sm:gap-10 pl-16 pr-8">
+                                    {displayedStats.map((stat) => {
+                                        const i = stat.globalIndex;
+                                        const userJawaban = (jawabanSiswa || []).find((j) => j.id_soal === stat.id_soal);
+                                        const isUserCorrect = userJawaban?.is_benar;
+                                        const isUserAnswered =
+                                            userJawaban &&
+                                            (userJawaban.id_pilihan !== null ||
+                                                (userJawaban.teks_jawaban !== null && userJawaban.teks_jawaban !== ''));
 
-                            {/* Question List with Pembahasan */}
-                            <div className="space-y-4">
-                                {filteredQuestions.map((q, idx) => {
-                                    const jawabanUser = (jawabanSiswa || []).find(j => j.id_soal === q.id_soal);
-                                    const isCorrect = jawabanUser?.is_benar;
+                                        const jumlahBenar = stat.jumlah_benar || 0;
+                                        const jumlahSalah = stat.jumlah_salah || 0;
+                                        const jumlahKosong = stat.jumlah_kosong || 0;
+                                        const total = jumlahBenar + jumlahSalah + jumlahKosong;
 
-                                    return (
-                                        <div 
-                                            key={q.id_soal}
-                                            className={`bg-white p-6 md:p-7 rounded-[2rem] border transition-all ${
-                                                isCorrect
-                                                    ? 'border-emerald-200/80 bg-emerald-50/10'
-                                                    : 'border-red-200/80 bg-red-50/10'
-                                            }`}
-                                        >
-                                            <div className="flex items-start justify-between gap-4 mb-4">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 font-extrabold text-sm flex items-center justify-center shrink-0">
-                                                        {idx + 1}
+                                        const pctBenar = total > 0 ? (jumlahBenar / total) * 100 : 0;
+                                        const pctKosong = total > 0 ? (jumlahKosong / total) * 100 : 0;
+                                        const pctSalah = total > 0 ? Math.max(0, 100 - pctBenar - pctKosong) : 0;
+
+                                        const accuracy = total > 0 ? Math.round(pctBenar) : 0;
+                                        const isHovered = hoveredSoalId === stat.id_soal;
+
+                                        return (
+                                            <div
+                                                key={stat.id_soal}
+                                                className="flex flex-col items-center relative h-full w-12 sm:w-14 shrink-0 cursor-pointer group"
+                                                onMouseEnter={() => setHoveredSoalId(stat.id_soal)}
+                                                onMouseLeave={() => setHoveredSoalId(null)}
+                                            >
+                                                {/* Tooltip Popup */}
+                                                <AnimatePresence>
+                                                    {isHovered && (
+                                                        <motion.div
+                                                            key={`tooltip-${stat.id_soal}`}
+                                                            initial={{ opacity: 0, y: 6, scale: 0.95, x: '-50%' }}
+                                                            animate={{ opacity: 1, y: 0, scale: 1, x: '-50%' }}
+                                                            exit={{ opacity: 0, y: 4, scale: 0.95, x: '-50%' }}
+                                                            transition={{ duration: 0.15 }}
+                                                            style={{ left: '50%' }}
+                                                            className="absolute bottom-[calc(100%+6px)] z-50 w-48 pointer-events-none text-center"
+                                                        >
+                                                            <div className="bg-white text-slate-800 rounded-2xl p-2.5 shadow-xl border border-slate-200 ring-4 ring-black/5">
+                                                                <div className="flex items-center justify-between gap-1 mb-1 pb-1 border-b border-slate-100">
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span className="font-extrabold text-slate-900 text-xs">
+                                                                            Soal #{i + 1}
+                                                                        </span>
+                                                                        <span className="text-[9px] font-bold text-white bg-[#fcc526] px-1.5 py-0.2 rounded shadow-2xs">
+                                                                            {stat.kategoriCode}
+                                                                        </span>
+                                                                    </div>
+                                                                    <span className="text-xs font-black text-[#10B981]">
+                                                                        {accuracy}%{' '}
+                                                                        <span className="text-[9px] font-medium text-slate-400">
+                                                                            Benar
+                                                                        </span>
+                                                                    </span>
+                                                                </div>
+
+                                                                {/* Rincian Peserta */}
+                                                                <div className="grid grid-cols-3 divide-x divide-slate-100 my-1 py-1 border-b border-slate-100 text-center">
+                                                                    <div className="px-0.5">
+                                                                        <span className="text-xs font-black text-[#10B981] block leading-none">
+                                                                            {jumlahBenar}
+                                                                        </span>
+                                                                        <span className="text-[9px] text-slate-500 font-medium">
+                                                                            Benar
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="px-0.5">
+                                                                        <span className="text-xs font-black text-[#EF4444] block leading-none">
+                                                                            {jumlahSalah}
+                                                                        </span>
+                                                                        <span className="text-[9px] text-slate-500 font-medium">
+                                                                            Salah
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="px-0.5">
+                                                                        <span className="text-xs font-black text-[#94A3B8] block leading-none">
+                                                                            {jumlahKosong}
+                                                                        </span>
+                                                                        <span className="text-[9px] text-slate-500 font-medium whitespace-nowrap">
+                                                                            Kosong
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Status Jawaban Siswa */}
+                                                                <div className="pt-0.5 flex items-center justify-between text-[9.5px]">
+                                                                    <span className="text-slate-400 font-medium">
+                                                                        {total} Peserta
+                                                                    </span>
+                                                                    <span
+                                                                        className={`font-bold inline-flex items-center gap-0.5 ${
+                                                                            isUserCorrect
+                                                                                ? 'text-[#10B981]'
+                                                                                : !isUserAnswered
+                                                                                ? 'text-slate-400'
+                                                                                : 'text-[#EF4444]'
+                                                                        }`}
+                                                                    >
+                                                                        {isUserCorrect
+                                                                            ? '✓ Benar'
+                                                                            : !isUserAnswered
+                                                                            ? '— Kosong'
+                                                                            : '✗ Salah'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Segitiga Panah Tooltip */}
+                                                            <div className="w-2.5 h-2.5 bg-white border-b border-r border-slate-200 rotate-45 mx-auto -mt-1.5 shadow-2xs" />
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+
+                                                {/* Stacked Bar */}
+                                                <div
+                                                    className={`w-5 sm:w-6 rounded-full h-full flex flex-col justify-end relative overflow-hidden shadow-inner border border-slate-100 transition-all duration-200 ${
+                                                        isHovered
+                                                            ? 'scale-105 ring-2 ring-slate-800/20 shadow-md brightness-105'
+                                                            : ''
+                                                    } bg-slate-100`}
+                                                >
+                                                    {/* Merah: Salah */}
+                                                    {pctSalah > 0 && (
+                                                        <motion.div
+                                                            initial={{ height: '0%' }}
+                                                            animate={{ height: `${pctSalah}%` }}
+                                                            transition={{ duration: 0.8, ease: 'easeOut' }}
+                                                            className="w-full bg-[#EF4444] shrink-0"
+                                                        />
+                                                    )}
+                                                    {/* Abu: Kosong */}
+                                                    {pctKosong > 0 && (
+                                                        <motion.div
+                                                            initial={{ height: '0%' }}
+                                                            animate={{ height: `${pctKosong}%` }}
+                                                            transition={{ duration: 0.8, ease: 'easeOut' }}
+                                                            className="w-full bg-[#94A3B8] shrink-0"
+                                                        />
+                                                    )}
+                                                    {/* Hijau: Benar */}
+                                                    {pctBenar > 0 && (
+                                                        <motion.div
+                                                            initial={{ height: '0%' }}
+                                                            animate={{ height: `${pctBenar}%` }}
+                                                            transition={{ duration: 0.8, ease: 'easeOut' }}
+                                                            className="w-full bg-[#10B981] shrink-0"
+                                                        />
+                                                    )}
+                                                </div>
+
+                                                {/* X-Label: Nomor Soal & Kategori */}
+                                                <div
+                                                    className={`absolute top-full mt-2 flex flex-col items-center text-center transition-all ${
+                                                        isHovered ? 'scale-110' : ''
+                                                    }`}
+                                                >
+                                                    <span
+                                                        className={`text-xs font-black transition-colors ${
+                                                            isUserCorrect
+                                                                ? 'text-[#10B981]'
+                                                                : !isUserAnswered
+                                                                ? 'text-slate-400'
+                                                                : 'text-[#EF4444]'
+                                                        }`}
+                                                    >
+                                                        #{i + 1}
                                                     </span>
-                                                    <span className="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-600">
-                                                        {q.kategori || 'Umum'}
+                                                    <span
+                                                        className={`text-[10px] font-bold uppercase tracking-tight mt-0.5 px-1.5 py-0.5 rounded-md border transition-colors ${
+                                                            isHovered
+                                                                ? 'bg-[#fcc526] text-white'
+                                                                : 'bg-slate-100 text-slate-500'
+                                                        }`}
+                                                    >
+                                                        {stat.kategoriCode}
                                                     </span>
                                                 </div>
-                                                <span className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${
-                                                    isCorrect ? 'bg-emerald-100 text-[#1b5e20]' : 'bg-red-100 text-red-600'
-                                                }`}>
-                                                    {isCorrect ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
-                                                    {isCorrect ? 'Benar' : 'Salah'}
-                                                </span>
                                             </div>
-
-                                            <div className="text-slate-800 text-sm font-medium leading-relaxed mb-4 prose max-w-none">
-                                                {q.konten_soal}
-                                            </div>
-
-                                            {/* Pembahasan Box */}
-                                            {q.pembahasan ? (
-                                                <div className="mt-4 p-5 rounded-2xl bg-amber-50/80 border border-amber-200/60 text-slate-800 space-y-2">
-                                                    <div className="flex items-center gap-2 text-amber-800 font-bold text-xs">
-                                                        <Info size={16} /> Pembahasan & Kunci Jawaban
-                                                    </div>
-                                                    <p className="text-xs leading-relaxed text-slate-700 font-normal">
-                                                        {q.pembahasan}
-                                                    </p>
-                                                </div>
-                                            ) : (
-                                                <div className="mt-4 p-4 rounded-2xl bg-slate-50 text-slate-400 text-xs font-medium italic">
-                                                    Belum ada penjelasan pembahasan untuk soal ini.
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        </motion.div>
-                    )}
-                </motion.div>
-            </div>
+                        </div>
+                    </ContainerWhite>
+                </div>
+            ) : (
+                /* Tab 2: Pembahasan Detail View (Sama dengan Latihan Soal) */
+                soals.length === 0 ? (
+                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 text-center text-slate-500">
+                        Tidak ada soal untuk pembahasan ini.
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-fade-in">
+                        {/* DESKTOP ONLY: Kolom Kiri - Navigasi Pembahasan (Sticky) */}
+                        <div className="hidden lg:block lg:col-span-4 sticky top-28 self-start z-30">
+                            <NavigasiPembahasan
+                                soals={soals}
+                                jawabanSiswa={jawabanSiswa}
+                                activeIndex={pembahasanIndex}
+                                onNavigate={setPembahasanIndex}
+                            />
+                        </div>
+
+                        {/* ALWAYS: Kolom Kanan - Kartu Soal & Pembahasan */}
+                        <div className="lg:col-span-8">
+                            <PembahasanCard
+                                soal={soals[pembahasanIndex]}
+                                jawaban={
+                                    (jawabanSiswa || []).find((j) => j.id_soal === soals[pembahasanIndex]?.id_soal) ||
+                                    jawabanSiswa[pembahasanIndex]
+                                }
+                                soalIndex={pembahasanIndex}
+                                totalSoal={soals.length}
+                                onPrev={() => setPembahasanIndex((i) => Math.max(0, i - 1))}
+                                onNext={() => setPembahasanIndex((i) => Math.min(soals.length - 1, i + 1))}
+                            />
+                        </div>
+
+                        {/* MOBILE ONLY: Navigasi Pembahasan di Bawah */}
+                        <div className="block lg:hidden w-full">
+                            <NavigasiPembahasan
+                                soals={soals}
+                                jawabanSiswa={jawabanSiswa}
+                                activeIndex={pembahasanIndex}
+                                onNavigate={setPembahasanIndex}
+                            />
+                        </div>
+                    </div>
+                )
+            )}
         </SiswaLayout>
     );
 }

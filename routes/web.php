@@ -96,6 +96,7 @@ Route::middleware(['auth:siswa', 'siswa.verified', 'siswa.password_changed'])->g
     Route::get('/tryout', [SiswaTryoutController::class, 'index'])->name('siswa.tryout.index');
     Route::get('/tryout/{id}', [SiswaTryoutController::class, 'show'])->name('siswa.tryout.show');
     Route::post('/tryout/{id}/pindah-subtes', [SiswaTryoutController::class, 'pindahSubtes'])->name('siswa.tryout.pindah-subtes');
+    Route::post('/tryout/{id}/mulai-subtes', [SiswaTryoutController::class, 'mulaiSubtesSekarang'])->name('siswa.tryout.mulai-subtes');
     Route::post('/tryout/{id}/toggle-pause', [SiswaTryoutController::class, 'togglePause'])->name('siswa.tryout.toggle-pause');
     Route::post('/tryout/{id}/save-jawaban', [SiswaTryoutController::class, 'saveJawaban'])->name('siswa.tryout.save-jawaban');
     Route::post('/tryout/{id}/submit', [SiswaTryoutController::class, 'submit'])->name('siswa.tryout.submit');

@@ -40,6 +40,8 @@ export default function SoalCard({
     onPrev,
     onNext,
     onKirim,
+    nextLabel = 'Selanjutnya',
+    kirimLabel = 'Kirim Jawaban',
 }) {
     const isFirstSoal = soalIndex === 0;
     const isLastSoal = soalIndex === totalSoal - 1;
@@ -182,7 +184,7 @@ export default function SoalCard({
                         onClick={onNext}
                         className="inline-flex items-center gap-1.5 !px-5 md:!px-6 !py-2.5 sm:!py-3 !rounded-xl !text-xs md:!text-sm font-semibold shadow-md"
                     >
-                        Berikutnya
+                        {nextLabel}
                         <ChevronRight size={16} />
                     </PrimaryButton>
                 ) : (
@@ -192,8 +194,9 @@ export default function SoalCard({
                         disabled={processing}
                         className="inline-flex items-center gap-1.5 !px-5 md:!px-6 !py-2.5 sm:!py-3 !rounded-xl !text-xs md:!text-sm font-semibold shadow-md"
                     >
-                        <Send size={16} />
-                        Kirim Jawaban
+                        {kirimLabel === 'Kirim Jawaban' ? <Send size={16} /> : null}
+                        {kirimLabel}
+                        {kirimLabel !== 'Kirim Jawaban' ? <ChevronRight size={16} /> : null}
                     </PrimaryButton>
                 )}
             </div>

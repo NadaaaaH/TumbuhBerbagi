@@ -15,13 +15,39 @@ use Inertia\Inertia;
 
 class TryoutController extends Controller
 {
+    protected const ORDER_TPS = ['PU', 'PPU', 'PBM', 'PK'];
+    protected const ORDER_LITERASI = ['LBI', 'LBIng', 'PM'];
     protected const ORDER_SUBTES = ['PU', 'PPU', 'PBM', 'PK', 'LBI', 'LBIng', 'PM'];
 
     public function index()
     {
         $siswa = auth()->user();
 
-        $pakets = PaketLatihan::where('status', 'aktif')
+        // Cek dan sinkronkan sesi aktif yang mungkin sudah habis seluruh waktunya saat user offline
+        $activeSessions = SesiLatihan::where('id_siswa', $siswa->id_siswa)
+            ->where('status', 'aktif')
+            ->whereDoesntHave('hasil_latihan')
+            ->with('paket_latihan')
+            ->get();
+
+        foreach ($activeSessions as $activeSesi) {
+            $p = $activeSesi->paket_latihan;
+            if ($p && $p->tipe === 'tryout') {
+                $subCodes = $this->getPaketSubtestCodes($p, $activeSesi);
+                $timeline = $this->syncSesiTimeline($activeSesi, $p, $subCodes);
+                if ($timeline['completed']) {
+                    $this->executeFinalSubmit($activeSesi, $p);
+                }
+            }
+        }
+
+        $pakets = PaketLatihan::where(function ($q) {
+                $q->where('status', 'aktif')
+                  ->orWhere(function ($sub) {
+                      $sub->whereNotNull('tanggal_aktif')
+                          ->where('tanggal_aktif', '<=', now());
+                  });
+            })
             ->where(function ($q) {
                 $q->whereNull('tanggal_aktif')
                   ->orWhere('tanggal_aktif', '<=', now());
@@ -32,6 +58,13 @@ class TryoutController extends Controller
             }])
             ->orderBy('id_paket', 'desc')
             ->get();
+
+        $pakets->transform(function ($p) {
+            if (!$p->waktu_ujian || $p->waktu_ujian <= 0) {
+                $p->waktu_ujian = 195;
+            }
+            return $p;
+        });
 
         $ongoingPackages = SesiLatihan::where('id_siswa', $siswa->id_siswa)
             ->where('status', 'aktif')
@@ -60,7 +93,13 @@ class TryoutController extends Controller
         $siswa = auth()->user();
 
         $paket = PaketLatihan::where('id_paket', $id)
-            ->where('status', 'aktif')
+            ->where(function ($q) {
+                $q->where('status', 'aktif')
+                  ->orWhere(function ($sub) {
+                      $sub->whereNotNull('tanggal_aktif')
+                          ->where('tanggal_aktif', '<=', now());
+                  });
+            })
             ->where(function ($q) {
                 $q->whereNull('tanggal_aktif')
                   ->orWhere('tanggal_aktif', '<=', now());
@@ -84,47 +123,53 @@ class TryoutController extends Controller
                 ->with('error', 'Periode pengerjaan Try Out sudah berakhir.');
         }
 
-        $subtestCodes = $this->getPaketSubtestCodes($paket);
+        $sesi = SesiLatihan::where('id_siswa', $siswa->id_siswa)
+            ->where('id_paket', $paket->id_paket)
+            ->first();
+
+        // Tentukan urutan subtes (dengan seed konsisten per sesi jika acak)
+        $subtestCodes = $this->getPaketSubtestCodes($paket, $sesi);
         $firstCode = $subtestCodes[0] ?? 'PU';
 
-        $sesi = SesiLatihan::firstOrCreate([
-            'id_siswa' => $siswa->id_siswa,
-            'id_paket' => $paket->id_paket,
-        ], [
-            'waktu_mulai' => now(),
-            'status' => 'aktif',
-            'subtes_aktif' => $firstCode,
-            'waktu_mulai_subtes' => now(),
-            'subtes_selesai' => [],
-            'is_paused' => false,
-            'sisa_detik_subtes' => PaketLatihan::SUBTES_UTBK[$firstCode]['durasi_detik'] ?? 1800,
-        ]);
+        if (!$sesi) {
+            $sesi = SesiLatihan::create([
+                'id_siswa' => $siswa->id_siswa,
+                'id_paket' => $paket->id_paket,
+                'waktu_mulai' => now(),
+                'status' => 'aktif',
+                'subtes_aktif' => $firstCode,
+                'waktu_mulai_subtes' => now(),
+                'subtes_selesai' => [],
+                'is_paused' => false,
+                'sisa_detik_subtes' => PaketLatihan::SUBTES_UTBK[$firstCode]['durasi_detik'] ?? 1800,
+            ]);
 
-        if ($sesi->wasRecentlyCreated) {
+            // Jika acak, generate ulang subtestCodes dengan ID sesi yang baru tercipta sebagai seed
+            if ($paket->is_random) {
+                $subtestCodes = $this->getPaketSubtestCodes($paket, $sesi);
+                $firstCode = $subtestCodes[0] ?? 'PU';
+                $sesi->update([
+                    'subtes_aktif' => $firstCode,
+                    'sisa_detik_subtes' => PaketLatihan::SUBTES_UTBK[$firstCode]['durasi_detik'] ?? 1800,
+                ]);
+            }
+
             \App\Models\AktivitasSiswa::log('mulai_tryout', 'Siswa memulai Try Out ' . $paket->nama_paket);
         }
 
-        if ($sesi->hasil_latihan) {
+        if ($sesi->hasil_latihan || $sesi->status === 'selesai') {
             return redirect()->route('siswa.tryout.hasil', $paket->id_paket);
         }
 
-        // Jika subtes aktif belum terisi di sesi lama
-        if (!$sesi->subtes_aktif || !in_array($sesi->subtes_aktif, $subtestCodes)) {
-            $subtesSelesai = $sesi->subtes_selesai ?? [];
-            $remaining = array_values(array_diff($subtestCodes, $subtesSelesai));
-            $targetCode = $remaining[0] ?? $firstCode;
-            $durasiDetik = PaketLatihan::SUBTES_UTBK[$targetCode]['durasi_detik'] ?? 1800;
-
-            $sesi->update([
-                'subtes_aktif' => $targetCode,
-                'waktu_mulai_subtes' => now(),
-                'sisa_detik_subtes' => $durasiDetik,
-                'is_paused' => false,
-                'subtes_selesai' => $subtesSelesai,
-            ]);
+        // Sinkronisasi timeline sesi:
+        // Jika user menutup tab / offline, waktu nyata di server tetap berjalan (jika tidak di-pause).
+        // Waktu berlebih akan memotong subtes-subtes berikutnya secara cascade atau auto-submit jika habis total.
+        $timeline = $this->syncSesiTimeline($sesi, $paket, $subtestCodes);
+        if ($timeline['completed']) {
+            return $this->executeFinalSubmit($sesi, $paket);
         }
 
-        // Hitung sisa waktu subtes aktif
+        $sisaDetik = $timeline['sisa_detik'];
         $activeCode = $sesi->subtes_aktif;
         $infoActive = PaketLatihan::SUBTES_UTBK[$activeCode] ?? [
             'kode' => $activeCode,
@@ -134,20 +179,6 @@ class TryoutController extends Controller
         ];
         $totalDurasiDetik = $infoActive['durasi_detik'];
 
-        if ($sesi->is_paused) {
-            $sisaDetik = max(0, $sesi->sisa_detik_subtes ?? $totalDurasiDetik);
-        } else {
-            $mulai = $sesi->waktu_mulai_subtes ?: now();
-            $elapsed = max(0, now()->diffInSeconds($mulai, false));
-            $initialRemaining = $sesi->sisa_detik_subtes ?? $totalDurasiDetik;
-            $sisaDetik = max(0, $initialRemaining - $elapsed);
-        }
-
-        // Jika waktu subtes habis saat halaman dibuka, otomatis advance
-        if ($sisaDetik <= 0 && $sesi->waktu_mulai_subtes) {
-            return $this->processAdvanceSubtest($sesi, $paket, $subtestCodes);
-        }
-
         // Daftar Subtes untuk Tab Navigasi Header
         $subtesList = collect($subtestCodes)->map(function ($code) use ($sesi, $paket) {
             $info = PaketLatihan::SUBTES_UTBK[$code] ?? [
@@ -156,7 +187,7 @@ class TryoutController extends Controller
                 'durasi_menit' => 30,
                 'durasi_detik' => 1800,
             ];
-            $soalCount = $paket->soal->filter(fn($s) => ($s->pivot->subtes ?: 'PU') === $code)->count();
+            $soalCount = $paket->soal->filter(fn($s) => self::getSoalSubtesCode($s) === $code)->count();
             $isSelesai = in_array($code, $sesi->subtes_selesai ?? []);
             $isAktif = $sesi->subtes_aktif === $code;
 
@@ -172,7 +203,7 @@ class TryoutController extends Controller
 
         // Soal khusus subtes aktif
         $activeSoals = $paket->soal->filter(function ($s) use ($activeCode) {
-            return ($s->pivot->subtes ?: 'PU') === $activeCode;
+            return self::getSoalSubtesCode($s) === $activeCode;
         })->values();
 
         // Acak soal jika is_random diaktifkan (konsisten per sesi)
@@ -212,6 +243,8 @@ class TryoutController extends Controller
                 'durasi_detik' => $totalDurasiDetik,
                 'sisa_detik' => $sisaDetik,
                 'is_last' => $isLastSubtest,
+                'is_intermisi' => (bool) ($timeline['is_intermisi'] ?? false),
+                'sisa_jeda' => (int) ($timeline['sisa_jeda'] ?? 0),
             ],
             'soals' => $activeSoals,
             'savedJawaban' => $savedJawaban,
@@ -225,6 +258,17 @@ class TryoutController extends Controller
         $siswa = auth()->user();
         $paket = PaketLatihan::where('id_paket', $id)->where('status', 'aktif')->where('tipe', 'tryout')->firstOrFail();
         $sesi = SesiLatihan::where('id_siswa', $siswa->id_siswa)->where('id_paket', $paket->id_paket)->where('status', 'aktif')->firstOrFail();
+
+        if ($sesi->hasil_latihan || $sesi->status === 'selesai') {
+            return response()->json(['error' => 'Try Out sudah selesai.', 'completed' => true], 403);
+        }
+
+        $subtestCodes = $this->getPaketSubtestCodes($paket, $sesi);
+        $timeline = $this->syncSesiTimeline($sesi, $paket, $subtestCodes);
+        if ($timeline['completed']) {
+            $this->executeFinalSubmit($sesi, $paket);
+            return response()->json(['error' => 'Waktu pengerjaan try out telah habis.', 'completed' => true], 403);
+        }
 
         $validated = $request->validate([
             'id_soal' => 'required|exists:soal,id_soal',
@@ -277,8 +321,26 @@ class TryoutController extends Controller
             $this->saveBatchJawaban($sesi, $request->jawaban);
         }
 
-        $subtestCodes = $this->getPaketSubtestCodes($paket);
+        $subtestCodes = $this->getPaketSubtestCodes($paket, $sesi);
         return $this->processAdvanceSubtest($sesi, $paket, $subtestCodes);
+    }
+
+    public function mulaiSubtesSekarang(Request $request, string $id)
+    {
+        $siswa = auth()->user();
+        $paket = PaketLatihan::where('id_paket', $id)->where('status', 'aktif')->where('tipe', 'tryout')->firstOrFail();
+        $sesi = SesiLatihan::where('id_siswa', $siswa->id_siswa)->where('id_paket', $paket->id_paket)->where('status', 'aktif')->firstOrFail();
+
+        // Jika sedang dalam masa jeda 30 detik antar subtes, segera mulai sekarang
+        if ($sesi->waktu_mulai_subtes && $sesi->waktu_mulai_subtes->isFuture()) {
+            $sesi->update(['waktu_mulai_subtes' => now()]);
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
+
+        return redirect()->route('siswa.tryout.show', $paket->id_paket);
     }
 
     public function togglePause(Request $request, string $id)
@@ -288,6 +350,9 @@ class TryoutController extends Controller
         $sesi = SesiLatihan::where('id_siswa', $siswa->id_siswa)->where('id_paket', $paket->id_paket)->where('status', 'aktif')->firstOrFail();
 
         if (!$paket->bisa_pause) {
+            if ($request->wantsJson()) {
+                return response()->json(['error' => 'Try Out ini tidak dapat dijeda.'], 403);
+            }
             return back()->withErrors(['error' => 'Try Out ini tidak dapat dijeda.']);
         }
 
@@ -297,19 +362,41 @@ class TryoutController extends Controller
 
         if (!$sesi->is_paused) {
             // Jeda sekarang: catat sisa detik
-            $elapsed = max(0, now()->diffInSeconds($sesi->waktu_mulai_subtes ?: now(), false));
+            $mulai = $sesi->waktu_mulai_subtes ?: now();
+            $elapsed = max(0, now()->timestamp - $mulai->timestamp);
             $initialRemaining = $sesi->sisa_detik_subtes ?? $totalDurasiDetik;
             $sisaDetik = max(0, $initialRemaining - $elapsed);
+
+            // Jika client mengirim sisa waktu aktual (dalam batas wajar), gunakan untuk presisi
+            if ($request->has('client_time_left') && is_numeric($request->client_time_left)) {
+                $clientTime = (int) $request->client_time_left;
+                if ($clientTime >= 0 && $clientTime <= $initialRemaining) {
+                    if (abs($clientTime - $sisaDetik) <= 15) {
+                        $sisaDetik = $clientTime;
+                    }
+                }
+            }
 
             $sesi->update([
                 'is_paused' => true,
                 'sisa_detik_subtes' => $sisaDetik,
             ]);
+            $isPaused = true;
         } else {
             // Lanjutkan kembali: waktu_mulai_subtes diset now
+            $sisaDetik = $sesi->sisa_detik_subtes ?? $totalDurasiDetik;
             $sesi->update([
                 'is_paused' => false,
                 'waktu_mulai_subtes' => now(),
+            ]);
+            $isPaused = false;
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'is_paused' => $isPaused,
+                'sisa_detik' => $sisaDetik,
             ]);
         }
 
@@ -432,14 +519,297 @@ class TryoutController extends Controller
         ]);
     }
 
-    protected function getPaketSubtestCodes(PaketLatihan $paket): array
+    /**
+     * Petakan kategori soal ke kode subtes standar UTBK
+     */
+    public static function mapKategoriToSubtes(?string $kategori): ?string
     {
-        $existingCodes = $paket->soal->map(fn($s) => $s->pivot->subtes ?: 'PU')->unique()->values();
-        $ordered = collect(self::ORDER_SUBTES)->filter(fn($c) => $existingCodes->contains($c))->values();
-        $extras = $existingCodes->diff(self::ORDER_SUBTES)->values();
-        $all = $ordered->merge($extras)->values()->all();
+        if (!$kategori) {
+            return null;
+        }
+
+        $k = trim($kategori);
+        $lower = strtolower($k);
+
+        // 1. PU (Penalaran Umum)
+        if ($k === 'PU' || $lower === 'penalaran umum' || (str_contains($lower, 'penalaran') && str_contains($lower, 'umum'))) {
+            return 'PU';
+        }
+
+        // 2. PPU (Pengetahuan & Pemahaman Umum)
+        if (
+            $k === 'PPU' ||
+            (str_contains($lower, 'pemahaman') && str_contains($lower, 'umum')) ||
+            (str_contains($lower, 'pengetahuan') && str_contains($lower, 'umum'))
+        ) {
+            return 'PPU';
+        }
+
+        // 3. PBM (Pemahaman Bacaan & Menulis)
+        if ($k === 'PBM' || (str_contains($lower, 'bacaan') && str_contains($lower, 'menulis'))) {
+            return 'PBM';
+        }
+
+        // 4. PK (Pengetahuan Kuantitatif)
+        if ($k === 'PK' || str_contains($lower, 'kuantitatif')) {
+            return 'PK';
+        }
+
+        // 5. LBI (Literasi dalam Bahasa Indonesia)
+        if (
+            $k === 'LBI' ||
+            $lower === 'literasi bahasa indonesia' ||
+            $lower === 'literasi dalam bahasa indonesia' ||
+            (str_contains($lower, 'literasi') && str_contains($lower, 'indonesia')) ||
+            $lower === 'bahasa indonesia'
+        ) {
+            return 'LBI';
+        }
+
+        // 6. LBIng (Literasi dalam Bahasa Inggris)
+        if (
+            $k === 'LBIng' ||
+            $k === 'LBE' ||
+            $lower === 'literasi bahasa inggris' ||
+            $lower === 'literasi dalam bahasa inggris' ||
+            str_contains($lower, 'inggris') ||
+            str_contains($lower, 'english')
+        ) {
+            return 'LBIng';
+        }
+
+        // 7. PM (Penalaran Matematika)
+        if ($k === 'PM' || str_contains($lower, 'matematik') || (str_contains($lower, 'penalaran') && str_contains($lower, 'matematik'))) {
+            return 'PM';
+        }
+
+        return null;
+    }
+
+    /**
+     * Dapatkan kode subtes yang akurat untuk suatu soal.
+     * Mengutamakan kategori soal asli sehingga tidak pernah salah subtes.
+     */
+    public static function getSoalSubtesCode($soal): string
+    {
+        $fromKategori = self::mapKategoriToSubtes($soal->kategori ?? null);
+        if ($fromKategori) {
+            return $fromKategori;
+        }
+
+        if (!empty($soal->pivot?->subtes)) {
+            $fromPivot = self::mapKategoriToSubtes($soal->pivot->subtes);
+            if ($fromPivot) {
+                return $fromPivot;
+            }
+            return $soal->pivot->subtes;
+        }
+
+        return 'PU';
+    }
+
+    protected function getPaketSubtestCodes(PaketLatihan $paket, ?SesiLatihan $sesi = null): array
+    {
+        $existingCodes = $paket->soal->map(fn($s) => self::getSoalSubtesCode($s))->unique()->values();
+
+        // 1. Subtes kelompok TPS yang ada di paket
+        $tps = collect(self::ORDER_TPS)->filter(fn($c) => $existingCodes->contains($c))->values()->all();
+
+        // 2. Subtes kelompok Literasi & PM yang ada di paket (selalu di 3 posisi terakhir)
+        $literasi = collect(self::ORDER_LITERASI)->filter(fn($c) => $existingCodes->contains($c))->values()->all();
+
+        // 3. Subtes tambahan kustom (jika ada)
+        $extras = $existingCodes->diff(self::ORDER_SUBTES)->values()->all();
+
+        if ($paket->is_random) {
+            // Seed deterministik konsisten per siswa/sesi agar urutan tidak berubah-ubah di tengah ujian
+            $seed = (int) ($sesi ? $sesi->id_sesi : ($paket->id_paket * 1000 + (auth()->id() ?? 1)));
+
+            // Acak urutan 4 subtes TPS (PU, PPU, PBM, PK)
+            $tps = $this->seededShuffle($tps, $seed);
+
+            // Acak urutan 3 subtes Literasi & PM (LBI, LBIng, PM), tetap di 3 posisi terakhir
+            $literasi = $this->seededShuffle($literasi, $seed + 77);
+        }
+
+        $all = array_merge($tps, $literasi, $extras);
 
         return !empty($all) ? $all : ['PU'];
+    }
+
+    protected function seededShuffle(array $items, int $seed): array
+    {
+        if (count($items) <= 1) {
+            return $items;
+        }
+
+        mt_srand($seed);
+        for ($i = count($items) - 1; $i > 0; $i--) {
+            $j = mt_rand(0, $i);
+            $tmp = $items[$i];
+            $items[$i] = $items[$j];
+            $items[$j] = $tmp;
+        }
+        return $items;
+    }
+
+    /**
+     * Sinkronisasi timeline sesi tryout.
+     * Jika tryout tidak dijeda (atau jika paket tidak mengizinkan pause),
+     * waktu terus berjalan di server. Jika waktu subtes aktif habis saat user offline/tutup tab,
+     * kelebihan waktu (overdue) akan memotong subtes-subtes berikutnya secara berantai (waterfall),
+     * atau otomatis menyelesaikan ujian jika seluruh subtes sudah terlewati.
+     */
+    protected function syncSesiTimeline(SesiLatihan $sesi, PaketLatihan $paket, array $subtestCodes): array
+    {
+        $firstCode = $subtestCodes[0] ?? 'PU';
+
+        // Pastikan subtes aktif valid
+        if (!$sesi->subtes_aktif || !in_array($sesi->subtes_aktif, $subtestCodes)) {
+            $subtesSelesai = $sesi->subtes_selesai ?? [];
+            $remaining = array_values(array_diff($subtestCodes, $subtesSelesai));
+            $targetCode = $remaining[0] ?? $firstCode;
+            $durasiDetik = PaketLatihan::SUBTES_UTBK[$targetCode]['durasi_detik'] ?? 1800;
+
+            $sesi->update([
+                'subtes_aktif' => $targetCode,
+                'waktu_mulai_subtes' => now(),
+                'sisa_detik_subtes' => $durasiDetik,
+                'is_paused' => false,
+                'subtes_selesai' => $subtesSelesai,
+            ]);
+            $sesi->refresh();
+        }
+
+        // Jika tryout disetel TIDAK BISA DIJEDA oleh admin, batalkan pause jika ada
+        if (!$paket->bisa_pause && $sesi->is_paused) {
+            $sesi->update(['is_paused' => false]);
+            $sesi->refresh();
+        }
+
+        $activeCode = $sesi->subtes_aktif;
+        $infoActive = PaketLatihan::SUBTES_UTBK[$activeCode] ?? [
+            'kode' => $activeCode,
+            'nama' => $activeCode,
+            'durasi_menit' => 30,
+            'durasi_detik' => 1800,
+        ];
+        $totalDurasiDetik = $infoActive['durasi_detik'];
+
+        // Jika ujian sedang dijeda (hanya jika memang diizinkan oleh paket)
+        if ($sesi->is_paused) {
+            $sisaDetik = max(0, $sesi->sisa_detik_subtes ?? $totalDurasiDetik);
+            return [
+                'completed' => false,
+                'sisa_detik' => $sisaDetik,
+            ];
+        }
+
+        // Hitung waktu berjalan sejak subtes aktif dimulai/di-resume
+        $mulai = $sesi->waktu_mulai_subtes ?: now();
+        $nowTs = now()->timestamp;
+        $mulaiTs = $mulai->timestamp;
+
+        // Cek apakah sedang dalam masa jeda 30 detik antar subtes (khusus tryout yang tidak bisa dijeda)
+        if (!$paket->bisa_pause && $nowTs < $mulaiTs) {
+            $sisaJeda = max(0, $mulaiTs - $nowTs);
+            return [
+                'completed' => false,
+                'sisa_detik' => $totalDurasiDetik,
+                'is_intermisi' => true,
+                'sisa_jeda' => $sisaJeda,
+            ];
+        }
+
+        $elapsed = max(0, $nowTs - $mulaiTs);
+        $initialRemaining = $sesi->sisa_detik_subtes ?? $totalDurasiDetik;
+
+        if ($elapsed < $initialRemaining) {
+            // Masih di dalam subtes aktif
+            $sisaDetik = $initialRemaining - $elapsed;
+            return [
+                'completed' => false,
+                'sisa_detik' => $sisaDetik,
+                'is_intermisi' => false,
+                'sisa_jeda' => 0,
+            ];
+        }
+
+        // Subtes aktif habis waktunya! Alirkan kelebihan waktu (overdue) ke subtes berikutnya
+        $overdue = $elapsed - $initialRemaining;
+        $subtesSelesai = $sesi->subtes_selesai ?? [];
+        if ($activeCode && !in_array($activeCode, $subtesSelesai)) {
+            $subtesSelesai[] = $activeCode;
+        }
+
+        $remaining = array_values(array_diff($subtestCodes, $subtesSelesai));
+        $breakBetween = (!$paket->bisa_pause) ? 30 : 0;
+
+        while (!empty($remaining)) {
+            $nextCode = $remaining[0];
+            $nextInfo = PaketLatihan::SUBTES_UTBK[$nextCode] ?? ['durasi_detik' => 1800];
+            $nextDuration = $nextInfo['durasi_detik'];
+            $totalSlot = $nextDuration + $breakBetween;
+
+            if ($overdue >= $totalSlot) {
+                // Subtes berikutnya ini juga terlewati habis saat siswa absen
+                $overdue -= $totalSlot;
+                $subtesSelesai[] = $nextCode;
+                array_shift($remaining);
+            } else {
+                // Kelebihan waktu jatuh di antara jeda 30 detik atau di dalam subtes ini
+                if ($breakBetween > 0 && $overdue < $breakBetween) {
+                    $sisaJeda = $breakBetween - $overdue;
+                    $sesi->update([
+                        'subtes_aktif' => $nextCode,
+                        'waktu_mulai_subtes' => now()->addSeconds($sisaJeda),
+                        'sisa_detik_subtes' => $nextDuration,
+                        'subtes_selesai' => $subtesSelesai,
+                        'is_paused' => false,
+                    ]);
+                    $sesi->refresh();
+
+                    return [
+                        'completed' => false,
+                        'sisa_detik' => $nextDuration,
+                        'is_intermisi' => true,
+                        'sisa_jeda' => $sisaJeda,
+                    ];
+                } else {
+                    $usedTime = $overdue - $breakBetween;
+                    $sisaDetik = max(0, $nextDuration - $usedTime);
+                    $sesi->update([
+                        'subtes_aktif' => $nextCode,
+                        'waktu_mulai_subtes' => now()->subSeconds($usedTime),
+                        'sisa_detik_subtes' => $nextDuration,
+                        'subtes_selesai' => $subtesSelesai,
+                        'is_paused' => false,
+                    ]);
+                    $sesi->refresh();
+
+                    return [
+                        'completed' => false,
+                        'sisa_detik' => $sisaDetik,
+                        'is_intermisi' => false,
+                        'sisa_jeda' => 0,
+                    ];
+                }
+            }
+        }
+
+        // Jika semua subtes sudah habis terlewati
+        $sesi->update([
+            'subtes_selesai' => $subtestCodes,
+            'is_paused' => false,
+        ]);
+        $sesi->refresh();
+
+        return [
+            'completed' => true,
+            'sisa_detik' => 0,
+            'is_intermisi' => false,
+            'sisa_jeda' => 0,
+        ];
     }
 
     protected function processAdvanceSubtest(SesiLatihan $sesi, PaketLatihan $paket, array $subtestCodes)
@@ -458,9 +828,12 @@ class TryoutController extends Controller
         $nextCode = $remaining[0];
         $durasiDetik = PaketLatihan::SUBTES_UTBK[$nextCode]['durasi_detik'] ?? 1800;
 
+        // Khusus tryout yang TIDAK bisa dijeda: beri jeda 30 detik sebelum subtes baru dimulai
+        $waktuMulai = (!$paket->bisa_pause) ? now()->addSeconds(30) : now();
+
         $sesi->update([
             'subtes_aktif' => $nextCode,
-            'waktu_mulai_subtes' => now(),
+            'waktu_mulai_subtes' => $waktuMulai,
             'sisa_detik_subtes' => $durasiDetik,
             'is_paused' => false,
             'subtes_selesai' => $subtesSelesai,
@@ -528,7 +901,7 @@ class TryoutController extends Controller
                 'nilai_akhir' => $nilaiAkhir,
             ]);
 
-            $subtestCodes = $this->getPaketSubtestCodes($paket);
+            $subtestCodes = $this->getPaketSubtestCodes($paket, $sesi);
             $sesi->update([
                 'waktu_selesai' => now(),
                 'status' => 'selesai',

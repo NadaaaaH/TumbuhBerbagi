@@ -24,6 +24,8 @@ export default function PopupModal({
     closeOnOverlayClick = true,
     padding = 'p-6 sm:p-8',
     className = '',
+    align = 'center',
+    containerClassName = '',
     children,
 }) {
     // Cegah scroll pada body & tambahkan shortcut keyboard Escape
@@ -59,6 +61,9 @@ export default function PopupModal({
     };
 
     const resolvedMaxWidth = maxWidthClasses[maxWidth] || maxWidth;
+    const alignClasses = align === 'top'
+        ? 'flex items-start justify-center pt-24 sm:pt-28 pb-8 px-4 sm:px-6 overflow-y-auto'
+        : 'flex items-center justify-center p-4 sm:p-6';
 
     return (
         <AnimatePresence>
@@ -66,12 +71,12 @@ export default function PopupModal({
                 <motion.div
                     key="popup-modal-backdrop"
                     initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6"
-                    onClick={closeOnOverlayClick ? onClose : undefined}
-                >
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className={`fixed inset-0 z-[9999] ${alignClasses} ${containerClassName}`}
+                        onClick={closeOnOverlayClick ? onClose : undefined}
+                    >
                     {/* Backdrop Blur Gelap */}
                     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
 

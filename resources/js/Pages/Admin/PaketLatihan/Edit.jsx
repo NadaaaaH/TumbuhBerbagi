@@ -14,13 +14,39 @@ export default function Edit({ auth, paket, soals = [] }) {
 
     const isTryout = paket?.tipe === 'tryout';
 
-    // Tentukan mode awal berdasarkan data paket
-    const getInitialMode = () => {
+    // Tentukan mode awal untuk Try Out
+    const toDateTime = (val) => val ? new Date(val).toISOString().slice(0, 16) : '';
+
+    const getInitialTryoutMode = () => {
+        if (!isTryout) return { mode: 'manual', subMode: 'aktif_sekarang' };
+        
+        // Jika tanggal_aktif sama dengan tanggal_mulai
+        if (paket?.tanggal_aktif && paket?.tanggal_mulai && toDateTime(paket.tanggal_aktif) === toDateTime(paket.tanggal_mulai)) {
+            return { mode: 'sesuai_mulai', subMode: 'aktif_sekarang' };
+        }
+        // Jika status aktif dan tanpa tanggal_aktif (atau sudah lewat)
+        if ((paket?.status === 'aktif' || paket?.status === 'Aktif') && !paket?.tanggal_aktif) {
+            return { mode: 'manual', subMode: 'aktif_sekarang' };
+        }
+        // Jika ada tanggal_aktif tersendiri
+        if (paket?.tanggal_aktif) {
+            return { mode: 'manual', subMode: 'jadwal_kustom' };
+        }
+        // Default nonaktif
+        return { mode: 'manual', subMode: 'nonaktif' };
+    };
+
+    const initialTryout = getInitialTryoutMode();
+    const [tryoutActMode, setTryoutActMode] = useState(initialTryout.mode); // 'sesuai_mulai' | 'manual'
+    const [manualSubMode, setManualSubMode] = useState(initialTryout.subMode); // 'aktif_sekarang' | 'jadwal_kustom' | 'nonaktif'
+
+    // Mode aktivasi untuk Latihan Soal
+    const getInitialLatMode = () => {
         if (paket?.tanggal_aktif) return 'terjadwal';
-        if (paket?.status === 'aktif' || paket?.status === 'Aktif') return isTryout ? 'nonaktif' : 'aktif';
+        if (paket?.status === 'aktif' || paket?.status === 'Aktif') return 'aktif';
         return 'nonaktif';
     };
-    const [statusMode, setStatusMode] = useState(getInitialMode);
+    const [statusMode, setStatusMode] = useState(getInitialLatMode);
 
     const filteredSoals = soals.filter((s) =>
         s.konten_soal?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -28,7 +54,6 @@ export default function Edit({ auth, paket, soals = [] }) {
         s.materi?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const toDateTime = (val) => val ? new Date(val).toISOString().slice(0, 16) : '';
 
     const { data, setData, put, processing, errors } = useForm({
         nama_paket:           paket?.nama_paket  || '',
@@ -46,28 +71,59 @@ export default function Edit({ auth, paket, soals = [] }) {
         tanggal_tampil_hasil: toDateTime(paket?.tanggal_tampil_hasil),
     });
 
-    // Konstanta Durasi Standar UTBK
+    // Konstanta Durasi Standar UTBK (Resmi 195 Menit / 3 Jam 15 Menit)
     const UTBK_SUBTESTS = [
         { kode: 'PU',    nama: 'Penalaran Umum',               menit: 30 },
-        { kode: 'PPU',   nama: 'Pengetahuan & Pemahaman Umum',  menit: 35 },
-        { kode: 'PK',    nama: 'Pengetahuan Kuantitatif',       menit: 40 },
-        { kode: 'PBM',   nama: 'Pemahaman Bacaan & Menulis',    menit: 35 },
+        { kode: 'PPU',   nama: 'Pengetahuan & Pemahaman Umum',  menit: 15 },
+        { kode: 'PBM',   nama: 'Pemahaman Bacaan & Menulis',    menit: 25 },
+        { kode: 'PK',    nama: 'Pengetahuan Kuantitatif',       menit: 20 },
         { kode: 'LBI',   nama: 'Literasi Bahasa Indonesia',     menit: 45 },
-        { kode: 'LBIng', nama: 'Literasi Bahasa Inggris',       menit: 35 },
-        { kode: 'PM',    nama: 'Penalaran Matematika',          menit: 45 },
+        { kode: 'LBIng', nama: 'Literasi Bahasa Inggris',       menit: 20 },
+        { kode: 'PM',    nama: 'Penalaran Matematika',          menit: 40 },
     ];
-    const TOTAL_MENIT = UTBK_SUBTESTS.reduce((s, t) => s + t.menit, 0);
+    const TOTAL_MENIT = 195;
 
     const latMode = [
         { value: 'aktif',     label: 'Aktif Sekarang' },
         { value: 'nonaktif',  label: 'Nonaktif'        },
         { value: 'terjadwal', label: '⏰ Jadwalkan'    },
     ];
-    const toMode = [
-        { value: 'nonaktif',  label: 'Aktifkan Nanti (Manual)' },
-        { value: 'terjadwal', label: '⏰ Jadwalkan Otomatis'   },
-    ];
-    const STATUS_MODES = isTryout ? toMode : latMode;
+
+    const handleTryoutActMode = (mode) => {
+        setTryoutActMode(mode);
+        if (mode === 'sesuai_mulai') {
+            setData(d => ({
+                ...d,
+                status: 'nonaktif',
+                tanggal_aktif: d.tanggal_mulai || '',
+            }));
+        } else {
+            handleManualSubMode(manualSubMode);
+        }
+    };
+
+    const handleManualSubMode = (sub) => {
+        setManualSubMode(sub);
+        if (sub === 'aktif_sekarang') {
+            setData(d => ({
+                ...d,
+                status: 'aktif',
+                tanggal_aktif: '',
+            }));
+        } else if (sub === 'jadwal_kustom') {
+            setData(d => ({
+                ...d,
+                status: 'nonaktif',
+                tanggal_aktif: d.tanggal_aktif || toDateTime(new Date(Date.now() + 60000)),
+            }));
+        } else if (sub === 'nonaktif') {
+            setData(d => ({
+                ...d,
+                status: 'nonaktif',
+                tanggal_aktif: '',
+            }));
+        }
+    };
 
     const handleStatusMode = (mode) => {
         setStatusMode(mode);
@@ -233,7 +289,14 @@ export default function Edit({ auth, paket, soals = [] }) {
                                                     type="datetime-local"
                                                     className="mt-1 block w-full"
                                                     value={data.tanggal_mulai}
-                                                    onChange={(e) => setData('tanggal_mulai', e.target.value)}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        setData(d => ({
+                                                            ...d,
+                                                            tanggal_mulai: val,
+                                                            tanggal_aktif: tryoutActMode === 'sesuai_mulai' ? val : d.tanggal_aktif,
+                                                        }));
+                                                    }}
                                                     required
                                                 />
                                                 <InputError message={errors.tanggal_mulai} className="mt-2" />
@@ -343,38 +406,132 @@ export default function Edit({ auth, paket, soals = [] }) {
 
                                     {/* Status Aktivasi (tryout) */}
                                     <SectionCard icon={Clock} title="Status Aktivasi" accent="amber">
-                                        <p className="text-xs text-slate-500 -mt-2">Kapan paket ini mulai terlihat oleh siswa?</p>
+                                        <p className="text-xs text-slate-500 -mt-2">
+                                            Kapan paket Try Out ini mulai terlihat oleh siswa di antarmukanya?
+                                        </p>
+
                                         <div className="flex gap-3 flex-wrap">
-                                            {STATUS_MODES.map(mode => (
-                                                <button key={mode.value} type="button" onClick={() => handleStatusMode(mode.value)}
-                                                    className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${
-                                                        statusMode === mode.value
-                                                            ? 'bg-amber-500 border-amber-500 text-white shadow-sm'
-                                                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                                                    }`}>
-                                                    {mode.label}
-                                                </button>
-                                            ))}
+                                            <button
+                                                type="button"
+                                                onClick={() => handleTryoutActMode('sesuai_mulai')}
+                                                className={`px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all flex items-center gap-2 ${
+                                                    tryoutActMode === 'sesuai_mulai'
+                                                        ? 'bg-amber-500 border-amber-500 text-white shadow-sm'
+                                                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                                }`}
+                                            >
+                                                <Calendar size={15} /> Sesuai Awal Pembukaan TO
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => handleTryoutActMode('manual')}
+                                                className={`px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all flex items-center gap-2 ${
+                                                    tryoutActMode === 'manual'
+                                                        ? 'bg-amber-500 border-amber-500 text-white shadow-sm'
+                                                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                                }`}
+                                            >
+                                                <Clock size={15} /> Manual (Atur Sendiri)
+                                            </button>
                                         </div>
-                                        {statusMode === 'terjadwal' && (
-                                            <div className="mt-3 p-4 bg-white border border-amber-200 rounded-xl">
-                                                <InputLabel htmlFor="tanggal_aktif" value="Jadwal Paket Mulai Terlihat Siswa" />
-                                                <TextInput
-                                                    id="tanggal_aktif"
-                                                    type="datetime-local"
-                                                    className="mt-1 block w-full sm:w-72"
-                                                    value={data.tanggal_aktif}
-                                                    onChange={(e) => setData('tanggal_aktif', e.target.value)}
-                                                    required
-                                                />
-                                                <InputError message={errors.tanggal_aktif} className="mt-2" />
+
+                                        {/* Penjelasan jika Sesuai Awal Pembukaan TO */}
+                                        {tryoutActMode === 'sesuai_mulai' && (
+                                            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs space-y-1">
+                                                <p className="font-bold text-amber-900">
+                                                    Otomatis Aktif Saat Pembukaan Try Out
+                                                </p>
+                                                <p className="text-amber-800 leading-relaxed">
+                                                    Paket ini akan otomatis mulai terlihat oleh siswa pada tanggal & jam mulai pengerjaan:{' '}
+                                                    <strong>
+                                                        {data.tanggal_mulai
+                                                            ? new Date(data.tanggal_mulai).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' }) + ' WIB'
+                                                            : '(Sesuai Tanggal & Jam Mulai di atas)'}
+                                                    </strong>
+                                                    . Sebelum waktu tersebut, paket belum muncul di daftar Try Out siswa.
+                                                </p>
                                             </div>
                                         )}
-                                        {statusMode === 'nonaktif' && (
-                                            <p className="text-xs text-slate-600 bg-white border border-slate-200 rounded-lg px-3 py-2 inline-block">
-                                                Paket tersimpan tapi belum terlihat siswa.
-                                            </p>
+
+                                        {/* Opsi jika Manual */}
+                                        {tryoutActMode === 'manual' && (
+                                            <div className="mt-3 p-4 bg-white border border-amber-200 rounded-xl space-y-3">
+                                                <div>
+                                                    <p className="text-xs font-semibold text-slate-700 mb-2">
+                                                        Pilihan Aktivasi Manual:
+                                                    </p>
+                                                    <div className="flex gap-2 flex-wrap">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleManualSubMode('aktif_sekarang')}
+                                                            className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all ${
+                                                                manualSubMode === 'aktif_sekarang'
+                                                                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
+                                                                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                                                            }`}
+                                                        >
+                                                            ✓ Aktifkan Sekarang
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleManualSubMode('jadwal_kustom')}
+                                                            className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all ${
+                                                                manualSubMode === 'jadwal_kustom'
+                                                                    ? 'bg-amber-500 border-amber-500 text-white shadow-sm'
+                                                                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                                                            }`}
+                                                        >
+                                                            ⏰ Jadwalkan Tanggal Khusus
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleManualSubMode('nonaktif')}
+                                                            className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all ${
+                                                                manualSubMode === 'nonaktif'
+                                                                    ? 'bg-slate-600 border-slate-600 text-white shadow-sm'
+                                                                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                                                            }`}
+                                                        >
+                                                            Nonaktif (Draft)
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {manualSubMode === 'aktif_sekarang' && (
+                                                    <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 leading-relaxed">
+                                                        ✓ <strong>Paket langsung aktif dan terlihat oleh siswa dari sekarang.</strong>
+                                                        <br />
+                                                        Jika tanggal mulai ujian ({data.tanggal_mulai ? new Date(data.tanggal_mulai).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) + ' WIB' : 'yang ditentukan'}) masih di masa mendatang, di antarmuka siswa card akan otomatis menampilkan status tombol <strong>"Belum Dimulai"</strong>.
+                                                    </div>
+                                                )}
+
+                                                {manualSubMode === 'jadwal_kustom' && (
+                                                    <div className="space-y-2 pt-1">
+                                                        <InputLabel htmlFor="tanggal_aktif" value="Jadwal Paket Mulai Terlihat Siswa" />
+                                                        <TextInput
+                                                            id="tanggal_aktif"
+                                                            type="datetime-local"
+                                                            className="block w-full sm:w-72 text-sm"
+                                                            value={data.tanggal_aktif}
+                                                            onChange={(e) => setData('tanggal_aktif', e.target.value)}
+                                                            required
+                                                        />
+                                                        <p className="text-[11px] text-slate-500">
+                                                            Disarankan diatur sebelum tanggal mulai pengerjaan agar siswa dapat melihat jadwal Try Out lebih awal dengan status "Belum Dimulai".
+                                                        </p>
+                                                        <InputError message={errors.tanggal_aktif} className="mt-1" />
+                                                    </div>
+                                                )}
+
+                                                {manualSubMode === 'nonaktif' && (
+                                                    <p className="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                                                        Paket tersimpan sebagai draft dan belum terlihat sama sekali oleh siswa.
+                                                    </p>
+                                                )}
+                                            </div>
                                         )}
+
                                         <InputError message={errors.status} className="mt-1" />
                                     </SectionCard>
                                 </>
@@ -401,7 +558,7 @@ export default function Edit({ auth, paket, soals = [] }) {
                                             Pilih apakah paket langsung aktif, nonaktif, atau dijadwalkan.
                                         </p>
                                         <div className="flex items-center gap-2 flex-wrap">
-                                            {STATUS_MODES.map(mode => (
+                                            {latMode.map(mode => (
                                                 <button key={mode.value} type="button" onClick={() => handleStatusMode(mode.value)}
                                                     className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${
                                                         statusMode === mode.value

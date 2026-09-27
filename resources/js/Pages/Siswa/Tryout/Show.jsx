@@ -1,10 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Head, useForm, Link, router } from '@inertiajs/react';
+import axios from 'axios';
 import SiswaLayout from '@/Layouts/SiswaLayout';
-import { ArrowLeft, Clock, ClipboardList, CheckCircle, Lock, Play, Pause, AlertTriangle, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Clock, ClipboardList, CheckCircle, Lock, Play, Pause, AlertTriangle, ArrowRight, Send, HelpCircle } from 'lucide-react';
+import PrimaryButton from '@/Components/PrimaryButton';
+import PopupModal from '@/Components/PopupModal';
 
-import NavigasiSoal from '../Latihan/Partials/NavigasiSoal';
-import SoalCard     from '../Latihan/Partials/SoalCard';
+import NavigasiTryout from './Partials/NavigasiTryout';
+import SoalCard       from '../Latihan/Partials/SoalCard';
+import PetunjukModal  from './Partials/PetunjukModal';
+import IntermisiModal from './Partials/IntermisiModal';
 
 export default function Show({
     auth,
@@ -41,6 +46,38 @@ export default function Show({
     const [showNextModal, setShowNextModal] = useState(false);
     const [showSubmitModal, setShowSubmitModal] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const isSubmittingRef = useRef(false);
+
+    // Jeda 30 detik antar subtes (khusus paket yang tidak bisa dijeda)
+    const [isIntermisi, setIsIntermisi] = useState(Boolean(activeSubtes.is_intermisi && activeSubtes.sisa_jeda > 0));
+    const [jedaLeft, setJedaLeft] = useState(activeSubtes.sisa_jeda ?? 0);
+    const [isStartingSubtes, setIsStartingSubtes] = useState(false);
+
+    // Modal Petunjuk Pengerjaan Tryout (muncul otomatis saat pertama masuk sesi)
+    const petunjukKey = `tryout_petunjuk_${paket.id_paket}_${sesi.id_sesi}`;
+    const [showPetunjukModal, setShowPetunjukModal] = useState(() => {
+        try {
+            return !localStorage.getItem(petunjukKey);
+        } catch {
+            return true;
+        }
+    });
+
+    const handleClosePetunjuk = () => {
+        setShowPetunjukModal(false);
+        try {
+            localStorage.setItem(petunjukKey, 'true');
+        } catch {}
+    };
+
+    // Local pause state untuk respon instan (optimistic UI)
+    const [currentIsPaused, setCurrentIsPaused] = useState(Boolean(isPaused));
+    const [isPausing, setIsPausing] = useState(false);
+    const [isResuming, setIsResuming] = useState(false);
+
+    useEffect(() => {
+        setCurrentIsPaused(Boolean(isPaused));
+    }, [isPaused]);
 
     // Sync to localStorage
     useEffect(() => {
@@ -53,11 +90,36 @@ export default function Show({
         catch {}
     }, [raguRagu]);
 
-    // Timer logic per active subtest
+    // Update waktu saat subtes aktif berubah (hanya saat berganti subtes)
     useEffect(() => {
-        if (isPaused) return;
-
         setTimeLeft(activeSubtes.sisa_detik ?? 1800);
+        isSubmittingRef.current = false;
+        const hasIntermisi = Boolean(activeSubtes.is_intermisi && activeSubtes.sisa_jeda > 0);
+        setIsIntermisi(hasIntermisi);
+        setJedaLeft(activeSubtes.sisa_jeda ?? 0);
+    }, [activeSubtes.kode, activeSubtes.is_intermisi, activeSubtes.sisa_jeda]);
+
+    // Hitungan mundur jeda 30 detik antar subtes
+    useEffect(() => {
+        if (!isIntermisi || jedaLeft <= 0) return;
+
+        const timer = setInterval(() => {
+            setJedaLeft((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    setIsIntermisi(false);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [isIntermisi, jedaLeft]);
+
+    // Timer logic per subtest (hanya berjalan saat tidak dijeda dan tidak sedang jeda antar subtes)
+    useEffect(() => {
+        if (currentIsPaused || isIntermisi) return;
 
         const timer = setInterval(() => {
             setTimeLeft((prev) => {
@@ -71,7 +133,7 @@ export default function Show({
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [activeSubtes.kode, isPaused, activeSubtes.sisa_detik]);
+    }, [currentIsPaused, isIntermisi]);
 
     // Format seconds to mm:ss
     const formatTime = (seconds) => {
@@ -85,7 +147,8 @@ export default function Show({
 
     // Handle auto-advance when timer reaches 0
     const handleTimeExpired = () => {
-        if (isSubmitting) return;
+        if (isSubmittingRef.current) return;
+        isSubmittingRef.current = true;
         setIsSubmitting(true);
 
         if (activeSubtes.is_last) {
@@ -99,38 +162,94 @@ export default function Show({
         const nextJawaban = { ...data.jawaban, [soalId]: value };
         setData('jawaban', nextJawaban);
 
-        // Auto-save to server silently
-        fetch(route('siswa.tryout.save-jawaban', paket.id_paket), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-            },
-            body: JSON.stringify({
-                id_soal: soalId,
-                jawaban: value,
-            }),
-        }).catch(() => {});
+        // Auto-save to server silently via axios
+        axios.post(route('siswa.tryout.save-jawaban', paket.id_paket), {
+            id_soal: soalId,
+            jawaban: value,
+        })
+        .then((res) => {
+            if (res.data && res.data.completed) {
+                router.visit(route('siswa.tryout.hasil', paket.id_paket));
+            }
+        })
+        .catch(() => {});
     };
 
     const toggleRaguRagu = (soalId) =>
         setRaguRagu((prev) => ({ ...prev, [soalId]: !prev[soalId] }));
 
-    const handleTogglePause = () => {
-        router.post(route('siswa.tryout.toggle-pause', paket.id_paket), {}, {
-            preserveScroll: true,
-            preserveState: false,
-        });
+    const handlePause = async () => {
+        if (isPausing || isResuming) return;
+        setIsPausing(true);
+        // Langsung tampilkan modal jeda & bekukan timer
+        setCurrentIsPaused(true);
+
+        try {
+            const res = await axios.post(route('siswa.tryout.toggle-pause', paket.id_paket), {
+                client_time_left: timeLeft,
+            });
+            if (res.data && res.data.success) {
+                setCurrentIsPaused(res.data.is_paused);
+                if (res.data.sisa_detik != null) {
+                    setTimeLeft(res.data.sisa_detik);
+                }
+            } else {
+                setCurrentIsPaused(false);
+            }
+        } catch (err) {
+            console.error('Gagal menjeda:', err);
+            setCurrentIsPaused(false);
+        } finally {
+            setIsPausing(false);
+        }
+    };
+
+    const handleResume = async () => {
+        if (isPausing || isResuming) return;
+        setIsResuming(true);
+
+        try {
+            const res = await axios.post(route('siswa.tryout.toggle-pause', paket.id_paket));
+            if (res.data && res.data.success) {
+                setCurrentIsPaused(res.data.is_paused);
+                if (res.data.sisa_detik != null) {
+                    setTimeLeft(res.data.sisa_detik);
+                }
+            } else {
+                setCurrentIsPaused(true);
+            }
+        } catch (err) {
+            console.error('Gagal melanjutkan:', err);
+            setCurrentIsPaused(true);
+        } finally {
+            setIsResuming(false);
+        }
+    };
+
+    const handleMulaiSubtesSekarang = async () => {
+        if (isStartingSubtes) return;
+        setIsStartingSubtes(true);
+        try {
+            await axios.post(route('siswa.tryout.mulai-subtes', paket.id_paket));
+        } catch (err) {
+            console.error('Gagal memulai subtes lebih awal:', err);
+        } finally {
+            setIsIntermisi(false);
+            setJedaLeft(0);
+            setIsStartingSubtes(false);
+        }
     };
 
     const doPindahSubtes = () => {
         setShowNextModal(false);
         setIsSubmitting(true);
+        isSubmittingRef.current = true;
         router.post(route('siswa.tryout.pindah-subtes', paket.id_paket), {
             jawaban: data.jawaban,
         }, {
             onFinish: () => {
                 setIsSubmitting(false);
+                isSubmittingRef.current = false;
                 setActiveIndex(0);
             }
         });
@@ -139,12 +258,17 @@ export default function Show({
     const doSubmit = () => {
         setShowSubmitModal(false);
         setIsSubmitting(true);
+        isSubmittingRef.current = true;
         try {
             localStorage.removeItem(storageKey);
             localStorage.removeItem(raguKey);
+            localStorage.removeItem(petunjukKey);
         } catch {}
         post(route('siswa.tryout.submit', paket.id_paket), {
-            onFinish: () => setIsSubmitting(false)
+            onFinish: () => {
+                setIsSubmitting(false);
+                isSubmittingRef.current = false;
+            }
         });
     };
 
@@ -191,7 +315,7 @@ export default function Show({
             <Head title={`Try Out - ${paket.nama_paket}`} />
 
             {/* OVERLAY MODAL JIKA UJIAN SEDANG DI-PAUSE */}
-            {isPaused && (
+            {currentIsPaused && (
                 <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
                         <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center mx-auto shadow-inner">
@@ -204,60 +328,27 @@ export default function Show({
                             </p>
                         </div>
                         <button
-                            onClick={handleTogglePause}
-                            className="w-full inline-flex items-center justify-center gap-2 bg-[#1b5e20] hover:bg-[#2d7e32] text-white py-3.5 px-6 rounded-2xl font-bold text-sm shadow-md shadow-emerald-900/10 active:scale-98 transition-all"
+                            type="button"
+                            disabled={isResuming}
+                            onClick={handleResume}
+                            className="w-full inline-flex items-center justify-center gap-2 bg-[#1b5e20] hover:bg-[#2d7e32] disabled:opacity-60 disabled:cursor-not-allowed text-white py-3.5 px-6 rounded-2xl font-bold text-sm shadow-md shadow-emerald-900/10 active:scale-98 transition-all"
                         >
-                            <Play size={18} /> Lanjutkan Ujian
+                            {isResuming ? (
+                                <>
+                                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    <span>Melanjutkan...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Play size={18} /> <span>Lanjutkan Ujian</span>
+                                </>
+                            )}
                         </button>
                     </div>
                 </div>
             )}
 
             <div className="space-y-6 pb-16">
-                {/* SUBTEST PROGRESSION BAR */}
-                <div className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-2xs space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Subtes Ujian:</span>
-                            <span className="text-sm font-extrabold text-[#1b5e20]">{activeSubtes.nama} ({activeSubtes.kode})</span>
-                        </div>
-                        <div className="text-xs text-slate-500 font-medium">
-                            Soal {activeIndex + 1} dari {soals.length} pada subtes ini
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-                        {subtesList.map((sub, idx) => {
-                            const isAktif = sub.status === 'aktif';
-                            const isSelesai = sub.status === 'selesai';
-
-                            return (
-                                <div
-                                    key={sub.kode}
-                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all border ${
-                                        isAktif
-                                            ? 'bg-emerald-50 text-[#1b5e20] border-emerald-300 ring-2 ring-emerald-500/20'
-                                            : isSelesai
-                                            ? 'bg-slate-100 text-slate-600 border-slate-200'
-                                            : 'bg-slate-50 text-slate-400 border-slate-200/60'
-                                    }`}
-                                >
-                                    {isSelesai ? (
-                                        <CheckCircle size={13} className="text-emerald-600" />
-                                    ) : isAktif ? (
-                                        <span className="w-2 h-2 rounded-full bg-[#1b5e20] animate-ping" />
-                                    ) : (
-                                        <Lock size={12} className="text-slate-400" />
-                                    )}
-                                    <span>{sub.kode}</span>
-                                    {isSelesai && <span className="text-[10px] text-slate-400 font-normal">Selesai</span>}
-                                    {isAktif && <span className="text-[10px] text-emerald-700 font-normal">Aktif</span>}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
                 {/* MAIN EXAM GRID */}
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
                     {/* LEFT SIDEBAR: TIMER & NAVIGASI - Sticky tetap di layar saat di-scroll */}
@@ -265,41 +356,66 @@ export default function Show({
                         {/* TIMER CARD KHUSUS SUBTES */}
                         <div className={`p-6 rounded-[2rem] border transition-all text-center relative overflow-hidden ${
                             isUrgent
-                                ? 'bg-red-50 border-red-200 text-red-700 animate-pulse'
+                                ? 'bg-red-50 border-red-300 text-red-800 animate-pulse'
                                 : 'bg-white border-slate-100 text-slate-800 shadow-2xs'
                         }`}>
                             <div className="flex items-center justify-between gap-2 mb-2">
-                                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                    <Clock size={13} /> Sisa Waktu Subtes
+                                <span className={`text-[11px] uppercase tracking-wider flex items-center gap-1.5 ${
+                                    isUrgent ? 'text-red-900 font-extrabold' : 'text-slate-400 font-bold'
+                                }`}>
+                                    <Clock size={13} className={isUrgent ? 'text-red-900' : 'text-slate-400'} /> Sisa Waktu Subtes
                                 </span>
-                                {bisaPause && (
+                                <div className="flex items-center gap-1">
                                     <button
                                         type="button"
-                                        onClick={handleTogglePause}
-                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
-                                        title="Jeda ujian sementara"
+                                        onClick={() => setShowPetunjukModal(true)}
+                                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${
+                                            isUrgent
+                                                ? 'bg-red-100 text-red-900 hover:bg-red-200'
+                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        }`}
+                                        title="Petunjuk pengerjaan tryout"
                                     >
-                                        <Pause size={11} /> Jeda
+                                        <HelpCircle size={11} /> Petunjuk
                                     </button>
-                                )}
+                                    {bisaPause && (
+                                        <button
+                                            type="button"
+                                            disabled={isPausing}
+                                            onClick={handlePause}
+                                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all ${
+                                                isUrgent
+                                                    ? 'bg-red-600 hover:bg-red-700 text-white shadow-xs'
+                                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            }`}
+                                            title="Jeda ujian sementara"
+                                        >
+                                            <Pause size={11} /> {isPausing ? 'Menjeda...' : 'Jeda'}
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
-                            <div className={`text-4xl font-black font-mono tracking-tight ${isUrgent ? 'text-red-600' : 'text-[#1b5e20]'}`}>
+                            <div className={`text-4xl font-black font-mono tracking-tight ${isUrgent ? 'text-red-700' : 'text-[#1b5e20]'}`}>
                                 {formatTime(timeLeft)}
                             </div>
 
-                            <p className="text-[11px] text-slate-400 mt-2 font-medium">
+                            <p className={`text-[11px] mt-2 font-medium ${
+                                isUrgent ? 'text-red-900 font-semibold' : 'text-slate-400'
+                            }`}>
                                 Waktu habis otomatis mengunci subtes ini.
                             </p>
                         </div>
 
-                        {/* NAVIGASI NOMOR SOAL */}
+                        {/* NAVIGASI NOMOR SOAL & SUBTES */}
                         <div className="hidden lg:block">
-                            <NavigasiSoal
+                            <NavigasiTryout
                                 soals={soals}
                                 activeIndex={activeIndex}
                                 jawaban={data.jawaban}
                                 raguRagu={raguRagu}
+                                subtesList={subtesList}
+                                activeSubtes={activeSubtes}
                                 processing={processing || isSubmitting}
                                 onNavigate={setActiveIndex}
                                 onKirim={() => {
@@ -327,6 +443,8 @@ export default function Show({
                             onRagu={toggleRaguRagu}
                             onPrev={() => setActiveIndex((i) => Math.max(0, i - 1))}
                             onNext={() => setActiveIndex((i) => Math.min(soals.length - 1, i + 1))}
+                            nextLabel="Selanjutnya"
+                            kirimLabel={activeSubtes.is_last ? "Kirim Jawaban" : "Lanjut Subtes"}
                             onKirim={() => {
                                 if (activeSubtes.is_last) {
                                     setShowSubmitModal(true);
@@ -340,11 +458,13 @@ export default function Show({
 
                 {/* MOBILE NAVIGASI */}
                 <div className="block lg:hidden">
-                    <NavigasiSoal
+                    <NavigasiTryout
                         soals={soals}
                         activeIndex={activeIndex}
                         jawaban={data.jawaban}
                         raguRagu={raguRagu}
+                        subtesList={subtesList}
+                        activeSubtes={activeSubtes}
                         processing={processing || isSubmitting}
                         onNavigate={setActiveIndex}
                         onKirim={() => {
@@ -359,74 +479,108 @@ export default function Show({
             </div>
 
             {/* MODAL KONFIRMASI PINDAH SUBTES */}
-            {showNextModal && (
-                <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
-                        <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-100">
-                            <AlertTriangle size={28} />
-                        </div>
-                        <div className="text-center space-y-2">
-                            <h4 className="text-lg font-extrabold text-slate-800">Selesaikan Subtes {activeSubtes.kode}?</h4>
-                            <p className="text-xs text-slate-500 leading-relaxed">
-                                Setelah beralih ke subtes berikutnya, subtes <strong>{activeSubtes.nama}</strong> akan <strong>terkunci secara permanen</strong> dan Anda tidak dapat kembali mengubah jawaban di subtes ini.
-                            </p>
-                        </div>
-                        <div className="flex gap-3 pt-2">
-                            <button
-                                type="button"
-                                disabled={isSubmitting}
-                                onClick={() => setShowNextModal(false)}
-                                className="flex-1 py-3 px-4 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 transition-colors"
-                            >
-                                Periksa Lagi
-                            </button>
-                            <button
-                                type="button"
-                                disabled={isSubmitting}
-                                onClick={doPindahSubtes}
-                                className="flex-1 py-3 px-4 rounded-xl bg-[#1b5e20] text-white font-bold text-xs hover:bg-[#2d7e32] shadow-sm transition-all"
-                            >
-                                {isSubmitting ? 'Memproses...' : 'Ya, Lanjut Subtes'}
-                            </button>
-                        </div>
+            <PopupModal
+                isOpen={showNextModal}
+                onClose={() => setShowNextModal(false)}
+                maxWidth="md"
+                showCloseButton={true}
+                padding="p-8"
+            >
+                <div className="space-y-4 text-center">
+                    {/* Logo Hijau Tanpa Container */}
+                    <div className="flex justify-center pt-1">
+                        <AlertTriangle size={56} className="text-[#1b5e20] stroke-[2]" />
+                    </div>
+
+                    <div className="space-y-2">
+                        <h4 className="font-['Poppins'] text-xl font-bold text-slate-900">
+                            Selesaikan Subtes {activeSubtes.kode}?
+                        </h4>
+                        <p className="text-sm text-slate-500 leading-relaxed max-w-sm mx-auto">
+                            Setelah beralih ke subtes berikutnya, subtes <strong className="text-slate-700">{activeSubtes.nama}</strong> akan <strong className="text-slate-700">terkunci secara permanen</strong> dan Anda tidak dapat kembali mengubah jawaban di subtes ini.
+                        </p>
+                    </div>
+
+                    <div className="flex gap-3 pt-3">
+                        <button
+                            type="button"
+                            disabled={isSubmitting}
+                            onClick={() => setShowNextModal(false)}
+                            className="flex-1 py-3 px-5 rounded-full border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors shadow-xs active:scale-95"
+                        >
+                            Periksa Lagi
+                        </button>
+                        <PrimaryButton
+                            type="button"
+                            disabled={isSubmitting}
+                            onClick={doPindahSubtes}
+                            className="flex-1 !py-3 !px-5 !rounded-full gap-2 shadow-md text-sm font-semibold justify-center"
+                        >
+                            <span>{isSubmitting ? 'Memproses...' : 'Ya, Lanjut Subtes'}</span>
+                            <ArrowRight size={15} />
+                        </PrimaryButton>
                     </div>
                 </div>
-            )}
+            </PopupModal>
 
             {/* MODAL KONFIRMASI FINAL SUBMIT */}
-            {showSubmitModal && (
-                <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
-                        <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-[#1b5e20] flex items-center justify-center mx-auto border border-emerald-100">
-                            <CheckCircle size={28} />
-                        </div>
-                        <div className="text-center space-y-2">
-                            <h4 className="text-lg font-extrabold text-slate-800">Kumpulkan Ujian Try Out?</h4>
-                            <p className="text-xs text-slate-500 leading-relaxed">
-                                Anda telah mencapai subtes terakhir. Seluruh jawaban akan dikumpulkan dan dihitung bobot kesulitannya (IRT). Pastikan semua nomor telah terisi dengan baik.
-                            </p>
-                        </div>
-                        <div className="flex gap-3 pt-2">
-                            <button
-                                type="button"
-                                disabled={isSubmitting}
-                                onClick={() => setShowSubmitModal(false)}
-                                className="flex-1 py-3 px-4 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 transition-colors"
-                            >
-                                Periksa Lagi
-                            </button>
-                            <button
-                                type="button"
-                                disabled={isSubmitting}
-                                onClick={doSubmit}
-                                className="flex-1 py-3 px-4 rounded-xl bg-[#1b5e20] text-white font-bold text-xs hover:bg-[#2d7e32] shadow-sm transition-all"
-                            >
-                                {isSubmitting ? 'Mengumpulkan...' : 'Ya, Kumpulkan Ujian'}
-                            </button>
-                        </div>
+            <PopupModal
+                isOpen={showSubmitModal}
+                onClose={() => setShowSubmitModal(false)}
+                maxWidth="md"
+                showCloseButton={true}
+                padding="p-8"
+            >
+                <div className="space-y-4 text-center">
+                    {/* Logo Hijau Tanpa Container */}
+                    <div className="flex justify-center pt-1">
+                        <CheckCircle size={56} className="text-[#1b5e20] stroke-[2]" />
+                    </div>
+
+                    <div className="space-y-2">
+                        <h4 className="font-['Poppins'] text-xl font-bold text-slate-900">
+                            Kumpulkan Ujian Try Out?
+                        </h4>
+                        <p className="text-sm text-slate-500 leading-relaxed max-w-sm mx-auto">
+                            Anda telah mencapai subtes terakhir. Seluruh lembar jawaban akan dikumpulkan untuk dihitung nilainya. Pastikan semua nomor telah terisi dengan baik.
+                        </p>
+                    </div>
+
+                    <div className="flex gap-3 pt-3">
+                        <button
+                            type="button"
+                            disabled={isSubmitting}
+                            onClick={() => setShowSubmitModal(false)}
+                            className="flex-1 py-3 px-5 rounded-full border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors shadow-xs active:scale-95"
+                        >
+                            Periksa Lagi
+                        </button>
+                        <PrimaryButton
+                            type="button"
+                            disabled={isSubmitting}
+                            onClick={doSubmit}
+                            className="flex-1 !py-3 !px-5 !rounded-full gap-2 shadow-md text-sm font-semibold justify-center"
+                        >
+                            <Send size={15} />
+                            <span>{isSubmitting ? 'Mengumpulkan...' : 'Ya, Kumpulkan'}</span>
+                        </PrimaryButton>
                     </div>
                 </div>
-            )}
+            </PopupModal>
+            {/* MODAL PETUNJUK PENGERJAAN TRYOUT */}
+            <PetunjukModal
+                isOpen={showPetunjukModal}
+                onClose={handleClosePetunjuk}
+            />
+
+            {/* MODAL JEDA 30 DETIK SETIAP PERPINDAHAN SUBTES (KHUSUS TRYOUT TANPA JEDA) */}
+            <IntermisiModal
+                isOpen={isIntermisi && jedaLeft > 0}
+                subtes={activeSubtes}
+                jedaLeft={jedaLeft}
+                onMulaiSekarang={handleMulaiSubtesSekarang}
+                isStarting={isStartingSubtes}
+            />
         </SiswaLayout>
     );
 }

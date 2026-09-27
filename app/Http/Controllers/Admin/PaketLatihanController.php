@@ -87,9 +87,14 @@ class PaketLatihanController extends Controller
             'tanggal_tampil_hasil' => 'nullable|date|required_if:tampil_hasil,terjadwal',
         ]);
 
-        // Kalau ada jadwal aktif, paksa status nonaktif sampai scheduler mengaktifkan
+        // Kalau ada jadwal aktif
         if (!empty($validated['tanggal_aktif'])) {
-            $validated['status'] = 'nonaktif';
+            if (now()->gte($validated['tanggal_aktif'])) {
+                $validated['status'] = 'aktif';
+                $validated['tanggal_aktif'] = null;
+            } else {
+                $validated['status'] = 'nonaktif';
+            }
         }
 
         // Kalau status manual aktif, hapus jadwal
@@ -97,8 +102,10 @@ class PaketLatihanController extends Controller
             $validated['tanggal_aktif'] = null;
         }
 
-        // Bersihkan field tryout jika tipe = latihan
-        if (!$isTryout) {
+        // Bersihkan field tryout jika tipe = latihan, set standar 195 menit untuk tryout
+        if ($isTryout) {
+            $validated['waktu_ujian'] = 195;
+        } else {
             $validated['tanggal_mulai']        = null;
             $validated['tanggal_selesai']      = null;
             $validated['is_random']            = false;
@@ -172,9 +179,14 @@ class PaketLatihanController extends Controller
             'tanggal_tampil_hasil' => 'nullable|date|required_if:tampil_hasil,terjadwal',
         ]);
 
-        // Kalau ada jadwal aktif, paksa status nonaktif sampai scheduler mengaktifkan
+        // Kalau ada jadwal aktif
         if (!empty($validated['tanggal_aktif'])) {
-            $validated['status'] = 'nonaktif';
+            if (now()->gte($validated['tanggal_aktif'])) {
+                $validated['status'] = 'aktif';
+                $validated['tanggal_aktif'] = null;
+            } else {
+                $validated['status'] = 'nonaktif';
+            }
         }
 
         // Kalau status manual aktif, hapus jadwal
@@ -182,8 +194,10 @@ class PaketLatihanController extends Controller
             $validated['tanggal_aktif'] = null;
         }
 
-        // Bersihkan field tryout jika tipe = latihan
-        if (!$isTryout) {
+        // Bersihkan field tryout jika tipe = latihan, set standar 195 menit untuk tryout
+        if ($isTryout) {
+            $validated['waktu_ujian'] = 195;
+        } else {
             $validated['tanggal_mulai']        = null;
             $validated['tanggal_selesai']      = null;
             $validated['is_random']            = false;
@@ -248,9 +262,17 @@ class PaketLatihanController extends Controller
 
         $subtes = $request->input('subtes'); // null untuk latihan soal
 
-        // Buat array pivot: setiap id_soal disertai subtes
+        // Buat array pivot: setiap id_soal disertai subtes (otomatis sinkron dengan kategori asli soal)
+        $soals = \App\Models\Soal::whereIn('id_soal', $request->soal_ids)->get()->keyBy('id_soal');
         $pivotData = collect($request->soal_ids)
-            ->mapWithKeys(fn($id) => [$id => ['subtes' => $subtes]])
+            ->mapWithKeys(function ($id) use ($soals, $subtes, $isTryout) {
+                if (!$isTryout) {
+                    return [$id => ['subtes' => null]];
+                }
+                $soal = $soals->get($id);
+                $mapped = $soal ? \App\Http\Controllers\Siswa\TryoutController::mapKategoriToSubtes($soal->kategori) : null;
+                return [$id => ['subtes' => $mapped ?: $subtes]];
+            })
             ->all();
 
         $paket->soal()->syncWithoutDetaching($pivotData);

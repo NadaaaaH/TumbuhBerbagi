@@ -103,7 +103,7 @@ export default function Index({ auth, pakets = [], ongoingPackages = [], complet
                                                     </p>
                                                 </div>
 
-                                                <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 mt-4">
+                                                <div className="pt-4 border-t border-slate-100 flex items-end justify-between gap-3 mt-4">
                                                     <div className="flex items-center gap-3.5 text-xs text-slate-600 font-semibold">
                                                         <div className="flex items-center gap-1.5">
                                                             <FileText size={15} className="text-[#1b5e20]/80 shrink-0" />
@@ -122,11 +122,13 @@ export default function Index({ auth, pakets = [], ongoingPackages = [], complet
                                                             </PrimaryButton>
                                                         </Link>
                                                     ) : (paket.tanggal_mulai && new Date() < new Date(paket.tanggal_mulai)) ? (
-                                                        <div className="flex flex-col items-end">
-                                                            <span className="text-[10px] text-slate-400 mb-1 font-medium">Buka: {new Date(paket.tanggal_mulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} WIB</span>
-                                                            <PrimaryButton disabled className="px-4 py-2 text-xs gap-1.5 shrink-0 bg-slate-200 border-slate-200 text-slate-400 hover:bg-slate-200 hover:text-slate-400 cursor-not-allowed">
-                                                                <PlayCircle size={13} /> Belum Dimulai
-                                                            </PrimaryButton>
+                                                        <div className="flex flex-col items-end shrink-0">
+                                                            <span className="text-[10px] text-slate-400 mb-1 font-medium">
+                                                                Dibuka {new Date(paket.tanggal_mulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', ...(new Date(paket.tanggal_mulai).getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}) })}, {new Date(paket.tanggal_mulai).toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'}).replace(':', '.')} WIB
+                                                            </span>
+                                                            <div className="px-4 py-2 text-xs font-semibold gap-1.5 shrink-0 bg-slate-100/90 border border-slate-200 text-slate-500 rounded-full inline-flex items-center cursor-not-allowed select-none shadow-sm">
+                                                                <Clock size={13} className="text-slate-400" /> Belum Dimulai
+                                                            </div>
                                                         </div>
                                                     ) : (
                                                         <Link href={route('siswa.latihan.show', paket.id_paket)}>
@@ -180,19 +182,19 @@ export default function Index({ auth, pakets = [], ongoingPackages = [], complet
                                                     </p>
                                                 </div>
                                                 {paket.tampil_hasil === 'terjadwal' && paket.tanggal_tampil_hasil && new Date() < new Date(paket.tanggal_tampil_hasil) ? (
-                                                    <div className="text-center sm:text-right shrink-0 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
+                                                    <div className="text-center sm:text-right shrink-0">
                                                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Nilai Akhir</p>
                                                         <p className="text-lg font-black text-slate-400 leading-none">PENDING</p>
                                                     </div>
                                                 ) : (
-                                                    <div className="text-center sm:text-right shrink-0 px-3 py-2">
-                                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Nilai Akhir</p>
+                                                    <div className="text-center sm:text-right shrink-0">
+                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Nilai Akhir</p>
                                                         <p className="text-2xl font-black text-[#d99b00] leading-none">{Math.round(completedPackages[paket.id_paket])}</p>
                                                     </div>
                                                 )}
                                             </div>
 
-                                            <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 mt-4">
+                                            <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3 mt-4">
                                                 <div className="flex items-center gap-3.5 text-xs text-slate-600 font-semibold">
                                                     <div className="flex items-center gap-1.5">
                                                         <FileText size={15} className="text-[#1b5e20]/80 shrink-0" />
@@ -205,8 +207,8 @@ export default function Index({ auth, pakets = [], ongoingPackages = [], complet
                                                 </div>
 
                                                 {paket.tampil_hasil === 'terjadwal' && paket.tanggal_tampil_hasil && new Date() < new Date(paket.tanggal_tampil_hasil) ? (
-                                                    <div className="flex flex-col items-end gap-1">
-                                                        <span className="text-[10px] text-slate-400 font-medium">Bisa dilihat pada {new Date(paket.tanggal_tampil_hasil).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                                    <div className="flex flex-col items-end gap-1 shrink-0">
+                                                        <span className="text-[10px] text-slate-400 font-medium">Bisa dilihat {new Date(paket.tanggal_tampil_hasil).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                                                         <SecondaryButton disabled className="px-4 py-2 text-xs gap-1.5 shrink-0 opacity-50 cursor-not-allowed">
                                                             <Eye size={13} /> Lihat Hasil
                                                         </SecondaryButton>
