@@ -24,7 +24,9 @@ class SiswaController extends Controller
             $searchTerm = '%' . strtolower($request->search) . '%';
             $query->where(function($q) use ($searchTerm) {
                 $q->where(DB::raw('LOWER(nama)'), 'like', $searchTerm)
-                  ->orWhere(DB::raw('LOWER(email)'), 'like', $searchTerm);
+                  ->orWhere(DB::raw('LOWER(email)'), 'like', $searchTerm)
+                  ->orWhere(DB::raw('LOWER(COALESCE(asal_sekolah, \'\'))'), 'like', $searchTerm)
+                  ->orWhere(DB::raw('LOWER(COALESCE(target_kampus, \'\'))'), 'like', $searchTerm);
             });
         }
 

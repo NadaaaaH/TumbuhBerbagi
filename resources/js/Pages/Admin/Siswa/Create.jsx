@@ -12,6 +12,8 @@ export default function Create({ auth }) {
         email: '',
         password: '',
         no_handphone: '',
+        asal_sekolah: '',
+        target_kampus: '',
         status_akun: 'Aktif',
     });
 
@@ -83,8 +85,35 @@ export default function Create({ auth }) {
                                         className="mt-1 block w-full"
                                         value={data.no_handphone}
                                         onChange={(e) => setData('no_handphone', e.target.value)}
+                                        placeholder="Contoh: 081234567890"
                                     />
                                     <InputError message={errors.no_handphone} className="mt-2" />
+                                </div>
+
+                                <div>
+                                    <InputLabel htmlFor="asal_sekolah" value="Asal Sekolah (Opsional)" />
+                                    <TextInput
+                                        id="asal_sekolah"
+                                        type="text"
+                                        className="mt-1 block w-full"
+                                        value={data.asal_sekolah}
+                                        onChange={(e) => setData('asal_sekolah', e.target.value)}
+                                        placeholder="Contoh: SMAN 1 Jakarta"
+                                    />
+                                    <InputError message={errors.asal_sekolah} className="mt-2" />
+                                </div>
+
+                                <div>
+                                    <InputLabel htmlFor="target_kampus" value="Target Kampus (Opsional)" />
+                                    <TextInput
+                                        id="target_kampus"
+                                        type="text"
+                                        className="mt-1 block w-full"
+                                        value={data.target_kampus}
+                                        onChange={(e) => setData('target_kampus', e.target.value)}
+                                        placeholder="Contoh: ITB - Teknik Informatika"
+                                    />
+                                    <InputError message={errors.target_kampus} className="mt-2" />
                                 </div>
 
                                 <div>

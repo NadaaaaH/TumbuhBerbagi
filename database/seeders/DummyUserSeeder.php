@@ -26,6 +26,8 @@ class DummyUserSeeder extends Seeder
             'email' => 'siswa@example.com',
             'password' => Hash::make('password'),
             'no_handphone' => '089876543210',
+            'asal_sekolah' => 'SMAN 1 Bandung',
+            'target_kampus' => 'Institut Teknologi Bandung',
             'status_akun' => 'Aktif',
         ]);
     }

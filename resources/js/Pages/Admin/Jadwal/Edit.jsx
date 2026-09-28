@@ -8,7 +8,7 @@ import { ArrowLeft, Save, ImagePlus, X } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 export default function Edit({ auth, jadwal }) {
-    const existingImage = jadwal.gambar ? `/storage/${jadwal.gambar}` : null;
+    const existingImage = jadwal.gambar_url || (jadwal.gambar ? `/storage/${jadwal.gambar}` : null);
     const [imagePreview, setImagePreview] = useState(existingImage);
     const [removeGambar, setRemoveGambar] = useState(false);
 

@@ -34,10 +34,10 @@ class Kegiatan extends Model
     public function getGambarUrlAttribute()
     {
         if ($this->gambar) {
-            if (filter_var($this->gambar, FILTER_VALIDATE_URL)) {
+            if (filter_var($this->gambar, FILTER_VALIDATE_URL) || str_starts_with($this->gambar, 'http')) {
                 return $this->gambar;
             }
-            return Storage::disk('r2')->url($this->gambar);
+            return Storage::url($this->gambar);
         }
         
         return null; // Bisa juga return URL default/placeholder jika diinginkan

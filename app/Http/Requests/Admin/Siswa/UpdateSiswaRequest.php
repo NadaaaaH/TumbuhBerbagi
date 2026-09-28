@@ -28,6 +28,8 @@ class UpdateSiswaRequest extends FormRequest
             'email' => ['required', 'string', 'email', 'max:100', 'unique:siswa,email,' . $siswaId . ',id_siswa'],
             'password' => ['nullable', 'string', 'min:8'],
             'no_handphone' => ['nullable', 'string', 'max:20'],
+            'asal_sekolah' => ['nullable', 'string', 'max:150'],
+            'target_kampus' => ['nullable', 'string', 'max:150'],
             'status_akun' => ['required', 'string', 'max:30'],
         ];
     }

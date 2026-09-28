@@ -130,8 +130,8 @@ export default function SiswaLayout({ user, header, children, examMode = false }
 
                     {/* Logo & Notification Bell Header */}
                     <div className="flex items-center justify-between h-20 px-6 border-b border-emerald-800/50">
-                        <Link href="/">
-                            <img src="/images/logo2.png" alt="Tumbuh Berbagi" className="h-9 w-auto drop-shadow" />
+                        <Link href="/" className="flex items-center">
+                            <img src="/images/logo2.png" alt="Tumbuh Berbagi" className="h-12 w-auto drop-shadow object-contain hover:scale-105 transition-transform duration-200" />
                         </Link>
 
                         {/* Desktop Notification Bell */}
@@ -214,9 +214,17 @@ export default function SiswaLayout({ user, header, children, examMode = false }
 
                     {/* Integrated User Profile Card */}
                     <div className="p-3.5 mx-4 mt-4 bg-white/10 border border-white/15 backdrop-blur-md rounded-2xl flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-[#fcc526] text-slate-950 flex items-center justify-center font-black shadow-md shrink-0 text-base">
-                            {user?.nama?.charAt(0) || 'S'}
-                        </div>
+                        {user?.foto_profil_url ? (
+                            <img
+                                src={user.foto_profil_url}
+                                alt={user?.nama || 'Siswa'}
+                                className="h-10 w-10 rounded-full object-cover shadow-md shrink-0 border border-white/20"
+                            />
+                        ) : (
+                            <div className="h-10 w-10 rounded-full bg-[#fcc526] text-slate-950 flex items-center justify-center font-black shadow-md shrink-0 text-base">
+                                {user?.nama?.charAt(0) || 'S'}
+                            </div>
+                        )}
                         <div className="min-w-0 flex-1">
                             <p className="text-xs font-bold text-white truncate leading-snug">{user?.nama || 'Siswa'}</p>
                             <p className="text-[10px] text-[#fcc526] font-semibold">Siswa Beasiswa</p>
@@ -232,10 +240,10 @@ export default function SiswaLayout({ user, header, children, examMode = false }
                                     href={item.href}
                                     className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-2xl transition-all duration-300 ${item.active
                                         ? 'bg-[#fcc526] text-slate-950 font-bold shadow-[0_4px_20px_rgba(252,197,38,0.35)]'
-                                        : 'text-emerald-100/90 hover:bg-white/10 hover:text-white'
+                                        : 'text-white hover:bg-white/10 hover:text-white'
                                         }`}
                                 >
-                                    <item.icon size={20} className={item.active ? 'text-slate-950' : 'text-[#fcc526]'} />
+                                    <item.icon size={20} className={item.active ? 'text-slate-950' : 'text-white'} />
                                     {item.name}
                                 </Link>
                             ))}
@@ -434,10 +442,18 @@ export default function SiswaLayout({ user, header, children, examMode = false }
                             {/* Right: Status badge & Student profile (Locked navigation, no dropdowns) */}
                             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
 
-                                <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
-                                    <div className="h-8 w-8 rounded-full bg-[#fcc526] text-slate-950 flex items-center justify-center font-black shadow-xs shrink-0 text-xs">
-                                        {user?.nama?.charAt(0) || 'S'}
-                                    </div>
+                                <div className="flex items-center gap-2 pl-2 border-2 border-[#fcc526] rounded-full">
+                                    {user?.foto_profil_url ? (
+                                        <img
+                                            src={user.foto_profil_url}
+                                            alt={user?.nama || 'Siswa'}
+                                            className="h-8 w-8 rounded-full object-cover shadow-xs shrink-0"
+                                        />
+                                    ) : (
+                                        <div className="h-8 w-8 rounded-full bg-[#fcc526] text-slate-950 flex items-center justify-center font-black shadow-xs shrink-0 text-xs">
+                                            {user?.nama?.charAt(0) || 'S'}
+                                        </div>
+                                    )}
                                     <div className="hidden sm:block text-left">
                                         <p className="text-xs font-bold text-slate-800 truncate leading-tight max-w-[120px]">
                                             {user?.nama || 'Siswa'}

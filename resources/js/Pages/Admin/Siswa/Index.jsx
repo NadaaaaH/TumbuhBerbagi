@@ -81,6 +81,8 @@ export default function Index({ auth, siswas, filters }) {
                             <tr>
                                 <th className="px-6 py-4 font-medium">No</th>
                                 <th className="px-6 py-4 font-medium">Nama Siswa</th>
+                                <th className="px-6 py-4 font-medium">Asal Sekolah</th>
+                                <th className="px-6 py-4 font-medium">Target Kampus</th>
                                 <th className="px-6 py-4 font-medium">Email</th>
                                 <th className="px-6 py-4 font-medium">No. HP</th>
                                 <th className="px-6 py-4 font-medium">Status Akun</th>
@@ -92,7 +94,20 @@ export default function Index({ auth, siswas, filters }) {
                                 siswas.map((siswa, index) => (
                                     <tr key={siswa.id_siswa} className="hover:bg-slate-50/50 transition-colors">
                                         <td className="px-6 py-4">{index + 1}</td>
-                                        <td className="px-6 py-4 font-medium text-slate-900">{siswa.nama}</td>
+                                        <td className="px-6 py-4 font-medium text-slate-900">
+                                            <div className="flex items-center gap-3">
+                                                {siswa.foto_profil_url ? (
+                                                    <img src={siswa.foto_profil_url} alt={siswa.nama} className="h-8 w-8 rounded-full object-cover shrink-0 border border-slate-200" />
+                                                ) : (
+                                                    <div className="h-8 w-8 rounded-full bg-[#fcc526] text-slate-950 flex items-center justify-center font-bold text-xs shrink-0">
+                                                        {siswa.nama?.charAt(0) || 'S'}
+                                                    </div>
+                                                )}
+                                                <span>{siswa.nama}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-600">{siswa.asal_sekolah || '-'}</td>
+                                        <td className="px-6 py-4 text-slate-600">{siswa.target_kampus || '-'}</td>
                                         <td className="px-6 py-4">{siswa.email}</td>
                                         <td className="px-6 py-4">{siswa.no_handphone || '-'}</td>
                                         <td className="px-6 py-4">
@@ -125,7 +140,7 @@ export default function Index({ auth, siswas, filters }) {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-8 text-center text-slate-500">
+                                    <td colSpan="8" className="px-6 py-8 text-center text-slate-500">
                                         Belum ada data siswa yang ditambahkan.
                                     </td>
                                 </tr>

@@ -17,16 +17,39 @@ class PasswordController extends Controller
      */
     public function update(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'current_password' => ['required', 'current_password'],
-            'password' => ['required', Password::defaults(), 'confirmed'],
-        ]);
+        $user = $request->user();
+        $rules = [];
 
-        $request->user()->update([
-            'password' => Hash::make($validated['password']),
-        ]);
+        if ($request->has('email')) {
+            $rules['email'] = [
+                'required',
+                'string',
+                'lowercase',
+                'email',
+                'max:100',
+                \Illuminate\Validation\Rule::unique(\App\Models\Siswa::class, 'email')->ignore($user->id_siswa, 'id_siswa'),
+            ];
+        }
 
-        return back();
+        if ($request->filled('password') || $request->filled('current_password')) {
+            $rules['current_password'] = ['required', 'current_password'];
+            $rules['password'] = ['required', Password::defaults(), 'confirmed'];
+        }
+
+        $validated = $request->validate($rules);
+
+        if (isset($validated['email']) && $validated['email'] !== $user->email) {
+            $user->email = $validated['email'];
+            $user->email_verified_at = null;
+        }
+
+        if (!empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+        }
+
+        $user->save();
+
+        return back()->with('status', 'password-updated');
     }
 
     /**

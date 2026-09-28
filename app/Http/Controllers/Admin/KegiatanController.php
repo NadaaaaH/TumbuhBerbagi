@@ -48,7 +48,7 @@ class KegiatanController extends Controller
         ]);
 
         if ($request->hasFile('gambar')) {
-            $path = $request->file('gambar')->store('kegiatan', 'r2');
+            $path = $request->file('gambar')->store('kegiatan');
             $validated['gambar'] = $path;
         }
 
@@ -81,17 +81,17 @@ class KegiatanController extends Controller
 
         if ($request->hasFile('gambar')) {
 
-            // Hapus gambar lama dari R2
+            // Hapus gambar lama
             if ($kegiatan->gambar) {
                 try {
-                    Storage::disk('r2')->delete($kegiatan->gambar);
+                    Storage::delete($kegiatan->gambar);
                 } catch (\Throwable $e) {
                     // Abaikan jika gambar lama gagal dihapus
                 }
             }
 
-            // Upload gambar baru ke R2
-            $path = $request->file('gambar')->store('kegiatan', 'r2');
+            // Upload gambar baru
+            $path = $request->file('gambar')->store('kegiatan');
 
             // Simpan path gambar baru
             $validated['gambar'] = $path;
@@ -109,11 +109,11 @@ class KegiatanController extends Controller
     {
         $kegiatan = Kegiatan::findOrFail($id);
 
-        // Hapus file gambar dari R2 jika ada
+        // Hapus file gambar jika ada
         if ($kegiatan->gambar) {
             try {
-                if (Storage::disk('r2')->exists($kegiatan->gambar)) {
-                    Storage::disk('r2')->delete($kegiatan->gambar);
+                if (Storage::exists($kegiatan->gambar)) {
+                    Storage::delete($kegiatan->gambar);
                 }
             } catch (\Throwable $e) {
                 // Skip jika file tidak ditemukan
@@ -135,10 +135,10 @@ class KegiatanController extends Controller
             'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
         ]);
 
-        $path = $request->file('image')->store('kegiatan/editor', 'r2');
+        $path = $request->file('image')->store('kegiatan/editor');
 
         // Kembalikan URL yang bisa langsung dipakai Tiptap
-        $url = Storage::disk('r2')->url($path);
+        $url = Storage::url($path);
 
         return response()->json(['url' => $url]);
     }

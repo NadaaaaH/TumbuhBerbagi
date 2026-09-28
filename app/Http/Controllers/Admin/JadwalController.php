@@ -45,7 +45,7 @@ class JadwalController extends Controller
         ]);
 
         if ($request->hasFile('gambar')) {
-            $validated['gambar'] = $request->file('gambar')->store('jadwal', 'public');
+            $validated['gambar'] = $request->file('gambar')->store('jadwal');
         }
 
         $jadwal = Jadwal::create($validated);
@@ -93,13 +93,13 @@ class JadwalController extends Controller
         if ($request->hasFile('gambar')) {
             // Hapus gambar lama jika ada
             if ($jadwal->gambar) {
-                Storage::disk('public')->delete($jadwal->gambar);
+                Storage::delete($jadwal->gambar);
             }
-            $validated['gambar'] = $request->file('gambar')->store('jadwal', 'public');
+            $validated['gambar'] = $request->file('gambar')->store('jadwal');
         } elseif ($request->input('remove_gambar')) {
             // Hapus gambar tanpa ganti
             if ($jadwal->gambar) {
-                Storage::disk('public')->delete($jadwal->gambar);
+                Storage::delete($jadwal->gambar);
             }
             $validated['gambar'] = null;
         } else {
@@ -115,6 +115,9 @@ class JadwalController extends Controller
     public function destroy(string $id)
     {
         $jadwal = Jadwal::findOrFail($id);
+        if ($jadwal->gambar) {
+            Storage::delete($jadwal->gambar);
+        }
         $jadwal->delete();
 
         return redirect()->route('jadwal.index')->with('success', 'Jadwal berhasil dihapus.');

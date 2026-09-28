@@ -7,8 +7,10 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import TertiaryButton from '@/Components/TertiaryButton';
 import FirstIcon from '@/Components/FirstIcon';
 import SecondIcon from '@/Components/SecondIcon';
+import PrimaryButton from '@/Components/PrimaryButton';
+import PopupModal from '@/Components/PopupModal';
 import { motion } from 'framer-motion';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Mail,
     Phone,
@@ -22,10 +24,18 @@ import {
     BookOpen,
     CheckSquare,
     Crosshair,
+    CheckCircle2,
 } from 'lucide-react';
 
-export default function Show({ auth, user: propUser, stats = {} }) {
+export default function Show({ auth, user: propUser, stats = {}, status }) {
     const user = propUser || auth?.user;
+    const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+
+    useEffect(() => {
+        if (status === 'profile-updated') {
+            setIsSuccessModalOpen(true);
+        }
+    }, [status]);
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -86,14 +96,16 @@ export default function Show({ auth, user: propUser, stats = {} }) {
             label: 'Latihan Soal Dikerjakan',
             value: stats?.soal_dikerjakan != null
                 ? Number(stats.soal_dikerjakan).toLocaleString('id-ID')
-                : '-',
+                : (stats?.latsol_dikerjakan != null ? Number(stats.latsol_dikerjakan).toLocaleString('id-ID') : '-'),
             icon: BookOpen,
             color: 'text-violet-600',
             bg: 'bg-violet-50',
         },
         {
             label: 'Akurasi Jawaban',
-            value: stats?.akurasi != null ? `${stats.akurasi}%` : '-',
+            value: stats?.akurasi != null
+                ? (String(stats.akurasi).endsWith('%') ? stats.akurasi : `${stats.akurasi}%`)
+                : '-',
             icon: Crosshair,
             color: 'text-amber-600',
             bg: 'bg-amber-50',
@@ -129,9 +141,17 @@ export default function Show({ auth, user: propUser, stats = {} }) {
                     <div className="bg-gradient-to-br from-[#1b5e20] to-[#2e7d32] rounded-[2rem] p-8 flex flex-col items-center justify-between text-white text-center shadow-[0_8px_40px_rgba(27,94,32,0.25)] min-h-[260px]">
                         {/* Avatar */}
                         <div className="flex flex-col items-center gap-4 flex-1 justify-center">
-                            <div className="h-20 w-20 rounded-[100rem] bg-[#fcc526] text-slate-900 flex items-center justify-center font-black text-4xl shadow-lg">
-                                {user?.nama?.charAt(0)?.toUpperCase() || 'S'}
-                            </div>
+                            {user?.foto_profil_url ? (
+                                <img
+                                    src={user.foto_profil_url}
+                                    alt={user?.nama || 'Siswa'}
+                                    className="h-20 w-20 rounded-full object-cover shadow-lg border-2 border-[#fcc526]"
+                                />
+                            ) : (
+                                <div className="h-20 w-20 rounded-[100rem] bg-[#fcc526] text-slate-900 flex items-center justify-center font-black text-4xl shadow-lg">
+                                    {user?.nama?.charAt(0)?.toUpperCase() || 'S'}
+                                </div>
+                            )}
                             <div>
                                 <p className="text-xl font-extrabold font-['Poppins'] leading-snug">
                                     {user?.nama || 'Siswa'}
@@ -163,16 +183,16 @@ export default function Show({ auth, user: propUser, stats = {} }) {
                                 Informasi Akun
                             </h2>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-10">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-12 sm:gap-y-14">
                                 {infoFields.map(({ icon: Icon, label, value }) => (
-                                    <div key={label} className="flex items-center gap-3.5">
-                                        <SecondIcon icon={Icon} iconSize={18} />
+                                    <div key={label} className="flex items-center gap-4">
+                                        <SecondIcon icon={Icon} iconSize={20} />
                                         <div className="min-w-0">
-                                            <p className="text-xs text-slate-400 font-medium leading-none mb-1.5">
+                                            <p className="text-[13px] sm:text-sm text-slate-400 font-medium leading-none mb-2">
                                                 {label}
                                             </p>
                                             <p
-                                                className="text-sm font-semibold text-slate-800 truncate"
+                                                className="text-base sm:text-[17px] font-semibold text-slate-800 truncate"
                                                 title={value}
                                             >
                                                 {value}
@@ -210,6 +230,37 @@ export default function Show({ auth, user: propUser, stats = {} }) {
                     ))}
                 </motion.div>
             </motion.div>
+
+            {/* PopupModal Berhasil Simpan Profil */}
+            <PopupModal
+                isOpen={isSuccessModalOpen}
+                onClose={() => setIsSuccessModalOpen(false)}
+                maxWidth="sm"
+                showCloseButton={true}
+                padding="p-7 sm:p-8"
+            >
+                <div className="flex flex-col items-center text-center">
+                    <div className="mb-4 text-[#1b5e20]">
+                        <CheckCircle2 size={50} strokeWidth={2.2} />
+                    </div>
+
+                    <h3 className="font-['Poppins'] text-xl font-bold text-slate-800 tracking-tight mb-2">
+                        Profil Berhasil Disimpan!
+                    </h3>
+
+                    <p className="text-sm text-slate-500 leading-relaxed mb-6 font-light">
+                        Semua perubahan informasi profil dan keamanan akun Anda telah berhasil diperbarui ke database.
+                    </p>
+
+                    <PrimaryButton
+                        type="button"
+                        onClick={() => setIsSuccessModalOpen(false)}
+                        className="w-full !py-3 !rounded-xl bg-[#1b5e20] hover:bg-[#144718] justify-center text-sm font-semibold shadow-md active:scale-95 transition-all"
+                    >
+                        Selesai
+                    </PrimaryButton>
+                </div>
+            </PopupModal>
         </SiswaLayout>
     );
 }

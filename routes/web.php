@@ -79,7 +79,7 @@ Route::middleware('auth:admin')->group(function () {
 Route::middleware(['auth:siswa', 'siswa.verified', 'siswa.password_changed'])->group(function () {
     Route::get('/profil', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::match(['patch', 'post'], '/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     Route::get('/jadwal', [SiswaJadwalController::class, 'index'])->name('siswa.jadwal');
     Route::post('/jadwal/{id}/alarm', [SiswaJadwalController::class, 'toggleAlarm'])->name('siswa.jadwal.alarm');

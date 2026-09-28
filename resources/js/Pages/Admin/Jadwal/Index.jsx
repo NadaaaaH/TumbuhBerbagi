@@ -79,7 +79,7 @@ export default function Index({ auth, jadwals, filters }) {
             gambar: null,
             remove_gambar: false,
         });
-        setImagePreview(jadwal.gambar ? `/storage/${jadwal.gambar}` : null);
+        setImagePreview(jadwal.gambar_url || (jadwal.gambar ? `/storage/${jadwal.gambar}` : null));
         if (fileInputRef.current) fileInputRef.current.value = '';
         clearErrors();
         setIsModalOpen(true);

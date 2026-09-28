@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class Jadwal extends Model
@@ -24,6 +25,19 @@ class Jadwal extends Model
         'waktu_selesai',
         'status',
     ];
+
+    protected $appends = ['gambar_url'];
+
+    public function getGambarUrlAttribute(): ?string
+    {
+        if ($this->gambar) {
+            if (filter_var($this->gambar, FILTER_VALIDATE_URL) || str_starts_with($this->gambar, 'http')) {
+                return $this->gambar;
+            }
+            return Storage::url($this->gambar);
+        }
+        return null;
+    }
 
     protected static function booted()
     {
