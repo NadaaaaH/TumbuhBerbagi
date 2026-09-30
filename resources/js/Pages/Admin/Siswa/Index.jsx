@@ -1,77 +1,123 @@
-import React, { useState } from 'react';
-import { Head, Link, useForm, router } from '@inertiajs/react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Plus, Edit, Trash2, Search, MoreVertical } from 'lucide-react';
-import Swal from 'sweetalert2';
-import TextInput from '@/Components/TextInput';
+import { Plus, Edit, Trash2, CheckCircle2 } from 'lucide-react';
 
-export default function Index({ auth, siswas, filters }) {
+import ContainerWhite from '@/Components/ContainerWhite';
+import PrimaryButton from '@/Components/PrimaryButton';
+import Pagination from '@/Components/Pagination';
+import PopupModal from '@/Components/PopupModal';
+import SearchBar from '@/Components/SearchBar';
+
+export default function Index({ auth, siswas, flash }) {
     const { delete: destroy } = useForm();
-    const [searchQuery, setSearchQuery] = useState(filters?.search || '');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [siswaToDelete, setSiswaToDelete] = useState(null);
 
-    const handleDelete = (id) => {
-        Swal.fire({
-            title: 'Hapus Akun Siswa?',
-            text: 'Semua riwayat latihan, nilai, dan data siswa ini akan dihapus secara permanen. Tindakan ini tidak bisa dibatalkan ya!',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#64748b',
-            confirmButtonText: 'Ya, hapus aja!',
-            cancelButtonText: 'Batal',
-            customClass: {
-                popup: 'rounded-3xl p-6 shadow-xl',
-                confirmButton: 'rounded-xl px-5 py-3 font-medium text-sm',
-                cancelButton: 'rounded-xl px-5 py-3 font-medium text-sm'
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                destroy(route('siswa.destroy', id), {
-                    onSuccess: () => {
-                        Swal.fire({
-                            title: 'Terhapus!',
-                            text: 'Akun siswa berhasil dihapus dengan aman.',
-                            icon: 'success',
-                            confirmButtonColor: '#1b5e20',
-                            customClass: {
-                                popup: 'rounded-3xl p-6 shadow-xl',
-                                confirmButton: 'rounded-xl px-5 py-3 font-medium text-sm'
-                            }
-                        });
-                    }
-                });
-            }
+    const itemsPerPage = 10;
+
+    useEffect(() => {
+        if (flash?.success) {
+            setSuccessMessage(flash.success);
+            setIsSuccessModalOpen(true);
+        }
+    }, [flash?.success]);
+
+    const allSiswas = useMemo(() => {
+        if (Array.isArray(siswas)) return siswas;
+        if (siswas?.data && Array.isArray(siswas.data)) return siswas.data;
+        return [];
+    }, [siswas]);
+
+    // Instant filter across multiple student attributes
+    const filteredSiswas = useMemo(() => {
+        if (!allSiswas || allSiswas.length === 0) return [];
+        if (!searchQuery.trim()) return allSiswas;
+
+        const query = searchQuery.toLowerCase().trim();
+        return allSiswas.filter((siswa) => {
+            const nama = (siswa.nama || '').toLowerCase();
+            const email = (siswa.email || '').toLowerCase();
+            const asalSekolah = (siswa.asal_sekolah || '').toLowerCase();
+            const targetKampus = (siswa.target_kampus || '').toLowerCase();
+            const batch = (siswa.batch || '').toString().toLowerCase();
+            const noHp = (siswa.no_handphone || '').toLowerCase();
+            const statusAkun = (siswa.status_akun || '').toLowerCase();
+
+            return (
+                nama.includes(query) ||
+                email.includes(query) ||
+                asalSekolah.includes(query) ||
+                targetKampus.includes(query) ||
+                batch.includes(query) ||
+                noHp.includes(query) ||
+                statusAkun.includes(query)
+            );
         });
+    }, [allSiswas, searchQuery]);
+
+    const totalItems = filteredSiswas.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [totalPages, currentPage]);
+
+    const paginatedSiswas = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredSiswas.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredSiswas, currentPage, itemsPerPage]);
+
+    const fromIndex = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+    const toIndex = Math.min(currentPage * itemsPerPage, totalItems);
+
+    const handleSearchChange = (e) => {
+        setSearchQuery(e.target.value);
+        setCurrentPage(1);
     };
 
-    const handleSearch = (e) => {
-        e.preventDefault();
-        router.get(route('siswa.index'), { search: searchQuery }, { preserveState: true });
+    const handleDeleteClick = (siswa) => {
+        setSiswaToDelete(siswa);
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if (!siswaToDelete) return;
+        destroy(route('siswa.destroy', siswaToDelete.id_siswa), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsDeleteModalOpen(false);
+                setSiswaToDelete(null);
+                setSuccessMessage('Akun siswa berhasil dihapus.');
+                setIsSuccessModalOpen(true);
+            },
+        });
     };
 
     return (
         <AdminLayout user={auth.user} header="Manajemen Siswa">
             <Head title="Manajemen Siswa" />
 
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <ContainerWhite className="!p-0 overflow-hidden shadow-sm">
                 <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <form onSubmit={handleSearch} className="relative w-full sm:max-w-xs">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                        <TextInput
-                            type="text"
-                            placeholder="Cari siswa..."
-                            className="w-full !pl-10 !pr-4 !py-2.5 !rounded-xl !border-slate-200 focus:!border-[#1b5e20] focus:!ring-[#1b5e20] text-sm"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </form>
+                    <SearchBar
+                        className="w-full sm:max-w-xs"
+                        placeholder="Cari siswa..."
+                        value={searchQuery}
+                        onChange={handleSearchChange}
+                    />
 
-                    <Link
-                        href={route('siswa.create')}
-                        className="inline-flex items-center gap-2 bg-[#1b5e20] text-white px-5 py-2.5 rounded-xl font-medium hover:bg-[#144718] transition-colors shadow-sm hover:shadow"
-                    >
-                        <Plus size={20} />
-                        Tambah Siswa
+                    <Link href={route('siswa.create')}>
+                        <PrimaryButton className="gap-2 !py-2.5 !px-5 text-sm font-semibold shadow-sm hover:shadow-md">
+                            <Plus size={18} />
+                            Tambah Siswa
+                        </PrimaryButton>
                     </Link>
                 </div>
 
@@ -90,10 +136,10 @@ export default function Index({ auth, siswas, filters }) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {siswas && siswas.length > 0 ? (
-                                siswas.map((siswa, index) => (
+                            {paginatedSiswas && paginatedSiswas.length > 0 ? (
+                                paginatedSiswas.map((siswa, index) => (
                                     <tr key={siswa.id_siswa} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-6 py-4">{index + 1}</td>
+                                        <td className="px-6 py-4">{fromIndex + index}</td>
                                         <td className="px-6 py-4 font-medium text-slate-900">
                                             <div className="flex items-center gap-3">
                                                 {siswa.foto_profil_url ? (
@@ -103,7 +149,14 @@ export default function Index({ auth, siswas, filters }) {
                                                         {siswa.nama?.charAt(0) || 'S'}
                                                     </div>
                                                 )}
-                                                <span>{siswa.nama}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span>{siswa.nama}</span>
+                                                    {siswa.batch && (
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium text-slate-500">
+                                                            {siswa.batch.toString().toLowerCase().includes('batch') ? siswa.batch : `Batch ${siswa.batch}`}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-slate-600">{siswa.asal_sekolah || '-'}</td>
@@ -111,10 +164,11 @@ export default function Index({ auth, siswas, filters }) {
                                         <td className="px-6 py-4">{siswa.email}</td>
                                         <td className="px-6 py-4">{siswa.no_handphone || '-'}</td>
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${siswa.status_akun === 'aktif' || siswa.status_akun === 'Aktif'
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                                                siswa.status_akun === 'aktif' || siswa.status_akun === 'Aktif'
                                                     ? 'bg-green-100 text-green-700'
                                                     : 'bg-slate-100 text-slate-700'
-                                                }`}>
+                                            }`}>
                                                 {siswa.status_akun}
                                             </span>
                                         </td>
@@ -122,14 +176,15 @@ export default function Index({ auth, siswas, filters }) {
                                             <div className="flex items-center justify-end gap-2">
                                                 <Link
                                                     href={route('siswa.edit', siswa.id_siswa)}
-                                                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                    className="p-2 text-[#1b5e20] hover:text-[#144718] hover:bg-[#e8f5e9] rounded-xl transition-all duration-200"
                                                     title="Edit Siswa"
                                                 >
                                                     <Edit size={18} />
                                                 </Link>
                                                 <button
-                                                    onClick={() => handleDelete(siswa.id_siswa)}
-                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                    type="button"
+                                                    onClick={() => handleDeleteClick(siswa)}
+                                                    className="p-2 text-[#1b5e20] hover:text-[#c62828] hover:bg-[#ffebee] rounded-xl transition-all duration-200 cursor-pointer"
                                                     title="Hapus Siswa"
                                                 >
                                                     <Trash2 size={18} />
@@ -141,7 +196,9 @@ export default function Index({ auth, siswas, filters }) {
                             ) : (
                                 <tr>
                                     <td colSpan="8" className="px-6 py-8 text-center text-slate-500">
-                                        Belum ada data siswa yang ditambahkan.
+                                        {searchQuery.trim()
+                                            ? `Tidak ada data siswa yang cocok dengan "${searchQuery}".`
+                                            : 'Belum ada data siswa yang ditambahkan.'}
                                     </td>
                                 </tr>
                             )}
@@ -149,11 +206,87 @@ export default function Index({ auth, siswas, filters }) {
                     </table>
                 </div>
 
-                {/* Pagination Placeholder */}
-                <div className="p-4 border-t border-slate-100 flex items-center justify-between text-sm text-slate-500">
-                    <div>Menampilkan {siswas?.length || 0} siswa</div>
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={(page) => setCurrentPage(page)}
+                    from={fromIndex}
+                    to={toIndex}
+                    total={totalItems}
+                    itemName="siswa"
+                />
+            </ContainerWhite>
+
+            {/* PopupModal Konfirmasi Hapus Siswa */}
+            <PopupModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                maxWidth="sm"
+                showCloseButton={true}
+                padding="p-7 sm:p-8"
+            >
+                <div className="flex flex-col items-center text-center">
+                    <div className="mb-4 text-red-500">
+                        <Trash2 size={50} strokeWidth={2} />
+                    </div>
+
+                    <h3 className="font-['Poppins'] text-xl font-bold text-slate-800 tracking-tight mb-2">
+                        Hapus Akun Siswa?
+                    </h3>
+
+                    <p className="text-sm text-slate-500 leading-relaxed mb-6 font-light">
+                        Semua riwayat latihan, nilai, dan data siswa ini akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.
+                    </p>
+
+                    <div className="flex items-center justify-center gap-3 w-full">
+                        <button
+                            type="button"
+                            onClick={() => setIsDeleteModalOpen(false)}
+                            className="flex-1 py-2.5 px-5 rounded-full border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="button"
+                            onClick={confirmDelete}
+                            className="flex-1 py-2.5 px-5 rounded-full bg-red-600 hover:bg-red-700 text-white font-semibold text-sm shadow-md active:scale-95 transition-all"
+                        >
+                            Ya, Hapus
+                        </button>
+                    </div>
                 </div>
-            </div>
+            </PopupModal>
+
+            {/* PopupModal Notifikasi Sukses */}
+            <PopupModal
+                isOpen={isSuccessModalOpen}
+                onClose={() => setIsSuccessModalOpen(false)}
+                maxWidth="sm"
+                showCloseButton={true}
+                padding="p-7 sm:p-8"
+            >
+                <div className="flex flex-col items-center text-center">
+                    <div className="mb-4 text-[#1b5e20]">
+                        <CheckCircle2 size={50} strokeWidth={2.2} />
+                    </div>
+
+                    <h3 className="font-['Poppins'] text-xl font-bold text-slate-800 tracking-tight mb-2">
+                        Berhasil Disimpan!
+                    </h3>
+
+                    <p className="text-sm text-slate-500 leading-relaxed mb-6 font-light">
+                        {successMessage || 'Data siswa berhasil disimpan ke sistem.'}
+                    </p>
+
+                    <PrimaryButton
+                        type="button"
+                        onClick={() => setIsSuccessModalOpen(false)}
+                        className="w-full !py-3 !rounded-xl bg-[#1b5e20] hover:bg-[#144718] justify-center text-sm font-semibold shadow-md active:scale-95 transition-all"
+                    >
+                        Selesai
+                    </PrimaryButton>
+                </div>
+            </PopupModal>
         </AdminLayout>
     );
 }

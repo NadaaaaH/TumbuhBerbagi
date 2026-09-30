@@ -23,6 +23,7 @@ class Siswa extends Authenticatable implements MustVerifyEmail
         'no_handphone',
         'asal_sekolah',
         'target_kampus',
+        'batch',
         'foto_profil',
         'status_akun',
         'email_verified_at',

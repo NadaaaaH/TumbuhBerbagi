@@ -18,23 +18,10 @@ class SiswaController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Siswa::query();
-
-        if ($request->has('search') && $request->search != '') {
-            $searchTerm = '%' . strtolower($request->search) . '%';
-            $query->where(function($q) use ($searchTerm) {
-                $q->where(DB::raw('LOWER(nama)'), 'like', $searchTerm)
-                  ->orWhere(DB::raw('LOWER(email)'), 'like', $searchTerm)
-                  ->orWhere(DB::raw('LOWER(COALESCE(asal_sekolah, \'\'))'), 'like', $searchTerm)
-                  ->orWhere(DB::raw('LOWER(COALESCE(target_kampus, \'\'))'), 'like', $searchTerm);
-            });
-        }
-
-        $siswas = $query->orderBy('id_siswa', 'desc')->get();
+        $siswas = Siswa::orderBy('id_siswa', 'desc')->get();
         
         return Inertia::render('Admin/Siswa/Index', [
             'siswas' => $siswas,
-            'filters' => $request->only(['search'])
         ]);
     }
 

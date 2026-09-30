@@ -5,7 +5,8 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import { ArrowLeft, Save, ImagePlus, X } from 'lucide-react';
-import Swal from 'sweetalert2';
+import ContainerWhite from '@/Components/ContainerWhite';
+import PrimaryButton from '@/Components/PrimaryButton';
 
 export default function Edit({ auth, jadwal }) {
     const existingImage = jadwal.gambar_url || (jadwal.gambar ? `/storage/${jadwal.gambar}` : null);
@@ -45,38 +46,29 @@ export default function Edit({ auth, jadwal }) {
         e.preventDefault();
         post(route('jadwal.update', jadwal.id_jadwal), {
             forceFormData: true,
-            onSuccess: () => {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Berhasil',
-                    text: 'Jadwal berhasil diperbarui!',
-                    confirmButtonColor: '#1b5e20'
-                });
-            }
         });
     };
 
     return (
         <AdminLayout
             user={auth.user}
-            header="Edit Jadwal"
+            header={
+                <div className="flex items-center gap-3.5">
+                    <Link href={route('jadwal.index')}>
+                        <PrimaryButton className="gap-2 !py-2 !px-4 text-xs sm:text-sm font-semibold shadow-sm hover:shadow">
+                            <ArrowLeft size={16} />
+                            Kembali
+                        </PrimaryButton>
+                    </Link>
+                    <span>Edit Jadwal</span>
+                </div>
+            }
         >
             <Head title="Edit Jadwal" />
 
-            <div className="mb-6">
-                <Link
-                    href={route('jadwal.index')}
-                    className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 transition-colors font-medium text-sm"
-                >
-                    <ArrowLeft size={16} />
-                    Kembali ke Daftar Jadwal
-                </Link>
-            </div>
-
-            <div className="max-w-2xl">
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                    <div className="p-6 md:p-8">
-                        <form onSubmit={submit} className="space-y-6">
+            <div className="w-full">
+                <ContainerWhite className="w-full !p-6 md:!p-8 shadow-sm">
+                    <form onSubmit={submit} className="space-y-6">
                             
                             <div>
                                 <InputLabel htmlFor="nama_jadwal" value="Nama Jadwal / Kegiatan" />
@@ -232,22 +224,21 @@ export default function Edit({ auth, jadwal }) {
                             <div className="flex gap-4 pt-6 border-t border-slate-100">
                                 <Link
                                     href={route('jadwal.index')}
-                                    className="flex-1 px-6 py-2 border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-xl font-medium transition-colors text-center"
+                                    className="flex-1 px-6 py-2.5 border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-full font-semibold text-sm transition-colors text-center inline-flex items-center justify-center"
                                 >
                                     Batal
                                 </Link>
-                                <button
+                                <PrimaryButton
                                     type="submit"
                                     disabled={processing}
-                                    className="flex-1 bg-[#1b5e20] hover:bg-[#508953] disabled:bg-slate-400 text-white px-6 py-2 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+                                    className="flex-1 gap-2 !py-2.5 !px-6 text-sm font-semibold shadow-sm hover:shadow-md"
                                 >
                                     <Save size={18} />
                                     {processing ? 'Menyimpan...' : 'Simpan Perubahan'}
-                                </button>
+                                </PrimaryButton>
                             </div>
                         </form>
-                    </div>
-                </div>
+                </ContainerWhite>
             </div>
         </AdminLayout>
     );

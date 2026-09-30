@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { ArrowLeft, Plus, Edit, Trash2, CheckCircle, XCircle, Search, BookOpen, X, CheckSquare, Clock, Shuffle, PauseCircle } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { ArrowLeft, Plus, Edit, Trash2, CheckCircle, XCircle, Search, BookOpen, X, CheckSquare, Clock, Shuffle, PauseCircle, CheckCircle2, AlertTriangle } from 'lucide-react';
+import PrimaryButton from '@/Components/PrimaryButton';
+import PopupModal from '@/Components/PopupModal';
 
 // ─── Konstanta Subtes UTBK ────────────────────────────────────────────────────
 const SUBTES_LIST = [
@@ -66,6 +67,13 @@ export default function Show({ auth, paket, soals = [], bankSoals = [], filters 
     // Subtes yang dipilih untuk modal bank soal / tambah soal baru
     const [bankSubtes, setBankSubtes]              = useState('PU');
 
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [soalToRemove, setSoalToRemove] = useState(null);
+    const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
+    const [warningModalMessage, setWarningModalMessage] = useState('');
+    const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
+
     const categories = ['PU', 'PPU', 'PK', 'PBM', 'Literasi Bahasa Indonesia', 'Literasi Bahasa Inggris', 'Penalaran Matematika'];
 
     // ── Soal yang ditampilkan berdasarkan tab aktif ───────────────────────────
@@ -103,7 +111,8 @@ export default function Show({ auth, paket, soals = [], bankSoals = [], filters 
     const handleAddFromBank = () => {
         if (selectedIds.length === 0) return;
         if (isTryout && !bankSubtes) {
-            Swal.fire({ title: 'Pilih Subtes!', text: 'Pilih subtes untuk soal yang akan ditambahkan.', icon: 'warning', confirmButtonColor: '#1b5e20' });
+            setWarningModalMessage('Pilih subtes untuk soal yang akan ditambahkan.');
+            setIsWarningModalOpen(true);
             return;
         }
         setSubmittingBank(true);
@@ -116,32 +125,28 @@ export default function Show({ auth, paket, soals = [], bankSoals = [], filters 
                     setShowBankModal(false);
                     setSelectedIds([]);
                     setBankSearch('');
+                    setSuccessMessage('Soal berhasil ditambahkan ke paket.');
+                    setIsSuccessModalOpen(true);
                 },
                 onFinish: () => setSubmittingBank(false),
             }
         );
     };
 
-    const handleDelete = (id) => {
-        Swal.fire({
-            title: 'Lepas Soal dari Paket?',
-            text: 'Soal ini akan dilepas dari paket ini (tetap tersimpan di Bank Soal).',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#64748b',
-            confirmButtonText: 'Ya, lepaskan!',
-            cancelButtonText: 'Batal',
-            customClass: { popup: 'rounded-3xl p-6 shadow-xl', confirmButton: 'rounded-xl px-5 py-3 font-medium text-sm', cancelButton: 'rounded-xl px-5 py-3 font-medium text-sm' }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                destroy(route('paket-latihan.remove-soal', { id_paket: paket.id_paket, id_soal: id }), {
-                    onSuccess: () => Swal.fire({
-                        title: 'Berhasil!', text: 'Soal berhasil dilepas dari paket ini.',
-                        icon: 'success', confirmButtonColor: '#1b5e20',
-                        customClass: { popup: 'rounded-3xl p-6 shadow-xl', confirmButton: 'rounded-xl px-5 py-3 font-medium text-sm' }
-                    })
-                });
+    const handleDeleteClick = (soal) => {
+        setSoalToRemove(soal);
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if (!soalToRemove) return;
+        destroy(route('paket-latihan.remove-soal', { id_paket: paket.id_paket, id_soal: soalToRemove.id_soal }), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsDeleteModalOpen(false);
+                setSoalToRemove(null);
+                setSuccessMessage('Soal berhasil dilepas dari paket ini.');
+                setIsSuccessModalOpen(true);
             }
         });
     };
@@ -179,17 +184,21 @@ export default function Show({ auth, paket, soals = [], bankSoals = [], filters 
     const fmtDate = (d) => d ? new Date(d).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
 
     return (
-        <AdminLayout user={auth.user} header={`Detail Paket: ${paket?.nama_paket}`}>
+        <AdminLayout
+            user={auth.user}
+            header={
+                <div className="flex items-center gap-3.5">
+                    <Link href={isTryout ? route('paket-tryout.index') : route('paket-latihan.index')}>
+                        <PrimaryButton className="gap-2 !py-2 !px-4 text-xs sm:text-sm font-semibold shadow-sm hover:shadow">
+                            <ArrowLeft size={16} />
+                            Kembali
+                        </PrimaryButton>
+                    </Link>
+                    <span>Detail Paket: {paket?.nama_paket}</span>
+                </div>
+            }
+        >
             <Head title={`Paket ${paket?.nama_paket}`} />
-
-            {/* Back link */}
-            <div className="mb-6">
-                <Link href={route('paket-latihan.index')}
-                    className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 transition-colors font-medium text-sm">
-                    <ArrowLeft size={16} />
-                    Kembali ke Daftar Paket
-                </Link>
-            </div>
 
             {/* ===== 2-COLUMN LAYOUT ===== */}
             <div className="flex flex-col lg:flex-row gap-6 items-start">
@@ -472,7 +481,7 @@ export default function Show({ auth, paket, soals = [], bankSoals = [], filters 
                                                             className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors" title="Edit Soal">
                                                             <Edit size={15} />
                                                         </Link>
-                                                        <button onClick={() => handleDelete(soal.id_soal)}
+                                                        <button onClick={() => handleDeleteClick(soal)}
                                                             className="p-2 rounded-xl text-rose-400 hover:text-rose-600 hover:bg-rose-50 transition-colors" title="Lepas dari Paket">
                                                             <Trash2 size={15} />
                                                         </button>
@@ -629,6 +638,107 @@ export default function Show({ auth, paket, soals = [], bankSoals = [], filters 
                     </div>
                 </div>
             )}
+            {/* PopupModal Konfirmasi Lepas Soal dari Paket */}
+            <PopupModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                maxWidth="sm"
+                showCloseButton={true}
+                padding="p-7 sm:p-8"
+            >
+                <div className="flex flex-col items-center text-center">
+                    <div className="mb-4 text-red-500">
+                        <Trash2 size={50} strokeWidth={2} />
+                    </div>
+
+                    <h3 className="font-['Poppins'] text-xl font-bold text-slate-800 tracking-tight mb-2">
+                        Lepas Soal dari Paket?
+                    </h3>
+
+                    <p className="text-sm text-slate-500 leading-relaxed mb-6 font-light">
+                        Soal ini akan dilepas dari paket latihan ini. Soal akan tetap tersimpan aman di Bank Soal.
+                    </p>
+
+                    <div className="flex items-center justify-center gap-3 w-full">
+                        <button
+                            type="button"
+                            onClick={() => setIsDeleteModalOpen(false)}
+                            className="flex-1 py-2.5 px-5 rounded-full border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="button"
+                            onClick={confirmDelete}
+                            className="flex-1 py-2.5 px-5 rounded-full bg-red-600 hover:bg-red-700 text-white font-semibold text-sm shadow-md active:scale-95 transition-all"
+                        >
+                            Ya, Lepaskan
+                        </button>
+                    </div>
+                </div>
+            </PopupModal>
+
+            {/* PopupModal Peringatan */}
+            <PopupModal
+                isOpen={isWarningModalOpen}
+                onClose={() => setIsWarningModalOpen(false)}
+                maxWidth="sm"
+                showCloseButton={true}
+                padding="p-7 sm:p-8"
+            >
+                <div className="flex flex-col items-center text-center">
+                    <div className="mb-4 w-14 h-14 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+                        <AlertTriangle size={28} strokeWidth={2.2} />
+                    </div>
+
+                    <h3 className="font-['Poppins'] text-xl font-bold text-slate-800 tracking-tight mb-2">
+                        Perhatian
+                    </h3>
+
+                    <p className="text-sm text-slate-500 leading-relaxed mb-6 font-light">
+                        {warningModalMessage}
+                    </p>
+
+                    <PrimaryButton
+                        type="button"
+                        onClick={() => setIsWarningModalOpen(false)}
+                        className="w-full !py-2.5 !px-6 text-sm font-semibold shadow-md active:scale-95 transition-all"
+                    >
+                        Saya Mengerti
+                    </PrimaryButton>
+                </div>
+            </PopupModal>
+
+            {/* PopupModal Notifikasi Sukses */}
+            <PopupModal
+                isOpen={isSuccessModalOpen}
+                onClose={() => setIsSuccessModalOpen(false)}
+                maxWidth="sm"
+                showCloseButton={true}
+                padding="p-7 sm:p-8"
+            >
+                <div className="flex flex-col items-center text-center">
+                    <div className="mb-4 text-[#1b5e20]">
+                        <CheckCircle2 size={50} strokeWidth={2.2} />
+                    </div>
+
+                    <h3 className="font-['Poppins'] text-xl font-bold text-slate-800 tracking-tight mb-2">
+                        Berhasil!
+                    </h3>
+
+                    <p className="text-sm text-slate-500 leading-relaxed mb-6 font-light">
+                        {successMessage}
+                    </p>
+
+                    <PrimaryButton
+                        type="button"
+                        onClick={() => setIsSuccessModalOpen(false)}
+                        className="w-full !py-3 !rounded-xl bg-[#1b5e20] hover:bg-[#144718] justify-center text-sm font-semibold shadow-md active:scale-95 transition-all"
+                    >
+                        Selesai
+                    </PrimaryButton>
+                </div>
+            </PopupModal>
         </AdminLayout>
     );
 }

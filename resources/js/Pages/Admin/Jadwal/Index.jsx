@@ -1,19 +1,36 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Head, router, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
-import { Plus, Pencil, Trash2, Calendar, Clock, Search, X, ImagePlus, Save } from 'lucide-react';
-import Swal from 'sweetalert2';
+import SearchBar from '@/Components/SearchBar';
+import PrimaryButton from '@/Components/PrimaryButton';
+import ContainerWhite from '@/Components/ContainerWhite';
+import Pagination from '@/Components/Pagination';
+import { Plus, Edit, Pencil, Trash2, Calendar, Clock, X, ImagePlus, Save, CheckCircle2 } from 'lucide-react';
+import PopupModal from '@/Components/PopupModal';
 
-export default function Index({ auth, jadwals, filters }) {
-    const [searchQuery, setSearchQuery] = useState(filters?.search || '');
+export default function Index({ auth, jadwals, flash }) {
+    const [searchQuery, setSearchQuery] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('create'); // 'create' | 'edit'
     const [editingId, setEditingId] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
+    const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [jadwalToDelete, setJadwalToDelete] = useState(null);
     const fileInputRef = useRef(null);
+
+    useEffect(() => {
+        if (flash?.success) {
+            setSuccessMessage(flash.success);
+            setIsSuccessModalOpen(true);
+        }
+    }, [flash?.success]);
 
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         _method: 'post',
@@ -125,12 +142,8 @@ export default function Index({ auth, jadwals, filters }) {
                 forceFormData: true,
                 onSuccess: () => {
                     closeModal();
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil',
-                        text: 'Jadwal berhasil ditambahkan!',
-                        confirmButtonColor: '#1b5e20'
-                    });
+                    setSuccessMessage('Jadwal berhasil ditambahkan!');
+                    setIsSuccessModalOpen(true);
                 }
             });
         } else {
@@ -138,36 +151,28 @@ export default function Index({ auth, jadwals, filters }) {
                 forceFormData: true,
                 onSuccess: () => {
                     closeModal();
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil',
-                        text: 'Jadwal berhasil diperbarui!',
-                        confirmButtonColor: '#1b5e20'
-                    });
+                    setSuccessMessage('Jadwal berhasil diperbarui!');
+                    setIsSuccessModalOpen(true);
                 }
             });
         }
     };
 
-    const handleDelete = (id) => {
-        Swal.fire({
-            title: 'Apakah Anda yakin?',
-            text: "Jadwal yang dihapus tidak dapat dikembalikan!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#94a3b8',
-            confirmButtonText: 'Ya, hapus!',
-            cancelButtonText: 'Batal'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                router.delete(route('jadwal.destroy', id), {
-                    preserveScroll: true,
-                    onSuccess: () => {
-                        Swal.fire('Terhapus!', 'Jadwal berhasil dihapus.', 'success');
-                    }
-                });
-            }
+    const handleDeleteClick = (jadwal) => {
+        setJadwalToDelete(jadwal);
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if (!jadwalToDelete) return;
+        router.delete(route('jadwal.destroy', jadwalToDelete.id_jadwal), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsDeleteModalOpen(false);
+                setJadwalToDelete(null);
+                setSuccessMessage('Jadwal berhasil dihapus.');
+                setIsSuccessModalOpen(true);
+            },
         });
     };
 
@@ -216,6 +221,48 @@ export default function Index({ auth, jadwals, filters }) {
         return 'Aktif';
     };
 
+    const allJadwals = useMemo(() => {
+        if (Array.isArray(jadwals)) return jadwals;
+        if (jadwals?.data && Array.isArray(jadwals.data)) return jadwals.data;
+        return [];
+    }, [jadwals]);
+
+    const filteredJadwals = useMemo(() => {
+        if (!allJadwals || allJadwals.length === 0) return [];
+        if (!searchQuery.trim()) return allJadwals;
+
+        const query = searchQuery.toLowerCase().trim();
+        return allJadwals.filter((j) => {
+            const nama = (j.nama_jadwal || '').toLowerCase();
+            const deskripsi = (j.deskripsi || '').toLowerCase();
+            const tanggal = (j.tanggal || '').toLowerCase();
+            const status = (j.status || '').toLowerCase();
+            return nama.includes(query) || deskripsi.includes(query) || tanggal.includes(query) || status.includes(query);
+        });
+    }, [allJadwals, searchQuery]);
+
+    const totalItems = filteredJadwals.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [totalPages, currentPage]);
+
+    const paginatedJadwals = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredJadwals.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredJadwals, currentPage, itemsPerPage]);
+
+    const fromIndex = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+    const toIndex = Math.min(currentPage * itemsPerPage, totalItems);
+
+    const handleSearchChange = (e) => {
+        setSearchQuery(e.target.value);
+        setCurrentPage(1);
+    };
+
     return (
         <AdminLayout
             user={auth.user}
@@ -223,99 +270,122 @@ export default function Index({ auth, jadwals, filters }) {
         >
             <Head title="Manajemen Jadwal" />
 
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <div>
-                    <h2 className="text-xl font-semibold text-slate-800 font-['Poppins']">Daftar Jadwal</h2>
-                    <p className="text-slate-500 text-sm">Kelola jadwal mentoring dan kegiatan untuk siswa.</p>
-                </div>
-                <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
-                    {/* Search Bar */}
-                    <form onSubmit={handleSearch} className="relative w-full sm:w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                        <TextInput
-                            type="text"
-                            placeholder="Cari jadwal..."
-                            className="w-full !pl-10 !pr-4 !py-2.5 !rounded-xl !border-slate-200 focus:!border-[#1b5e20] focus:!ring-[#1b5e20] text-sm"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </form>
+            <ContainerWhite className="!p-0 overflow-hidden shadow-sm">
+                <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <SearchBar
+                        className="w-full sm:max-w-xs"
+                        placeholder="Cari jadwal..."
+                        value={searchQuery}
+                        onChange={handleSearchChange}
+                    />
 
-                    <button
+                    <PrimaryButton
                         type="button"
                         onClick={openCreateModal}
-                        className="w-full sm:w-auto shrink-0 justify-center bg-[#1b5e20] hover:bg-[#508953] text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center gap-2 shadow-sm cursor-pointer"
+                        className="gap-2 !py-2.5 !px-5 text-sm font-semibold shadow-sm hover:shadow-md"
                     >
                         <Plus size={18} />
                         Tambah Jadwal
-                    </button>
+                    </PrimaryButton>
                 </div>
-            </div>
 
-            {jadwals && jadwals.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {jadwals.map((jadwal) => (
-                        <div key={jadwal.id_jadwal} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
-                            <div className="p-6 flex-1 flex flex-col space-y-4">
-                                <div className="flex items-start justify-between">
-                                    <h3 className="font-semibold text-lg text-slate-800 flex-1 line-clamp-2">
-                                        {jadwal.nama_jadwal}
-                                    </h3>
-                                    <span className={`ml-2 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusBadge(jadwal)}`}>
-                                        {getStatusText(jadwal)}
-                                    </span>
-                                </div>
-
-                                <div className="space-y-3 text-sm text-slate-600">
-                                    <div className="flex items-center gap-3">
-                                        <Calendar size={18} className="text-slate-400 flex-shrink-0" />
-                                        <span>{formatDate(jadwal.tanggal)}</span>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <Clock size={18} className="text-slate-400 flex-shrink-0" />
-                                        <span>{formatTime(jadwal.waktu_mulai)} - {formatTime(jadwal.waktu_selesai)}</span>
-                                    </div>
-                                </div>
-
-                                <div className="mt-auto pt-4 flex gap-2 border-t border-slate-100">
-                                    <button
-                                        type="button"
-                                        onClick={() => openEditModal(jadwal)}
-                                        className="flex-1 bg-amber-50 text-amber-600 hover:bg-amber-100 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer"
-                                    >
-                                        <Pencil size={16} />
-                                        Edit
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleDelete(jadwal.id_jadwal)}
-                                        className="flex-1 bg-red-50 text-red-600 hover:bg-red-100 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer"
-                                    >
-                                        <Trash2 size={16} />
-                                        Hapus
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-slate-600">
+                        <thead className="bg-slate-50 border-b border-slate-100 text-slate-500">
+                            <tr>
+                                <th className="px-6 py-4 font-medium">No</th>
+                                <th className="px-6 py-4 font-medium">Nama Jadwal / Kegiatan</th>
+                                <th className="px-6 py-4 font-medium">Tanggal</th>
+                                <th className="px-6 py-4 font-medium">Waktu</th>
+                                <th className="px-6 py-4 font-medium">Deskripsi</th>
+                                <th className="px-6 py-4 font-medium">Status</th>
+                                <th className="px-6 py-4 font-medium text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {paginatedJadwals && paginatedJadwals.length > 0 ? (
+                                paginatedJadwals.map((jadwal, index) => (
+                                    <tr key={jadwal.id_jadwal} className="hover:bg-slate-50/50 transition-colors">
+                                        <td className="px-6 py-4">{fromIndex + index}</td>
+                                        <td className="px-6 py-4 font-medium text-slate-900">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-10 w-10 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0 flex items-center justify-center">
+                                                    {jadwal.gambar_url || jadwal.gambar ? (
+                                                        <img
+                                                            src={jadwal.gambar_url || `/storage/${jadwal.gambar}`}
+                                                            alt={jadwal.nama_jadwal}
+                                                            className="h-full w-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <Calendar size={18} className="text-slate-400" />
+                                                    )}
+                                                </div>
+                                                <span className="font-semibold text-slate-900 line-clamp-1 max-w-xs">
+                                                    {jadwal.nama_jadwal}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-600 whitespace-nowrap">
+                                            {formatDate(jadwal.tanggal)}
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-600 whitespace-nowrap">
+                                            {formatTime(jadwal.waktu_mulai)} - {formatTime(jadwal.waktu_selesai)}
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-500 max-w-xs">
+                                            <p className="line-clamp-2 text-xs leading-relaxed">
+                                                {jadwal.deskripsi || '-'}
+                                            </p>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusBadge(jadwal)}`}>
+                                                {getStatusText(jadwal)}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right whitespace-nowrap">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openEditModal(jadwal)}
+                                                    className="p-2 text-[#1b5e20] hover:text-[#144718] hover:bg-[#e8f5e9] rounded-xl transition-all duration-200 cursor-pointer"
+                                                    title="Edit Jadwal"
+                                                >
+                                                    <Edit size={18} />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDeleteClick(jadwal)}
+                                                    className="p-2 text-[#1b5e20] hover:text-[#c62828] hover:bg-[#ffebee] rounded-xl transition-all duration-200 cursor-pointer"
+                                                    title="Hapus Jadwal"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="7" className="px-6 py-8 text-center text-slate-500">
+                                        {searchQuery.trim()
+                                            ? `Tidak ada data jadwal yang cocok dengan "${searchQuery}".`
+                                            : 'Belum ada data jadwal yang ditambahkan.'}
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
-            ) : (
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-12">
-                    <div className="flex flex-col items-center justify-center text-center">
-                        <Calendar size={48} className="text-slate-300 mb-4" />
-                        <h3 className="text-lg font-semibold text-slate-800 mb-1">Belum ada jadwal</h3>
-                        <p className="text-slate-500 mb-6">Mulai dengan membuat jadwal baru untuk siswa Anda.</p>
-                        <button
-                            type="button"
-                            onClick={openCreateModal}
-                            className="bg-[#1b5e20] hover:bg-[#508953] text-white px-6 py-2 rounded-xl text-sm font-medium transition-colors inline-flex items-center gap-2 cursor-pointer"
-                        >
-                            <Plus size={18} />
-                            Buat Jadwal Pertama
-                        </button>
-                    </div>
-                </div>
-            )}
+
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={(page) => setCurrentPage(page)}
+                    from={fromIndex}
+                    to={toIndex}
+                    total={totalItems}
+                    itemName="jadwal"
+                />
+            </ContainerWhite>
 
             {/* Popup Modal Tambah / Edit Jadwal */}
             {isModalOpen && (
@@ -524,24 +594,95 @@ export default function Index({ auth, jadwals, filters }) {
                                 type="button"
                                 onClick={closeModal}
                                 disabled={processing}
-                                className="px-5 py-2.5 border border-slate-200 text-slate-600 hover:bg-slate-100 rounded-xl font-medium text-sm transition-colors cursor-pointer"
+                                className="px-5 py-2.5 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-100 font-semibold text-sm transition-colors cursor-pointer"
                             >
                                 Batal
                             </button>
-                            <button
+                            <PrimaryButton
                                 form="form-jadwal-modal"
                                 type="submit"
                                 disabled={processing}
-                                className="bg-[#1b5e20] hover:bg-[#508953] disabled:bg-slate-400 text-white px-6 py-2.5 rounded-xl font-medium text-sm transition-colors flex items-center gap-2 shadow-sm cursor-pointer"
+                                className="gap-2 !py-2.5 !px-6 text-sm font-semibold shadow-sm hover:shadow-md cursor-pointer"
                             >
                                 <Save size={16} />
                                 {processing ? 'Menyimpan...' : (modalMode === 'create' ? 'Simpan Jadwal' : 'Perbarui Jadwal')}
-                            </button>
+                            </PrimaryButton>
                         </div>
 
                     </div>
                 </div>
             )}
+
+            {/* PopupModal Konfirmasi Hapus Jadwal */}
+            <PopupModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                maxWidth="sm"
+                showCloseButton={true}
+                padding="p-7 sm:p-8"
+            >
+                <div className="flex flex-col items-center text-center">
+                    <div className="mb-4 text-red-500">
+                        <Trash2 size={50} strokeWidth={2} />
+                    </div>
+
+                    <h3 className="font-['Poppins'] text-xl font-bold text-slate-800 tracking-tight mb-2">
+                        Hapus Jadwal?
+                    </h3>
+
+                    <p className="text-sm text-slate-500 leading-relaxed mb-6 font-light">
+                        Jadwal kegiatan atau mentoring ini akan dihapus secara permanen dari sistem. Tindakan ini tidak dapat dibatalkan.
+                    </p>
+
+                    <div className="flex items-center justify-center gap-3 w-full">
+                        <button
+                            type="button"
+                            onClick={() => setIsDeleteModalOpen(false)}
+                            className="flex-1 py-2.5 px-5 rounded-full border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="button"
+                            onClick={confirmDelete}
+                            className="flex-1 py-2.5 px-5 rounded-full bg-red-600 hover:bg-red-700 text-white font-semibold text-sm shadow-md active:scale-95 transition-all"
+                        >
+                            Ya, Hapus
+                        </button>
+                    </div>
+                </div>
+            </PopupModal>
+
+            {/* PopupModal Notifikasi Sukses */}
+            <PopupModal
+                isOpen={isSuccessModalOpen}
+                onClose={() => setIsSuccessModalOpen(false)}
+                maxWidth="sm"
+                showCloseButton={true}
+                padding="p-7 sm:p-8"
+            >
+                <div className="flex flex-col items-center text-center">
+                    <div className="mb-4 text-[#1b5e20]">
+                        <CheckCircle2 size={50} strokeWidth={2.2} />
+                    </div>
+
+                    <h3 className="font-['Poppins'] text-xl font-bold text-slate-800 tracking-tight mb-2">
+                        Berhasil Disimpan!
+                    </h3>
+
+                    <p className="text-sm text-slate-500 leading-relaxed mb-6 font-light">
+                        {successMessage || 'Data jadwal berhasil diproses.'}
+                    </p>
+
+                    <PrimaryButton
+                        type="button"
+                        onClick={() => setIsSuccessModalOpen(false)}
+                        className="w-full !py-3 !rounded-xl bg-[#1b5e20] hover:bg-[#144718] justify-center text-sm font-semibold shadow-md active:scale-95 transition-all"
+                    >
+                        Selesai
+                    </PrimaryButton>
+                </div>
+            </PopupModal>
         </AdminLayout>
     );
 }

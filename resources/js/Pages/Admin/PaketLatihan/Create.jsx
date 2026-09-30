@@ -5,6 +5,8 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import { ArrowLeft, Save, Clock, Calendar, Shuffle, PauseCircle, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
+import ContainerWhite from '@/Components/ContainerWhite';
+import PrimaryButton from '@/Components/PrimaryButton';
 
 // ─── Konstanta Durasi Standar UTBK (Resmi 195 Menit / 3 Jam 15 Menit) ─────────
 const UTBK_SUBTESTS = [
@@ -60,15 +62,15 @@ function SectionCard({ icon: Icon, title, children, accent = 'slate' }) {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function Create({ auth }) {
-    const [statusMode, setStatusMode]               = useState('nonaktif'); // tryout default nonaktif
+export default function Create({ auth, defaultTipe = 'latihan' }) {
+    const [statusMode, setStatusMode]               = useState(defaultTipe === 'tryout' ? 'nonaktif' : 'aktif');
     const [showDurasi, setShowDurasi]               = useState(false);
 
     const { data, setData, post, processing, errors } = useForm({
         nama_paket:           '',
         deskripsi:            '',
-        tipe:                 'latihan',
-        status:               'aktif',
+        tipe:                 defaultTipe,
+        status:               defaultTipe === 'tryout' ? 'nonaktif' : 'aktif',
         waktu_ujian:          0,
         tanggal_aktif:        '',
         // Tryout fields
@@ -169,21 +171,24 @@ export default function Create({ auth }) {
     const statusModes = isTryout ? toMode : latMode;
 
     return (
-        <AdminLayout user={auth.user} header={isTryout ? 'Buat Try Out Baru' : 'Tambah Paket Latihan'}>
+        <AdminLayout
+            user={auth.user}
+            header={
+                <div className="flex items-center gap-3.5">
+                    <Link href={isTryout ? route('paket-tryout.index') : route('paket-latihan.index')}>
+                        <PrimaryButton className="gap-2 !py-2 !px-4 text-xs sm:text-sm font-semibold shadow-sm hover:shadow">
+                            <ArrowLeft size={16} />
+                            Kembali
+                        </PrimaryButton>
+                    </Link>
+                    <span>{isTryout ? 'Buat Try Out Baru' : 'Tambah Paket Latihan'}</span>
+                </div>
+            }
+        >
             <Head title={isTryout ? 'Buat Try Out' : 'Tambah Paket'} />
 
-            <div className="mb-6">
-                <Link
-                    href={route('paket-latihan.index')}
-                    className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 transition-colors font-medium text-sm"
-                >
-                    <ArrowLeft size={16} />
-                    Kembali ke Daftar Paket
-                </Link>
-            </div>
-
             <div className="w-full">
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden p-6">
+                <ContainerWhite className="w-full !p-6 md:!p-8 shadow-sm">
                     <form onSubmit={submit} className="space-y-6">
 
                         {/* ── Tipe Paket ── */}
@@ -615,7 +620,7 @@ export default function Create({ auth }) {
                         {/* ── Actions ── */}
                         <div className="flex items-center justify-end gap-4 pt-4 border-t border-slate-100">
                             <Link
-                                href={route('paket-latihan.index')}
+                                href={isTryout ? route('paket-tryout.index') : route('paket-latihan.index')}
                                 className="px-6 py-2.5 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition-colors"
                             >
                                 Batal
@@ -634,7 +639,7 @@ export default function Create({ auth }) {
                             </button>
                         </div>
                     </form>
-                </div>
+                </ContainerWhite>
             </div>
         </AdminLayout>
     );

@@ -16,20 +16,12 @@ class SesiLatihanController extends Controller
 {
     public function index(Request $request)
     {
-        $query = PaketLatihan::withCount(['soal' => function ($q) {
+        $pakets = PaketLatihan::withCount(['soal' => function ($q) {
                 $q->where('status', 'aktif');
-            }, 'sesi_latihan']);
-
-        if ($request->has('search') && $request->search != '') {
-            $searchTerm = '%' . strtolower($request->search) . '%';
-            $query->where(\Illuminate\Support\Facades\DB::raw('LOWER(nama_paket)'), 'like', $searchTerm);
-        }
-
-        $pakets = $query->orderBy('id_paket', 'desc')->get();
+            }, 'sesi_latihan'])->orderBy('id_paket', 'desc')->get();
 
         return Inertia::render('Admin/SesiLatihan/Index', [
             'pakets' => $pakets,
-            'filters' => $request->only(['search'])
         ]);
     }
 

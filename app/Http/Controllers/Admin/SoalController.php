@@ -14,29 +14,12 @@ class SoalController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Soal::with(['pilihan_jawaban', 'paket_latihan'])->orderBy('id_soal', 'desc');
-
-        if ($request->has('kategori') && $request->kategori != '') {
-            $query->where('kategori', $request->kategori);
-        }
-
-        if ($request->has('id_paket') && $request->id_paket != '') {
-            $query->whereHas('paket_latihan', function ($q) use ($request) {
-                $q->where('paket_latihan.id_paket', $request->id_paket);
-            });
-        }
-
-        if ($request->has('search') && $request->search != '') {
-            $query->where(DB::raw('LOWER(konten_soal)'), 'like', '%' . strtolower($request->search) . '%');
-        }
-
-        $soals = $query->get();
+        $soals = Soal::with(['pilihan_jawaban', 'paket_latihan'])->orderBy('id_soal', 'desc')->get();
         $pakets = PaketLatihan::orderBy('nama_paket')->get();
 
         return Inertia::render('Admin/Soal/Index', [
             'soals' => $soals,
             'pakets' => $pakets,
-            'filters' => $request->only(['kategori', 'id_paket', 'search'])
         ]);
     }
 
@@ -53,7 +36,7 @@ class SoalController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'id_paket' => 'required|array|min:1',
+            'id_paket' => 'nullable|array',
             'id_paket.*' => 'exists:paket_latihan,id_paket',
             'konten_soal' => 'required|string',
             'jenis_soal' => 'required|in:pilihan_ganda,isian',
@@ -73,7 +56,7 @@ class SoalController extends Controller
 
         DB::beginTransaction();
         try {
-            $firstPaketId = $validated['id_paket'][0] ?? null;
+            $firstPaketId = (!empty($validated['id_paket'])) ? $validated['id_paket'][0] : null;
 
             $soal = Soal::create([
                 'id_paket' => $firstPaketId,
@@ -92,13 +75,15 @@ class SoalController extends Controller
             // Sinkronkan relasi pivot many-to-many
             // Jika paket adalah tryout, sertakan subtes di pivot
             $pivotData = [];
-            foreach ($validated['id_paket'] as $pid) {
-                $paketItem = PaketLatihan::find($pid);
-                $subtes    = null;
-                if ($paketItem && $paketItem->tipe === 'tryout') {
-                    $subtes = $request->input('subtes') ?: null;
+            if (!empty($validated['id_paket'])) {
+                foreach ($validated['id_paket'] as $pid) {
+                    $paketItem = PaketLatihan::find($pid);
+                    $subtes    = null;
+                    if ($paketItem && $paketItem->tipe === 'tryout') {
+                        $subtes = $request->input('subtes') ?: null;
+                    }
+                    $pivotData[$pid] = ['subtes' => $subtes];
                 }
-                $pivotData[$pid] = ['subtes' => $subtes];
             }
             $soal->paket_latihan()->sync($pivotData);
 
@@ -146,7 +131,7 @@ class SoalController extends Controller
         $soal = Soal::findOrFail($id);
 
         $validated = $request->validate([
-            'id_paket' => 'required|array|min:1',
+            'id_paket' => 'nullable|array',
             'id_paket.*' => 'exists:paket_latihan,id_paket',
             'konten_soal' => 'required|string',
             'jenis_soal' => 'required|in:pilihan_ganda,isian',
@@ -165,7 +150,7 @@ class SoalController extends Controller
 
         DB::beginTransaction();
         try {
-            $firstPaketId = $validated['id_paket'][0] ?? null;
+            $firstPaketId = (!empty($validated['id_paket'])) ? $validated['id_paket'][0] : null;
 
             $soal->update([
                 'id_paket' => $firstPaketId,
@@ -182,7 +167,7 @@ class SoalController extends Controller
             ]);
 
             // Sinkronkan relasi pivot many-to-many
-            $soal->paket_latihan()->sync($validated['id_paket']);
+            $soal->paket_latihan()->sync($validated['id_paket'] ?? []);
 
             // Perbarui atau buat pilihan jawaban jika pilihan ganda
             if ($validated['jenis_soal'] === 'pilihan_ganda' && !empty($validated['pilihan'])) {
@@ -228,6 +213,10 @@ class SoalController extends Controller
     public function destroy(string $id)
     {
         $soal = Soal::findOrFail($id);
+
+        if ($soal->paket_latihan()->exists()) {
+            return back()->with('error', 'Soal ini tidak dapat dihapus karena masih terhubung dengan paket latihan. Silakan ganti atau lepaskan soal ini dari paket latihan terlebih dahulu.');
+        }
 
         DB::beginTransaction();
         try {

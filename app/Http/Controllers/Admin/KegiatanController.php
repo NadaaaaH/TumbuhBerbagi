@@ -13,20 +13,9 @@ class KegiatanController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Kegiatan::query();
-
-        if ($request->has('search') && $request->search != '') {
-            $searchTerm = '%' . strtolower($request->search) . '%';
-            $query->where(function ($q) use ($searchTerm) {
-                $q->where(DB::raw('LOWER(nama_kegiatan)'), 'like', $searchTerm)
-                    ->orWhere(DB::raw('LOWER(deskripsi)'), 'like', $searchTerm);
-            });
-        }
-
-        $kegiatans = $query->orderBy('tanggal', 'desc')->get();
+        $kegiatans = Kegiatan::orderBy('tanggal', 'desc')->get();
         return Inertia::render('Admin/Kegiatan/Index', [
             'kegiatans' => $kegiatans,
-            'filters' => $request->only(['search'])
         ]);
     }
 

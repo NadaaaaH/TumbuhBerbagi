@@ -13,17 +13,9 @@ class JadwalController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Jadwal::query();
-
-        if ($request->has('search') && $request->search != '') {
-            $searchTerm = '%' . strtolower($request->search) . '%';
-            $query->where(DB::raw('LOWER(nama_jadwal)'), 'like', $searchTerm);
-        }
-
-        $jadwals = $query->orderBy('tanggal', 'desc')->orderBy('waktu_mulai', 'desc')->get();
+        $jadwals = Jadwal::orderBy('tanggal', 'desc')->orderBy('waktu_mulai', 'desc')->get();
         return Inertia::render('Admin/Jadwal/Index', [
             'jadwals' => $jadwals,
-            'filters' => $request->only(['search'])
         ]);
     }
 

@@ -52,7 +52,20 @@ Route::middleware('auth:admin')->group(function () {
     Route::patch('admin/soal/{id}/toggle-status', [AdminSoalController::class, 'toggleStatus'])
         ->name('soal.toggleStatus');
 
+    // Paket Try Out
+    Route::get('admin/paket-tryout', [AdminPaketLatihanController::class, 'indexTryout'])
+        ->name('paket-tryout.index');
+    Route::get('admin/paket-tryout/create', [AdminPaketLatihanController::class, 'createTryout'])
+        ->name('paket-tryout.create');
+
+    // Paket Latihan
+    Route::get('admin/paket-latihan', [AdminPaketLatihanController::class, 'indexLatihan'])
+        ->name('paket-latihan.index');
+    Route::get('admin/paket-latihan/create', [AdminPaketLatihanController::class, 'createLatihan'])
+        ->name('paket-latihan.create');
+
     Route::resource('admin/paket-latihan', AdminPaketLatihanController::class)
+        ->except(['index', 'create'])
         ->names('paket-latihan');
     Route::delete('admin/paket-latihan/{id_paket}/soal/{id_soal}', [AdminPaketLatihanController::class, 'removeSoal'])
         ->name('paket-latihan.remove-soal');

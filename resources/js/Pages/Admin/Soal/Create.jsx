@@ -8,11 +8,13 @@ import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
 import RichTextEditor from '@/Components/RichTextEditor';
 import SelectInput from '@/Components/SelectInput';
 import MultiSelect from '@/Components/MultiSelect';
+import ContainerWhite from '@/Components/ContainerWhite';
+import PrimaryButton from '@/Components/PrimaryButton';
 
 export default function Create({ auth, pakets, defaultPaketId }) {
     const initialPaket = defaultPaketId 
         ? [Number(defaultPaketId)] 
-        : (pakets[0]?.id_paket ? [pakets[0].id_paket] : []);
+        : [];
 
     const { data, setData, post, transform, processing, errors } = useForm({
         id_paket: initialPaket,
@@ -68,41 +70,34 @@ export default function Create({ auth, pakets, defaultPaketId }) {
     const categories = ['PU', 'PPU', 'PK', 'PBM', 'Literasi Bahasa Indonesia', 'Literasi Bahasa Inggris', 'Penalaran Matematika'];
 
     return (
-        <AdminLayout user={auth.user} header="Tambah Soal UTBK Baru">
+        <AdminLayout
+            user={auth.user}
+            header={
+                <div className="flex items-center gap-3.5">
+                    <Link href={defaultPaketId ? route('paket-latihan.show', defaultPaketId) : route('soal.index')}>
+                        <PrimaryButton className="gap-2 !py-2 !px-4 text-xs sm:text-sm font-semibold shadow-sm hover:shadow">
+                            <ArrowLeft size={16} />
+                            Kembali
+                        </PrimaryButton>
+                    </Link>
+                    <span>Tambah Soal UTBK Baru</span>
+                </div>
+            }
+        >
             <Head title="Tambah Soal" />
 
-            <div className="mb-6">
-                {defaultPaketId ? (
-                    <Link
-                        href={route('paket-latihan.show', defaultPaketId)}
-                        className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 transition-colors font-medium text-sm"
-                    >
-                        <ArrowLeft size={16} />
-                        Kembali ke Detail Paket
-                    </Link>
-                ) : (
-                    <Link
-                        href={route('soal.index')}
-                        className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 transition-colors font-medium text-sm"
-                    >
-                        <ArrowLeft size={16} />
-                        Kembali ke Daftar Semua Soal
-                    </Link>
-                )}
-            </div>
-
             <div className="w-full">
-                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden p-6">
+                <ContainerWhite className="w-full !p-6 md:!p-8 shadow-sm">
                     <form onSubmit={submit} className="space-y-6">
                         <div className="grid gap-6 md:grid-cols-2">
                             {/* Paket Latihan */}
                             <div>
-                                <InputLabel htmlFor="id_paket" value="Paket Soal (Bisa Pilih Banyak)" />
+                                <InputLabel htmlFor="id_paket" value="Paket Soal (Opsional - Bisa Pilih Banyak)" />
                                 <MultiSelect
                                     options={pakets}
                                     value={data.id_paket}
                                     onChange={(vals) => setData('id_paket', vals)}
-                                    placeholder="Pilih satu atau beberapa paket latihan..."
+                                    placeholder="Pilih paket latihan jika ingin langsung ditautkan (opsional)..."
                                     className="mt-1"
                                 />
                                 <InputError message={errors.id_paket} className="mt-2" />
@@ -306,33 +301,33 @@ export default function Create({ auth, pakets, defaultPaketId }) {
                         </div>
 
                         {/* Submit Actions */}
-                        <div className="flex items-center justify-end gap-4 pt-6">
+                        <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-100">
                             {defaultPaketId ? (
                                 <Link
                                     href={route('paket-latihan.show', defaultPaketId)}
-                                    className="px-6 py-2.5 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                                    className="inline-flex items-center px-6 py-2.5 rounded-full border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors"
                                 >
                                     Batal
                                 </Link>
                             ) : (
                                 <Link
                                     href={route('soal.index')}
-                                    className="px-6 py-2.5 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                                    className="inline-flex items-center px-6 py-2.5 rounded-full border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors"
                                 >
                                     Batal
                                 </Link>
                             )}
-                            <button
+                            <PrimaryButton
                                 type="submit"
                                 disabled={processing}
-                                className="bg-[#1b5e20] hover:bg-[#508953] text-white px-8 py-2.5 rounded-xl font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+                                className="gap-2 !py-2.5 !px-6 text-sm font-semibold shadow-sm hover:shadow-md"
                             >
                                 <Save size={18} />
                                 Simpan Soal
-                            </button>
+                            </PrimaryButton>
                         </div>
                     </form>
-                </div>
+                </ContainerWhite>
             </div>
         </AdminLayout>
     );

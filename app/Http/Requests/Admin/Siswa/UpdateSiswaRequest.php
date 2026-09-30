@@ -30,6 +30,7 @@ class UpdateSiswaRequest extends FormRequest
             'no_handphone' => ['nullable', 'string', 'max:20'],
             'asal_sekolah' => ['nullable', 'string', 'max:150'],
             'target_kampus' => ['nullable', 'string', 'max:150'],
+            'batch' => ['nullable', 'string', 'max:50'],
             'status_akun' => ['required', 'string', 'max:30'],
         ];
     }

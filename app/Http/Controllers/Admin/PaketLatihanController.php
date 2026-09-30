@@ -12,28 +12,56 @@ class PaketLatihanController extends Controller
 {
     public function index(Request $request)
     {
-        $query = PaketLatihan::withCount('soal');
-
-        if ($request->filled('search')) {
-            $searchTerm = '%' . strtolower($request->search) . '%';
-            $query->where(DB::raw('LOWER(nama_paket)'), 'like', $searchTerm);
+        $tipe = $request->query('tipe');
+        if ($tipe === 'tryout') {
+            return $this->indexTryout($request);
         }
+        return $this->indexLatihan($request);
+    }
 
-        if ($request->filled('tipe') && in_array($request->tipe, ['tryout', 'latihan'])) {
-            $query->where('tipe', $request->tipe);
-        }
-
-        $pakets = $query->orderBy('id_paket', 'desc')->get();
+    public function indexTryout(Request $request)
+    {
+        $pakets = PaketLatihan::where('tipe', 'tryout')
+            ->withCount('soal')
+            ->orderBy('id_paket', 'desc')
+            ->get();
         
         return Inertia::render('Admin/PaketLatihan/Index', [
             'pakets' => $pakets,
-            'filters' => $request->only(['search', 'tipe'])
+            'fixedTipe' => 'tryout',
+        ]);
+    }
+
+    public function indexLatihan(Request $request)
+    {
+        $pakets = PaketLatihan::where('tipe', 'latihan')
+            ->withCount('soal')
+            ->orderBy('id_paket', 'desc')
+            ->get();
+        
+        return Inertia::render('Admin/PaketLatihan/Index', [
+            'pakets' => $pakets,
+            'fixedTipe' => 'latihan',
         ]);
     }
 
     public function create()
     {
-        return Inertia::render('Admin/PaketLatihan/Create');
+        return $this->createLatihan();
+    }
+
+    public function createTryout()
+    {
+        return Inertia::render('Admin/PaketLatihan/Create', [
+            'defaultTipe' => 'tryout',
+        ]);
+    }
+
+    public function createLatihan()
+    {
+        return Inertia::render('Admin/PaketLatihan/Create', [
+            'defaultTipe' => 'latihan',
+        ]);
     }
 
     public function show(Request $request, string $id)
@@ -236,7 +264,9 @@ class PaketLatihanController extends Controller
             }
         }
 
-        return redirect()->route('paket-latihan.index')->with('success', 'Paket Latihan berhasil diperbarui.');
+        $targetRoute = $paket->tipe === 'tryout' ? 'paket-tryout.index' : 'paket-latihan.index';
+        $label = $paket->tipe === 'tryout' ? 'Paket Try Out' : 'Paket Latihan';
+        return redirect()->route($targetRoute)->with('success', $label . ' berhasil diperbarui.');
     }
 
     public function removeSoal(string $id_paket, string $id_soal)
@@ -309,7 +339,9 @@ class PaketLatihanController extends Controller
             $paket->delete();
 
             DB::commit();
-            return redirect()->route('paket-latihan.index')->with('success', 'Paket Latihan berhasil dihapus.');
+            $targetRoute = $paket->tipe === 'tryout' ? 'paket-tryout.index' : 'paket-latihan.index';
+            $label = $paket->tipe === 'tryout' ? 'Paket Try Out' : 'Paket Latihan';
+            return redirect()->route($targetRoute)->with('success', $label . ' berhasil dihapus.');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['error' => 'Gagal menghapus paket latihan: ' . $e->getMessage()]);

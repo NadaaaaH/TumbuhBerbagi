@@ -3,6 +3,7 @@ import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { ArrowLeft, Download, FileSpreadsheet, CheckCircle2, XCircle, Clock, Award, Users, Search, Eye, X, Loader2, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
+import PrimaryButton from '@/Components/PrimaryButton';
 
 // ============================================================
 //  PDF PREVIEW MODAL
@@ -136,7 +137,20 @@ export default function Show({ auth, paket, pesertaSudah, pesertaBelum, question
     );
 
     return (
-        <AdminLayout user={auth.user} header={`Detail Sesi Latihan: ${paket.nama_paket}`}>
+        <AdminLayout
+            user={auth.user}
+            header={
+                <div className="flex items-center gap-3.5">
+                    <Link href={route('sesi-latihan.index')}>
+                        <PrimaryButton className="gap-2 !py-2 !px-4 text-xs sm:text-sm font-semibold shadow-sm hover:shadow">
+                            <ArrowLeft size={16} />
+                            Kembali
+                        </PrimaryButton>
+                    </Link>
+                    <span>Detail Sesi Latihan: {paket.nama_paket}</span>
+                </div>
+            }
+        >
             <Head title={`Sesi ${paket.nama_paket}`} />
 
             {/* PDF Preview Modal */}
@@ -148,29 +162,21 @@ export default function Show({ auth, paket, pesertaSudah, pesertaBelum, question
                 title={previewModal.title}
             />
 
-            <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <Link
-                    href={route('sesi-latihan.index')}
-                    className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 transition-colors font-medium text-sm"
-                >
-                    <ArrowLeft size={16} />
-                    Kembali ke Sesi Latihan
-                </Link>
-
-                {pesertaSudah.length > 0 && (
+            {pesertaSudah.length > 0 && (
+                <div className="mb-6 flex justify-end">
                     <button
                         onClick={() => openPreview(
                             route('sesi-latihan.preview-all', paket.id_paket),
                             route('sesi-latihan.export-all', paket.id_paket),
                             `Laporan Semua Peserta — ${paket.nama_paket}`
                         )}
-                        className="inline-flex items-center justify-center gap-2 bg-[#1b5e20] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#144718] transition-colors shadow-sm"
+                        className="inline-flex items-center justify-center gap-2 bg-[#1b5e20] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#144718] transition-colors shadow-sm cursor-pointer"
                     >
                         <Eye size={16} />
                         Pratinjau &amp; Ekspor Semua Peserta
                     </button>
-                )}
-            </div>
+                </div>
+            )}
 
             <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
                 {/* Left Column: Participants */}

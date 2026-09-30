@@ -6,7 +6,8 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import RichTextEditor from '@/Components/RichTextEditor';
 import { ArrowLeft, Save, Upload } from 'lucide-react';
-import Swal from 'sweetalert2';
+import ContainerWhite from '@/Components/ContainerWhite';
+import PrimaryButton from '@/Components/PrimaryButton';
 
 export default function Edit({ auth, kegiatan }) {
     // When updating with files in Inertia, we must use POST and simulate PUT with _method
@@ -35,38 +36,29 @@ export default function Edit({ auth, kegiatan }) {
         e.preventDefault();
         post(route('kegiatan.update', kegiatan.id_kegiatan), {
             forceFormData: true,
-            onSuccess: () => {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Berhasil',
-                    text: 'Kegiatan berhasil diperbarui!',
-                    confirmButtonColor: '#1b5e20'
-                });
-            }
         });
     };
 
     return (
         <AdminLayout
             user={auth.user}
-            header="Edit Kegiatan"
+            header={
+                <div className="flex items-center gap-3.5">
+                    <Link href={route('kegiatan.index')}>
+                        <PrimaryButton className="gap-2 !py-2 !px-4 text-xs sm:text-sm font-semibold shadow-sm hover:shadow">
+                            <ArrowLeft size={16} />
+                            Kembali
+                        </PrimaryButton>
+                    </Link>
+                    <span>Edit Kegiatan</span>
+                </div>
+            }
         >
             <Head title="Edit Kegiatan" />
 
-            <div className="mb-6">
-                <Link
-                    href={route('kegiatan.index')}
-                    className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 transition-colors font-medium text-sm"
-                >
-                    <ArrowLeft size={16} />
-                    Kembali ke Daftar Kegiatan
-                </Link>
-            </div>
-
             <div className="w-full">
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                    <div className="p-6 md:p-8">
-                        <form onSubmit={submit} className="space-y-6">
+                <ContainerWhite className="w-full !p-6 md:!p-8 shadow-sm">
+                    <form onSubmit={submit} className="space-y-6">
                             
                             <div>
                                 <InputLabel htmlFor="nama_kegiatan" value="Judul Informasi / Kegiatan" />
@@ -209,22 +201,21 @@ export default function Edit({ auth, kegiatan }) {
                             <div className="flex items-center justify-end pt-6 border-t border-slate-100 mt-8 gap-4">
                                 <Link
                                     href={route('kegiatan.index')}
-                                    className="px-6 py-2.5 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                                    className="inline-flex items-center px-6 py-2.5 rounded-full border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors"
                                 >
                                     Batal
                                 </Link>
-                                <button
+                                <PrimaryButton
                                     type="submit"
                                     disabled={processing}
-                                    className="bg-[#1b5e20] hover:bg-[#508953] text-white px-8 py-2.5 rounded-xl font-medium transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
+                                    className="gap-2 !py-2.5 !px-6 text-sm font-semibold shadow-sm hover:shadow-md"
                                 >
                                     <Save size={18} />
                                     Simpan Perubahan
-                                </button>
+                                </PrimaryButton>
                             </div>
                         </form>
-                    </div>
-                </div>
+                </ContainerWhite>
             </div>
         </AdminLayout>
     );

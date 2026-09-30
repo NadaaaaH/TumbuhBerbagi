@@ -5,12 +5,14 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import { ArrowLeft, Save, Trash2, Plus, Search, Clock, Calendar, Shuffle, PauseCircle, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
-import Swal from 'sweetalert2';
+import PopupModal from '@/Components/PopupModal';
 import ContainerWhite from '@/Components/ContainerWhite';
+import PrimaryButton from '@/Components/PrimaryButton';
 
 export default function Edit({ auth, paket, soals = [] }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [showDurasi, setShowDurasi]   = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     const isTryout = paket?.tipe === 'tryout';
 
@@ -181,58 +183,38 @@ export default function Edit({ auth, paket, soals = [] }) {
     };
 
     const handleDelete = () => {
-        Swal.fire({
-            title: 'Hapus Paket Latihan?',
-            text: 'Seluruh soal dan data sesi latihan siswa yang terhubung dengan paket ini akan dihapus secara permanen.',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#64748b',
-            confirmButtonText: 'Ya, hapus!',
-            cancelButtonText: 'Batal',
-            customClass: {
-                popup: 'rounded-3xl p-6 shadow-xl',
-                confirmButton: 'rounded-xl px-5 py-3 font-medium text-sm',
-                cancelButton: 'rounded-xl px-5 py-3 font-medium text-sm'
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                router.delete(route('paket-latihan.destroy', paket.id_paket), {
-                    onSuccess: () => {
-                        Swal.fire({
-                            title: 'Terhapus!',
-                            text: 'Paket latihan berhasil dihapus.',
-                            icon: 'success',
-                            confirmButtonColor: '#1b5e20',
-                            customClass: {
-                                popup: 'rounded-3xl p-6 shadow-xl',
-                                confirmButton: 'rounded-xl px-5 py-3 font-medium text-sm'
-                            }
-                        });
-                    }
-                });
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmDelete = () => {
+        router.delete(route('paket-latihan.destroy', paket.id_paket), {
+            onSuccess: () => {
+                setIsDeleteModalOpen(false);
             }
         });
     };
 
     return (
-        <AdminLayout user={auth.user} header="Edit Paket Latihan">
-            <Head title="Edit Paket" />
-
-            <div className="mb-6">
-                <Link
-                    href={route('paket-latihan.index')}
-                    className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 transition-colors font-medium text-sm"
-                >
-                    <ArrowLeft size={16} />
-                    Kembali ke Daftar Paket
-                </Link>
-            </div>
+        <AdminLayout
+            user={auth.user}
+            header={
+                <div className="flex items-center gap-3.5">
+                    <Link href={isTryout ? route('paket-tryout.index') : route('paket-latihan.index')}>
+                        <PrimaryButton className="gap-2 !py-2 !px-4 text-xs sm:text-sm font-semibold shadow-sm hover:shadow">
+                            <ArrowLeft size={16} />
+                            Kembali
+                        </PrimaryButton>
+                    </Link>
+                    <span>{isTryout ? 'Edit Paket Try Out' : 'Edit Paket Latihan'}</span>
+                </div>
+            }
+        >
+            <Head title={isTryout ? 'Edit Paket Try Out' : 'Edit Paket Latihan'} />
 
             <div className="flex flex-col lg:flex-row gap-6">
 
                 <div className="w-full">
-                    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden p-6">
+                    <ContainerWhite className="w-full !p-6 shadow-sm">
                         <form onSubmit={submit} className="space-y-6">
 
                             {/* Nama Paket */}
@@ -612,7 +594,7 @@ export default function Edit({ auth, paket, soals = [] }) {
                                 </button>
                                 <div className="flex items-center gap-4">
                                     <Link
-                                        href={route('paket-latihan.index')}
+                                        href={isTryout ? route('paket-tryout.index') : route('paket-latihan.index')}
                                         className="px-6 py-2.5 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition-colors"
                                     >
                                         Batal
@@ -630,7 +612,7 @@ export default function Edit({ auth, paket, soals = [] }) {
                                 </div>
                             </div>
                         </form>
-                    </div>
+                    </ContainerWhite>
                 </div>
 
                 <div className="w-full lg:w-[520px] shrink-0">
@@ -721,6 +703,46 @@ export default function Edit({ auth, paket, soals = [] }) {
                     </ContainerWhite>
                 </div>
             </div>
+
+            {/* PopupModal Konfirmasi Hapus Paket Latihan */}
+            <PopupModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                maxWidth="sm"
+                showCloseButton={true}
+                padding="p-7 sm:p-8"
+            >
+                <div className="flex flex-col items-center text-center">
+                    <div className="mb-4 text-red-500">
+                        <Trash2 size={50} strokeWidth={2} />
+                    </div>
+
+                    <h3 className="font-['Poppins'] text-xl font-bold text-slate-800 tracking-tight mb-2">
+                        Hapus Paket Latihan?
+                    </h3>
+
+                    <p className="text-sm text-slate-500 leading-relaxed mb-6 font-light">
+                        Seluruh data paket dan sesi pengerjaan siswa yang terhubung dengan paket ini akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.
+                    </p>
+
+                    <div className="flex items-center justify-center gap-3 w-full">
+                        <button
+                            type="button"
+                            onClick={() => setIsDeleteModalOpen(false)}
+                            className="flex-1 py-2.5 px-5 rounded-full border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="button"
+                            onClick={confirmDelete}
+                            className="flex-1 py-2.5 px-5 rounded-full bg-red-600 hover:bg-red-700 text-white font-semibold text-sm shadow-md active:scale-95 transition-all"
+                        >
+                            Ya, Hapus
+                        </button>
+                    </div>
+                </div>
+            </PopupModal>
         </AdminLayout>
     );
 }
