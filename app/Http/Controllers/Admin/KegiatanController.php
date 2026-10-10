@@ -34,6 +34,8 @@ class KegiatanController extends Controller
             'waktu_mulai' => 'nullable|date_format:H:i',
             'waktu_selesai' => 'nullable|date_format:H:i',
             'status' => 'nullable|string|max:30',
+        ], [
+            'gambar.max' => 'Ukuran gambar tidak boleh lebih dari 2 MB.',
         ]);
 
         if ($request->hasFile('gambar')) {
@@ -66,6 +68,8 @@ class KegiatanController extends Controller
             'waktu_mulai' => 'nullable|date_format:H:i',
             'waktu_selesai' => 'nullable|date_format:H:i',
             'status' => 'nullable|string|max:30',
+        ], [
+            'gambar.max' => 'Ukuran gambar tidak boleh lebih dari 2 MB.',
         ]);
 
         if ($request->hasFile('gambar')) {
@@ -121,7 +125,9 @@ class KegiatanController extends Controller
     public function uploadImage(Request $request)
     {
         $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+        ], [
+            'image.max' => 'Ukuran gambar tidak boleh lebih dari 2 MB.',
         ]);
 
         $path = $request->file('image')->store('kegiatan/editor');

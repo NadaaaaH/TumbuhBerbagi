@@ -9,6 +9,7 @@ import { ArrowLeft, Save, Upload } from 'lucide-react';
 
 import ContainerWhite from '@/Components/ContainerWhite';
 import PrimaryButton from '@/Components/PrimaryButton';
+import { isImageTooLarge, showImageSizeWarning } from '@/utils/imageUpload';
 
 export default function Create({ auth }) {
     const { data, setData, post, processing, errors } = useForm({
@@ -20,6 +21,18 @@ export default function Create({ auth }) {
         waktu_selesai: '',
         status: 'Aktif',
     });
+
+    const handleImageChange = (e) => {
+        const input = e.currentTarget;
+        const file = input.files?.[0];
+        if (!file) return;
+        if (isImageTooLarge(file)) {
+            input.value = '';
+            showImageSizeWarning();
+            return;
+        }
+        setData('gambar', file);
+    };
 
     const submit = (e) => {
         e.preventDefault();
@@ -158,7 +171,7 @@ export default function Create({ auth }) {
                                                 type="file" 
                                                 className="hidden" 
                                                 accept="image/*"
-                                                onChange={(e) => setData('gambar', e.target.files[0])}
+                                                onChange={handleImageChange}
                                             />
                                         </label>
                                     </div>
@@ -168,6 +181,7 @@ export default function Create({ auth }) {
                                         </p>
                                     )}
                                     <InputError message={errors.gambar} className="mt-2" />
+                                    <p className="mt-1 text-sm text-gray-500">Maksimal ukuran gambar: 2 MB</p>
                                 </div>
                             </div>
 

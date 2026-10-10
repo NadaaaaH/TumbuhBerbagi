@@ -7,6 +7,7 @@ import TextInput from '@/Components/TextInput';
 import { ArrowLeft, Save, ImagePlus, X } from 'lucide-react';
 import ContainerWhite from '@/Components/ContainerWhite';
 import PrimaryButton from '@/Components/PrimaryButton';
+import { isImageTooLarge, showImageSizeWarning } from '@/utils/imageUpload';
 
 export default function Edit({ auth, jadwal }) {
     const existingImage = jadwal.gambar_url || (jadwal.gambar ? `/storage/${jadwal.gambar}` : null);
@@ -26,8 +27,14 @@ export default function Edit({ auth, jadwal }) {
     });
 
     const handleImageChange = (e) => {
-        const file = e.target.files[0];
+        const input = e.currentTarget;
+        const file = input.files?.[0];
         if (file) {
+            if (isImageTooLarge(file)) {
+                input.value = '';
+                showImageSizeWarning();
+                return;
+            }
             setData('gambar', file);
             setData('remove_gambar', false);
             setImagePreview(URL.createObjectURL(file));
@@ -190,6 +197,7 @@ export default function Edit({ auth, jadwal }) {
                                     disabled={processing}
                                 />
                                 <InputError message={errors.gambar} className="mt-2" />
+                                <p className="mt-1 text-sm text-gray-500">Maksimal ukuran gambar: 2 MB</p>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">

@@ -26,7 +26,7 @@ export default function KegiatanModal({ kegiatan, auth, onClose }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-6"
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6"
             onClick={onClose}
         >
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
@@ -37,7 +37,7 @@ export default function KegiatanModal({ kegiatan, auth, onClose }) {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 40, scale: 0.98 }}
                 transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                className="relative bg-white rounded-t-2xl sm:rounded-3xl w-full sm:max-w-4xl lg:max-w-5xl max-h-[90vh] overflow-y-auto no-scrollbar shadow-2xl border border-slate-100 font-['Inter',sans-serif]"
+                className="relative bg-white rounded-3xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-slate-100 font-['Inter',sans-serif]"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Close Button */}
@@ -50,22 +50,22 @@ export default function KegiatanModal({ kegiatan, auth, onClose }) {
                 </button>
 
                 {/* Banner Image */}
-                <div className="w-full h-56 sm:h-72 bg-slate-100 overflow-hidden relative flex-shrink-0">
+                <div className="h-36 sm:h-48 w-full bg-slate-100 overflow-hidden relative flex-shrink-0">
                     {kegiatan.gambar_url || kegiatan.gambar ? (
                         <img
                             src={kegiatan.gambar_url || `/storage/${kegiatan.gambar}`}
                             alt={kegiatan.nama_kegiatan}
-                            className="w-full h-full object-cover"
+                            className="h-full w-full object-contain"
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-300">
+                        <div className="h-full w-full flex items-center justify-center text-slate-300">
                             <Calendar size={64} opacity={0.3} />
                         </div>
                     )}
                 </div>
 
                 {/* Content */}
-                <div className="p-8">
+                <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6">
                     <h2 className="font-['Poppins'] text-2xl sm:text-3xl font-extrabold text-slate-800 leading-tight mb-3">
                         {kegiatan.nama_kegiatan}
                     </h2>

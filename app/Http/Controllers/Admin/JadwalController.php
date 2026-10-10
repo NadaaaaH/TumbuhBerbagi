@@ -34,6 +34,8 @@ class JadwalController extends Controller
             'waktu_selesai' => 'nullable',
             'status'      => 'nullable|in:aktif,nonaktif',
             'gambar'      => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+        ], [
+            'gambar.max' => 'Ukuran gambar tidak boleh lebih dari 2 MB.',
         ]);
 
         if ($request->hasFile('gambar')) {
@@ -79,6 +81,8 @@ class JadwalController extends Controller
             'waktu_selesai' => 'nullable',
             'status'      => 'required|in:aktif,nonaktif',
             'gambar'      => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+        ], [
+            'gambar.max' => 'Ukuran gambar tidak boleh lebih dari 2 MB.',
         ]);
 
         // Handle gambar baru

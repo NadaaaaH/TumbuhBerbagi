@@ -7,6 +7,7 @@ import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
 import Link from '@tiptap/extension-link';
 import axios from 'axios';
+import { isImageTooLarge, showImageSizeWarning, showImageUploadError } from '@/utils/imageUpload';
 import {
     Bold,
     Italic,
@@ -247,6 +248,11 @@ export default function RichTextEditor({
         input.onchange = async () => {
             const file = input.files?.[0];
             if (!file) return;
+            if (isImageTooLarge(file)) {
+                input.value = '';
+                showImageSizeWarning();
+                return;
+            }
             setUploading(true);
             try {
                 const formData = new FormData();
@@ -255,8 +261,10 @@ export default function RichTextEditor({
                     headers: { 'Content-Type': 'multipart/form-data' },
                 });
                 editor.chain().focus().setImage({ src: data.url, alt: file.name }).run();
-            } catch {
-                alert('Gagal mengunggah gambar. Maksimal ukuran 4MB.');
+            } catch (error) {
+                const message = error.response?.data?.errors?.image?.[0]
+                    || 'Gagal mengunggah gambar. Silakan coba kembali.';
+                showImageUploadError(message);
             } finally {
                 setUploading(false);
             }
@@ -415,8 +423,8 @@ export default function RichTextEditor({
 
                 {/* ── Footer hint ─────────────────────────────────────────────── */}
                 <div className="px-4 py-1.5 border-t border-slate-50 bg-slate-50/60 flex items-center justify-between gap-4">
-                    <span className="text-[11px] text-slate-400 hidden sm:block">
-                        Tip: Gunakan toolbar di atas untuk memformat teks, sisipkan gambar, atau tambahkan tautan.
+                    <span className="text-sm text-gray-500">
+                        Tip: Gunakan toolbar di atas untuk memformat teks, sisipkan gambar, atau tambahkan tautan. Maksimal ukuran gambar: 2 MB
                     </span>
                     <span className="text-[11px] text-slate-400 ml-auto tabular-nums">
                         {editor.getText().length} karakter

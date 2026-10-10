@@ -10,6 +10,7 @@ import { Transition } from '@headlessui/react';
 import { motion } from 'framer-motion';
 import React, { useRef, useState } from 'react';
 import { User, Shield, Camera, Trash2 } from 'lucide-react';
+import { isImageTooLarge, showImageSizeWarning } from '@/utils/imageUpload';
 
 export default function Edit({ auth, mustVerifyEmail, status }) {
     const user = auth.user;
@@ -39,8 +40,14 @@ export default function Edit({ auth, mustVerifyEmail, status }) {
     });
 
     const handlePhotoChange = (e) => {
-        const file = e.target.files[0];
+        const input = e.currentTarget;
+        const file = input.files?.[0];
         if (file) {
+            if (isImageTooLarge(file)) {
+                input.value = '';
+                showImageSizeWarning();
+                return;
+            }
             setData((prev) => ({
                 ...prev,
                 foto_profil: file,
@@ -172,8 +179,8 @@ export default function Edit({ auth, mustVerifyEmail, status }) {
                                                     </button>
                                                 )}
                                             </div>
-                                            <p className="text-xs text-slate-400">
-                                                Format: JPG, PNG, atau WEBP. Maksimal 2MB.
+                                            <p className="text-sm text-gray-500">
+                                                Format: JPG, PNG, atau WEBP. Maksimal ukuran gambar: 2 MB
                                             </p>
                                             <InputError message={errors.foto_profil} className="mt-1" />
                                         </div>

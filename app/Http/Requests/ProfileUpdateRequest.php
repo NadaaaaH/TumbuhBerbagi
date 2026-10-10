@@ -44,7 +44,7 @@ class ProfileUpdateRequest extends FormRequest
             'email.unique' => 'Alamat email sudah digunakan oleh akun lain.',
             'foto_profil.image' => 'File foto profil harus berupa gambar.',
             'foto_profil.mimes' => 'Format foto profil harus JPG, PNG, atau WEBP.',
-            'foto_profil.max' => 'Ukuran foto profil maksimal 2MB.',
+            'foto_profil.max' => 'Ukuran gambar tidak boleh lebih dari 2 MB.',
             'current_password.required_with' => 'Kata sandi saat ini wajib diisi jika ingin mengubah kata sandi.',
             'current_password.current_password' => 'Kata sandi saat ini tidak cocok.',
             'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
