@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import ContainerWhite from '@/Components/ContainerWhite';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -60,6 +60,19 @@ function formatTanggal(dateStr) {
     } catch {
         return dateStr;
     }
+}
+
+function formatWaktu(dateStr) {
+    if (!dateStr) return null;
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    return date.toLocaleString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
 }
 
 function stripHtml(html) {
@@ -229,9 +242,9 @@ function PdfPreviewModal({ isOpen, onClose, previewUrl, downloadUrl, title }) {
 export default function Show({
     auth,
     paket,
-    pesertaSudah = [],
-    pesertaBelum = [],
-    pesertaSedang = [],
+    summary = {},
+    participants = {},
+    filters = {},
     questionStats = [],
 }) {
     // ── Tab State: 'peserta' | 'soal' ──────────────────────────
@@ -275,146 +288,53 @@ export default function Show({
     // ── Chart Visibility Toggle ───────────────────────────────
     const [showChart, setShowChart] = useState(true);
 
-    // ── Data Gabungan Peserta ───────────────────────────────────
-    const allPeserta = useMemo(() => {
-        const list = [];
-
-        // 1. Peserta yang sudah selesai
-        (pesertaSudah || []).forEach((item) => {
-            const durationMin =
-                item.waktu_selesai && item.waktu_mulai
-                    ? Math.round((new Date(item.waktu_selesai) - new Date(item.waktu_mulai)) / 1000 / 60)
-                    : null;
-
-            list.push({
-                id: item.id_sesi,
-                id_siswa: item.siswa?.id_siswa,
-                id_sesi: item.id_sesi,
-                nama: item.siswa?.nama || 'Siswa',
-                email: item.siswa?.email || '-',
-                status: 'selesai',
-                nilai: item.hasil_latihan?.nilai_akhir ?? 0,
-                benar: item.hasil_latihan?.jumlah_benar ?? 0,
-                salah: item.hasil_latihan?.jumlah_salah ?? 0,
-                durasi: durationMin,
-                waktu_selesai: item.waktu_selesai,
-                waktu_mulai: item.waktu_mulai,
-                canPreview: true,
-            });
-        });
-
-        // 2. Peserta yang sedang mengerjakan (jika disediakan backend)
-        (pesertaSedang || []).forEach((item) => {
-            list.push({
-                id: item.id_sesi || `sedang-${item.id_siswa}`,
-                id_siswa: item.siswa?.id_siswa || item.id_siswa,
-                id_sesi: item.id_sesi,
-                nama: item.siswa?.nama || item.nama || 'Siswa',
-                email: item.siswa?.email || item.email || '-',
-                status: 'sedang_mengerjakan',
-                nilai: null,
-                benar: null,
-                salah: null,
-                durasi: null,
-                waktu_selesai: null,
-                waktu_mulai: item.waktu_mulai,
-                canPreview: false,
-            });
-        });
-
-        // 3. Peserta yang belum mulai
-        (pesertaBelum || []).forEach((siswa) => {
-            list.push({
-                id: `belum-${siswa.id_siswa}`,
-                id_siswa: siswa.id_siswa,
-                id_sesi: null,
-                nama: siswa.nama || 'Siswa',
-                email: siswa.email || '-',
-                status: 'belum_mulai',
-                nilai: null,
-                benar: null,
-                salah: null,
-                durasi: null,
-                waktu_selesai: null,
-                waktu_mulai: null,
-                canPreview: false,
-            });
-        });
-
-        return list;
-    }, [pesertaSudah, pesertaBelum, pesertaSedang]);
-
-    // ── Metrics Calculation ───────────────────────────────────
-    const totalPeserta = allPeserta.length;
-    const selesaiCount = pesertaSudah.length;
-    const sedangCount = pesertaSedang.length;
-    const belumCount = pesertaBelum.length;
-
+    const allPeserta = participants.data || [];
+    const totalPeserta = summary.total || 0;
+    const selesaiCount = summary.selesai || 0;
+    const sedangCount = summary.sedang_mengerjakan || 0;
+    const belumCount = summary.belum_mulai || 0;
     const completionRate = totalPeserta > 0 ? Math.round((selesaiCount / totalPeserta) * 100) : 0;
+    const avgNilai = summary.rata_rata_nilai ?? null;
 
-    const avgNilai = useMemo(() => {
-        if (selesaiCount === 0) return null;
-        const total = pesertaSudah.reduce((acc, curr) => acc + (curr.hasil_latihan?.nilai_akhir ?? 0), 0);
-        return Math.round(total / selesaiCount);
-    }, [pesertaSudah, selesaiCount]);
+    const [pesertaSearch, setPesertaSearch] = useState(filters.search || '');
+    const [pesertaStatusFilter, setPesertaStatusFilter] = useState(filters.status || '');
+    const [pesertaSort, setPesertaSort] = useState(filters.sort || 'nilai_desc');
+    const pesertaPage = participants.current_page || 1;
+    const paginatedPeserta = allPeserta;
+    const totalPesertaPages = participants.last_page || 1;
+    const pesertaFrom = participants.from || 0;
+    const pesertaTo = participants.to || 0;
 
-    // ── Tab 1: Peserta Filters & Pagination ────────────────────
-    const [pesertaSearch, setPesertaSearch] = useState('');
-    const [pesertaStatusFilter, setPesertaStatusFilter] = useState('');
-    const [pesertaSort, setPesertaSort] = useState('nilai_desc');
-    const [pesertaPage, setPesertaPage] = useState(1);
-    const PESERTA_PER_PAGE = 10;
-
-    // Reset pagination on filter change
     useEffect(() => {
-        setPesertaPage(1);
-    }, [pesertaSearch, pesertaStatusFilter, pesertaSort]);
+        setPesertaSearch(filters.search || '');
+        setPesertaStatusFilter(filters.status || '');
+        setPesertaSort(filters.sort || 'nilai_desc');
+    }, [filters.search, filters.status, filters.sort]);
 
-    const filteredPeserta = useMemo(() => {
-        return allPeserta
-            .filter((p) => {
-                if (pesertaSearch.trim()) {
-                    const q = pesertaSearch.toLowerCase();
-                    const matchesName = (p.nama || '').toLowerCase().includes(q);
-                    const matchesEmail = (p.email || '').toLowerCase().includes(q);
-                    if (!matchesName && !matchesEmail) return false;
-                }
-                if (pesertaStatusFilter && p.status !== pesertaStatusFilter) {
-                    return false;
-                }
-                return true;
-            })
-            .sort((a, b) => {
-                if (pesertaSort === 'nilai_desc') {
-                    return (b.nilai ?? -1) - (a.nilai ?? -1);
-                }
-                if (pesertaSort === 'nilai_asc') {
-                    return (a.nilai ?? 9999) - (b.nilai ?? 9999);
-                }
-                if (pesertaSort === 'nama_asc') {
-                    return (a.nama || '').localeCompare(b.nama || '');
-                }
-                if (pesertaSort === 'nama_desc') {
-                    return (b.nama || '').localeCompare(a.nama || '');
-                }
-                if (pesertaSort === 'durasi_asc') {
-                    return (a.durasi ?? 9999) - (b.durasi ?? 9999);
-                }
-                if (pesertaSort === 'terbaru') {
-                    return new Date(b.waktu_selesai ?? 0) - new Date(a.waktu_selesai ?? 0);
-                }
-                return 0;
-            });
-    }, [allPeserta, pesertaSearch, pesertaStatusFilter, pesertaSort]);
+    const visitParticipantPage = (page, nextFilters = {}) => {
+        const query = {
+            search: nextFilters.search ?? pesertaSearch,
+            status: nextFilters.status ?? pesertaStatusFilter,
+            sort: nextFilters.sort ?? pesertaSort,
+            page,
+        };
+        Object.keys(query).forEach((key) => {
+            if (!query[key]) delete query[key];
+        });
 
-    const paginatedPeserta = useMemo(() => {
-        const start = (pesertaPage - 1) * PESERTA_PER_PAGE;
-        return filteredPeserta.slice(start, start + PESERTA_PER_PAGE);
-    }, [filteredPeserta, pesertaPage]);
+        router.get(route('sesi-latihan.show', paket.id_paket), query, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            only: ['participants', 'filters'],
+        });
+    };
 
-    const totalPesertaPages = Math.max(1, Math.ceil(filteredPeserta.length / PESERTA_PER_PAGE));
-    const pesertaFrom = filteredPeserta.length === 0 ? 0 : (pesertaPage - 1) * PESERTA_PER_PAGE + 1;
-    const pesertaTo = Math.min(pesertaPage * PESERTA_PER_PAGE, filteredPeserta.length);
+    useEffect(() => {
+        if (pesertaSearch === (filters.search || '')) return;
+        const timer = setTimeout(() => visitParticipantPage(1, { search: pesertaSearch }), 300);
+        return () => clearTimeout(timer);
+    }, [pesertaSearch]);
 
     // ── Tab 2: Question Stats Calculation & Filters ───────────
     const [soalSearch, setSoalSearch] = useState('');
@@ -433,15 +353,13 @@ export default function Show({
     const enhancedQuestionStats = useMemo(() => {
         return (questionStats || []).map((stat, i) => {
             const fullSoal = (paket?.soal || []).find((s) => s.id_soal === stat.id_soal) || {};
-            const totalRespons = (stat.jumlah_benar || 0) + (stat.jumlah_salah || 0);
-            const akurasi = totalRespons > 0 ? Math.round(((stat.jumlah_benar || 0) / totalRespons) * 100) : 0;
+            const totalRespons = stat.jumlah_respons ?? (stat.jumlah_benar || 0) + (stat.jumlah_salah || 0);
 
             return {
                 ...stat,
                 fullSoal,
                 index: i + 1,
                 totalRespons,
-                akurasi,
                 kategori: fullSoal.kategori || fullSoal.pivot?.subtes || null,
                 tingkat_kesulitan: fullSoal.tingkat_kesulitan || null,
                 pembahasan: fullSoal.pembahasan || null,
@@ -453,10 +371,12 @@ export default function Show({
     // Question Stats Metrics
     const totalSoalCount = enhancedQuestionStats.length;
     const avgSoalAccuracy = useMemo(() => {
-        if (totalSoalCount === 0) return 0;
-        const sum = enhancedQuestionStats.reduce((acc, q) => acc + q.akurasi, 0);
-        return Math.round(sum / totalSoalCount);
-    }, [enhancedQuestionStats, totalSoalCount]);
+        const accuracies = enhancedQuestionStats
+            .map((question) => question.akurasi)
+            .filter((accuracy) => accuracy !== null && accuracy !== undefined);
+        if (accuracies.length === 0) return null;
+        return Math.round(accuracies.reduce((sum, accuracy) => sum + accuracy, 0) / accuracies.length);
+    }, [enhancedQuestionStats]);
 
     const lowAccuracyCount = useMemo(() => {
         return enhancedQuestionStats.filter((q) => q.totalRespons > 0 && q.akurasi < 40).length;
@@ -487,10 +407,10 @@ export default function Show({
                 if (soalSubtesFilter && q.kategori !== soalSubtesFilter) {
                     return false;
                 }
-                if (soalAkurasiFilter === 'low' && (q.totalRespons === 0 || q.akurasi >= 40)) {
+                if (soalAkurasiFilter === 'low' && (q.akurasi === null || q.akurasi >= 40)) {
                     return false;
                 }
-                if (soalAkurasiFilter === 'high' && q.akurasi < 70) {
+                if (soalAkurasiFilter === 'high' && (q.akurasi === null || q.akurasi < 70)) {
                     return false;
                 }
                 return true;
@@ -498,8 +418,8 @@ export default function Show({
             .sort((a, b) => {
                 if (soalSort === 'index_asc') return a.index - b.index;
                 if (soalSort === 'index_desc') return b.index - a.index;
-                if (soalSort === 'akurasi_asc') return a.akurasi - b.akurasi;
-                if (soalSort === 'akurasi_desc') return b.akurasi - a.akurasi;
+                if (soalSort === 'akurasi_asc') return (a.akurasi ?? Infinity) - (b.akurasi ?? Infinity);
+                if (soalSort === 'akurasi_desc') return (b.akurasi ?? -Infinity) - (a.akurasi ?? -Infinity);
                 if (soalSort === 'respons_desc') return b.totalRespons - a.totalRespons;
                 return 0;
             });
@@ -592,7 +512,7 @@ export default function Show({
                         {/* Modal Content */}
                         <CustomScrollbar theme="light" maxHeight="calc(85vh - 140px)" className="p-6 space-y-6">
                             {/* Performance Stats Mini Row */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                                 <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 text-center">
                                     <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Total Respons</p>
                                     <p className="text-lg font-bold text-slate-900 mt-0.5">{selectedQuestion.totalRespons || (selectedQuestion.jumlah_benar + selectedQuestion.jumlah_salah)}</p>
@@ -605,14 +525,16 @@ export default function Show({
                                     <p className="text-[10px] font-semibold text-rose-700 uppercase tracking-wider">Salah</p>
                                     <p className="text-lg font-bold text-rose-700 mt-0.5">{selectedQuestion.jumlah_salah || 0}</p>
                                 </div>
+                                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 text-center">
+                                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Kosong</p>
+                                    <p className="text-lg font-bold text-slate-700 mt-0.5">{selectedQuestion.jumlah_kosong || 0}</p>
+                                </div>
                                 <div className="p-3 rounded-2xl bg-blue-50/60 border border-blue-100 text-center">
                                     <p className="text-[10px] font-semibold text-blue-700 uppercase tracking-wider">Akurasi</p>
                                     <p className="text-lg font-bold text-blue-700 mt-0.5">
-                                        {selectedQuestion.akurasi !== undefined
+                                        {selectedQuestion.akurasi !== null && selectedQuestion.akurasi !== undefined
                                             ? `${selectedQuestion.akurasi}%`
-                                            : selectedQuestion.jumlah_benar + selectedQuestion.jumlah_salah > 0
-                                            ? `${Math.round((selectedQuestion.jumlah_benar / (selectedQuestion.jumlah_benar + selectedQuestion.jumlah_salah)) * 100)}%`
-                                            : '0%'}
+                                            : '-'}
                                     </p>
                                 </div>
                             </div>
@@ -643,6 +565,9 @@ export default function Show({
                                                 selectedQuestion.kunci_jawaban &&
                                                 (String(opt.kode_pilihan).toUpperCase() === String(selectedQuestion.kunci_jawaban).toUpperCase() ||
                                                     String(opt.id_pilihan) === String(selectedQuestion.kunci_jawaban));
+                                            const distribution = selectedQuestion.pilihan?.find(
+                                                (choice) => String(choice.id_pilihan) === String(opt.id_pilihan)
+                                            );
 
                                             return (
                                                 <div
@@ -668,6 +593,11 @@ export default function Show({
                                                     {isKey && (
                                                         <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-md shrink-0">
                                                             Kunci Jawaban
+                                                        </span>
+                                                    )}
+                                                    {distribution && (
+                                                        <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md shrink-0">
+                                                            {distribution.jumlah} pemilih
                                                         </span>
                                                     )}
                                                 </div>
@@ -781,7 +711,7 @@ export default function Show({
                         </div>
 
                         {/* Export & Action Buttons */}
-                        {pesertaSudah.length > 0 && (
+                        {selesaiCount > 0 && (
                             <div className="flex items-center gap-3 shrink-0">
                                 <button
                                     onClick={() =>
@@ -954,7 +884,11 @@ export default function Show({
                                 <div className="w-full sm:w-48">
                                     <SelectInput
                                         value={pesertaStatusFilter}
-                                        onChange={(e) => setPesertaStatusFilter(e.target.value)}
+                                        onChange={(e) => {
+                                            const status = e.target.value;
+                                            setPesertaStatusFilter(status);
+                                            visitParticipantPage(1, { status });
+                                        }}
                                         className="w-full text-xs sm:text-sm cursor-pointer"
                                     >
                                         <option value="">Semua Status ({totalPeserta})</option>
@@ -967,7 +901,11 @@ export default function Show({
                                 <div className="w-full sm:w-48">
                                     <SelectInput
                                         value={pesertaSort}
-                                        onChange={(e) => setPesertaSort(e.target.value)}
+                                        onChange={(e) => {
+                                            const sort = e.target.value;
+                                            setPesertaSort(sort);
+                                            visitParticipantPage(1, { sort });
+                                        }}
                                         className="w-full text-xs sm:text-sm cursor-pointer"
                                     >
                                         <option value="nilai_desc">Nilai Tertinggi</option>
@@ -975,7 +913,6 @@ export default function Show({
                                         <option value="nama_asc">Nama (A - Z)</option>
                                         <option value="nama_desc">Nama (Z - A)</option>
                                         <option value="terbaru">Terbaru Selesai</option>
-                                        <option value="durasi_asc">Durasi Tercepat</option>
                                     </SelectInput>
                                 </div>
                             </div>
@@ -998,7 +935,7 @@ export default function Show({
                                 <tbody className="divide-y divide-slate-100">
                                     {paginatedPeserta.length > 0 ? (
                                         paginatedPeserta.map((peserta, idx) => {
-                                            const rowNum = (pesertaPage - 1) * PESERTA_PER_PAGE + idx + 1;
+                                            const rowNum = pesertaFrom + idx;
 
                                             return (
                                                 <tr
@@ -1015,6 +952,12 @@ export default function Show({
                                                         <div className="text-xs text-slate-400 mt-0.5">
                                                             {peserta.email}
                                                         </div>
+                                                        {peserta.aktivitas_terakhir && (
+                                                            <div className="text-[11px] text-slate-400 mt-0.5">
+                                                                {peserta.status === 'selesai' ? 'Submit' : 'Mulai'}:{' '}
+                                                                {formatWaktu(peserta.aktivitas_terakhir)}
+                                                            </div>
+                                                        )}
                                                     </td>
                                                     <td className="px-5 py-4 whitespace-nowrap">
                                                         {getStatusBadge(peserta.status)}
@@ -1098,10 +1041,10 @@ export default function Show({
                         <Pagination
                             currentPage={pesertaPage}
                             totalPages={totalPesertaPages}
-                            onPageChange={(p) => setPesertaPage(p)}
+                            onPageChange={(p) => visitParticipantPage(p)}
                             from={pesertaFrom}
                             to={pesertaTo}
-                            total={filteredPeserta.length}
+                            total={participants.total || 0}
                             itemName="peserta"
                         />
                     </ContainerWhite>
@@ -1122,7 +1065,9 @@ export default function Show({
 
                             <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
                                 <p className="text-xs font-semibold text-slate-500">Rata-rata Akurasi</p>
-                                <p className="text-2xl font-bold text-[#1b5e20] mt-1">{avgSoalAccuracy}%</p>
+                                <p className="text-2xl font-bold text-[#1b5e20] mt-1">
+                                    {avgSoalAccuracy === null ? '-' : `${avgSoalAccuracy}%`}
+                                </p>
                                 <p className="text-[11px] text-slate-400 mt-0.5">Tingkat keberhasilan siswa</p>
                             </div>
 
@@ -1190,7 +1135,7 @@ export default function Show({
                                             {/* Bars Container */}
                                             <div className="absolute inset-x-0 top-0 bottom-8 flex items-end justify-start gap-6 sm:gap-8 pl-10 pr-4">
                                                 {enhancedQuestionStats.map((stat, i) => {
-                                                    const accuracy = stat.akurasi;
+                                                    const accuracy = stat.akurasi ?? 0;
                                                     const total = stat.totalRespons;
 
                                                     return (
@@ -1206,7 +1151,7 @@ export default function Show({
                                                                         Soal #{i + 1}
                                                                     </p>
                                                                     <p className="text-emerald-400 font-bold">
-                                                                        {accuracy}% Benar
+                                                                        {stat.akurasi === null ? '-' : `${stat.akurasi}%`} Benar
                                                                     </p>
                                                                     <p className="text-slate-400 text-[10px] mt-0.5">
                                                                         ({stat.jumlah_benar} B, {stat.jumlah_salah} S)
@@ -1316,6 +1261,7 @@ export default function Show({
                                             <th className="px-5 py-3.5 text-center">Respons</th>
                                             <th className="px-5 py-3.5 text-center">Benar</th>
                                             <th className="px-5 py-3.5 text-center">Salah</th>
+                                            <th className="px-5 py-3.5 text-center">Kosong</th>
                                             <th className="px-5 py-3.5 min-w-[140px]">Akurasi</th>
                                             <th className="px-5 py-3.5">Kesulitan</th>
                                             <th className="px-5 py-3.5 text-right">Aksi</th>
@@ -1326,7 +1272,9 @@ export default function Show({
                                             paginatedSoal.map((q) => {
                                                 const cleanText = stripHtml(q.konten_soal) || '(Soal gambar/media tanpa teks)';
                                                 const accuracyColor =
-                                                    q.akurasi >= 70
+                                                    q.akurasi === null
+                                                        ? 'bg-slate-300'
+                                                        : q.akurasi >= 70
                                                         ? 'bg-emerald-500'
                                                         : q.akurasi >= 40
                                                         ? 'bg-amber-500'
@@ -1366,16 +1314,19 @@ export default function Show({
                                                         <td className="px-5 py-4 text-center whitespace-nowrap font-semibold text-rose-700">
                                                             {q.jumlah_salah}
                                                         </td>
+                                                        <td className="px-5 py-4 text-center whitespace-nowrap font-semibold text-slate-600">
+                                                            {q.jumlah_kosong}
+                                                        </td>
                                                         <td className="px-5 py-4 whitespace-nowrap">
                                                             <div className="flex items-center gap-2.5">
                                                                 <div className="flex-1 bg-slate-100 rounded-full h-2 w-20 overflow-hidden">
                                                                     <div
                                                                         className={`h-2 rounded-full ${accuracyColor}`}
-                                                                        style={{ width: `${Math.max(q.akurasi, 4)}%` }}
+                                                                        style={{ width: `${Math.max(q.akurasi ?? 0, 4)}%` }}
                                                                     />
                                                                 </div>
                                                                 <span className="text-xs font-bold text-slate-800 w-9 text-right">
-                                                                    {q.akurasi}%
+                                                                    {q.akurasi === null ? '-' : `${q.akurasi}%`}
                                                                 </span>
                                                             </div>
                                                         </td>
@@ -1399,7 +1350,7 @@ export default function Show({
                                             })
                                         ) : (
                                             <tr>
-                                                <td colSpan="9" className="text-center py-12 px-4 text-slate-400">
+                                                <td colSpan="10" className="text-center py-12 px-4 text-slate-400">
                                                     <FileQuestion size={32} className="mx-auto mb-2 text-slate-300" />
                                                     <p className="text-sm font-semibold text-slate-600">
                                                         Tidak ada butir soal yang cocok.

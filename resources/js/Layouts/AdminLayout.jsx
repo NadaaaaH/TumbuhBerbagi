@@ -16,7 +16,8 @@ import {
     LogIn,
     PlayCircle,
     CheckCircle2,
-    Clock
+    Clock,
+    ShieldCheck,
 } from 'lucide-react';
 import CustomScrollbar from '@/Components/CustomScrollbar';
 import PopupModal from '@/Components/PopupModal';
@@ -110,6 +111,7 @@ export default function AdminLayout({ user, header, children, recentActivities: 
         { name: 'Paket Latihan', href: route('paket-latihan.index'), icon: BookOpen, active: isLatihanActive },
         { name: 'Bank Soal', href: route('soal.index'), icon: FileQuestion, active: url.startsWith('/admin/soal') },
         { name: 'Hasil Latihan', href: route('sesi-latihan.index'), icon: Award, active: url.startsWith('/admin/sesi-latihan') },
+        { name: 'Kelola Admin', href: route('admin.manage-admin.index'), icon: ShieldCheck, active: url.startsWith('/admin/kelola-admin') },
     ];
 
     return (

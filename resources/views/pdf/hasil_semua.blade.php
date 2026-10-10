@@ -408,19 +408,19 @@
                 </td>
                 <td style="padding-right:6px;">
                     <div class="stat-card card-blue">
-                        <div class="stat-num">{{ $rataNilai }}%</div>
+                        <div class="stat-num">{{ $rataNilai === null ? '-' : $rataNilai . '%' }}</div>
                         <div class="stat-label">Rata-rata Nilai</div>
                     </div>
                 </td>
                 <td style="padding-right:6px;">
                     <div class="stat-card card-teal">
-                        <div class="stat-num">{{ $nilaiTertinggi }}%</div>
+                        <div class="stat-num">{{ $nilaiTertinggi === null ? '-' : $nilaiTertinggi . '%' }}</div>
                         <div class="stat-label">Nilai Tertinggi</div>
                     </div>
                 </td>
                 <td>
                     <div class="stat-card card-amber">
-                        <div class="stat-num">{{ $nilaiTerendah }}%</div>
+                        <div class="stat-num">{{ $nilaiTerendah === null ? '-' : $nilaiTerendah . '%' }}</div>
                         <div class="stat-label">Nilai Terendah</div>
                     </div>
                 </td>
@@ -457,19 +457,25 @@
                     </td>
                     <td style="font-weight:bold; color:#1a202c;">{{ $p['nama'] }}</td>
                     <td>
-                        <span style="font-size:11pt; font-weight:bold; color:#1b5e20;">{{ $p['nilai'] }}%</span>
-                        <table style="width:100%; border-collapse:collapse; margin-top:3px; height:5px;">
-                            <tr>
-                                <td style="width:{{ $p['nilai'] }}%; background-color:#1b5e20; height:5px; border-radius:3px 0 0 3px;"></td>
-                                <td style="width:{{ 100 - $p['nilai'] }}%; background-color:#e2e8f0; height:5px; border-radius:0 3px 3px 0;"></td>
-                            </tr>
-                        </table>
+                        @if($p['nilai'] !== null)
+                            <span style="font-size:11pt; font-weight:bold; color:#1b5e20;">{{ $p['nilai'] }}%</span>
+                            <table style="width:100%; border-collapse:collapse; margin-top:3px; height:5px;">
+                                <tr>
+                                    <td style="width:{{ $p['nilai'] }}%; background-color:#1b5e20; height:5px; border-radius:3px 0 0 3px;"></td>
+                                    <td style="width:{{ 100 - $p['nilai'] }}%; background-color:#e2e8f0; height:5px; border-radius:0 3px 3px 0;"></td>
+                                </tr>
+                            </table>
+                        @else
+                            <span style="color:#718096;">-</span>
+                        @endif
                     </td>
                     <td style="text-align:center; color:#276749; font-weight:bold;">{{ $p['benar'] }}</td>
                     <td style="text-align:center; color:#9b2c2c; font-weight:bold;">{{ $p['salah'] }}</td>
                     <td style="color:#4a5568;">{{ $p['durasi'] }} Menit</td>
                     <td style="text-align:center;">
-                        @if($p['nilai'] >= 80)
+                        @if($p['nilai'] === null)
+                            <span style="color:#718096;">-</span>
+                        @elseif($p['nilai'] >= 80)
                             <span class="badge badge-tinggi">Tinggi</span>
                         @elseif($p['nilai'] >= 60)
                             <span class="badge badge-sedang">Sedang</span>
@@ -508,15 +514,19 @@
                     <td style="text-align:center; color:#276749; font-weight:bold;">{{ $soal['benar'] }}</td>
                     <td style="text-align:center; color:#9b2c2c; font-weight:bold;">{{ $soal['salah'] }}</td>
                     <td>
-                        <span class="{{ $soal['akurasi'] >= 70 ? 'accuracy-high' : ($soal['akurasi'] >= 40 ? 'accuracy-mid' : 'accuracy-low') }}">{{ $soal['akurasi'] }}%</span>
-                        <table style="width:100%; border-collapse:collapse; margin-top:3px; height:5px;">
-                            <tr>
-                                <td style="width:{{ $soal['akurasi'] }}%; background-color:{{ $soal['akurasi'] >= 70 ? '#1b5e20' : ($soal['akurasi'] >= 40 ? '#f59e0b' : '#c62828') }}; height:5px; border-radius:3px 0 0 3px;"></td>
-                                @if($soal['akurasi'] < 100)
-                                <td style="width:{{ 100 - $soal['akurasi'] }}%; background-color:#e2e8f0; height:5px; border-radius:0 3px 3px 0;"></td>
-                                @endif
-                            </tr>
-                        </table>
+                        @if($soal['akurasi'] !== null)
+                            <span class="{{ $soal['akurasi'] >= 70 ? 'accuracy-high' : ($soal['akurasi'] >= 40 ? 'accuracy-mid' : 'accuracy-low') }}">{{ $soal['akurasi'] }}%</span>
+                            <table style="width:100%; border-collapse:collapse; margin-top:3px; height:5px;">
+                                <tr>
+                                    <td style="width:{{ $soal['akurasi'] }}%; background-color:{{ $soal['akurasi'] >= 70 ? '#1b5e20' : ($soal['akurasi'] >= 40 ? '#f59e0b' : '#c62828') }}; height:5px; border-radius:3px 0 0 3px;"></td>
+                                    @if($soal['akurasi'] < 100)
+                                    <td style="width:{{ 100 - $soal['akurasi'] }}%; background-color:#e2e8f0; height:5px; border-radius:0 3px 3px 0;"></td>
+                                    @endif
+                                </tr>
+                            </table>
+                        @else
+                            <span style="color:#718096;">-</span>
+                        @endif
                     </td>
                 </tr>
                 @endforeach

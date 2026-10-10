@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\KegiatanController as AdminKegiatanController;
 use App\Http\Controllers\Admin\SoalController as AdminSoalController;
 use App\Http\Controllers\Admin\PaketLatihanController as AdminPaketLatihanController;
 use App\Http\Controllers\Admin\SesiLatihanController as AdminSesiLatihanController;
+use App\Http\Controllers\Admin\AdminManageController;
 use App\Http\Controllers\Siswa\DashboardController as SiswaDashboardController;
 use App\Http\Controllers\Siswa\JadwalController as SiswaJadwalController;
 use App\Http\Controllers\Siswa\KegiatanController as SiswaKegiatanController;
@@ -38,6 +39,28 @@ Route::get('/dashboard', [SiswaDashboardController::class, 'index'])
     ->name('dashboard');
 
 // Admin Protected Routes
+Route::get('admin/email/verify/{adminId}/{emailHash}', [AdminManageController::class, 'verifyEmailChange'])
+    ->middleware(['signed', 'throttle:6,1'])
+    ->name('admin.email.verify');
+
+Route::middleware(['auth:admin', 'admin.utama'])->group(function () {
+    Route::get('admin/kelola-admin', [AdminManageController::class, 'index'])
+        ->name('admin.manage-admin.index');
+    Route::post('admin/kelola-admin/verifikasi-pin', [AdminManageController::class, 'verifyPin'])
+        ->middleware('throttle:admin-pin')
+        ->name('admin.manage-admin.verify-pin');
+
+    Route::middleware('admin.manage-verified')->group(function () {
+        Route::put('admin/kelola-admin/email', [AdminManageController::class, 'updateEmail'])
+            ->middleware('throttle:3,1')
+            ->name('admin.manage-admin.email');
+        Route::put('admin/kelola-admin/password', [AdminManageController::class, 'updatePassword'])
+            ->name('admin.manage-admin.password');
+        Route::put('admin/kelola-admin/pin', [AdminManageController::class, 'updatePin'])
+            ->name('admin.manage-admin.pin');
+    });
+});
+
 Route::middleware('auth:admin')->group(function () {
     Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])
         ->name('admin.dashboard');
@@ -121,4 +144,3 @@ Route::middleware(['auth:siswa', 'siswa.verified', 'siswa.password_changed'])->g
 });
 
 require __DIR__ . '/auth.php';
-

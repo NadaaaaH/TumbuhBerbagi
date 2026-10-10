@@ -22,6 +22,8 @@ class Admin extends Authenticatable
 
     protected $hidden = [
         'password',
+        'pin_hash',
+        'email_pending',
     ];
 
     protected function casts(): array

@@ -392,17 +392,24 @@
             <table class="score-layout">
                 <tr>
                     <td style="vertical-align:middle; width:48%; padding-right:20px;">
-                        <div class="score-big">{{ $hasil->nilai_akhir }}<span class="score-pct">%</span></div>
+                        <div class="score-big">
+                            {{ $hasil->nilai_akhir === null ? '-' : $hasil->nilai_akhir }}
+                            @if($hasil->nilai_akhir !== null)<span class="score-pct">%</span>@endif
+                        </div>
                         <div class="score-subtitle">Nilai Akhir</div>
                         <!-- Progress Bar via table trick -->
-                        <table style="width:100%; border-collapse:collapse; margin-top:8px; height:7px;">
-                            <tr>
-                                <td style="width:{{ $hasil->nilai_akhir }}%; background-color:#1b5e20; height:7px; border-radius:3px 0 0 3px;"></td>
-                                <td style="width:{{ 100 - $hasil->nilai_akhir }}%; background-color:#c8e6c9; height:7px; border-radius:0 3px 3px 0;"></td>
-                            </tr>
-                        </table>
+                        @if($hasil->nilai_akhir !== null)
+                            <table style="width:100%; border-collapse:collapse; margin-top:8px; height:7px;">
+                                <tr>
+                                    <td style="width:{{ $hasil->nilai_akhir }}%; background-color:#1b5e20; height:7px; border-radius:3px 0 0 3px;"></td>
+                                    <td style="width:{{ 100 - $hasil->nilai_akhir }}%; background-color:#c8e6c9; height:7px; border-radius:0 3px 3px 0;"></td>
+                                </tr>
+                            </table>
+                        @endif
                         <div style="margin-top:8px;">
-                            @if($hasil->nilai_akhir >= 70)
+                            @if($hasil->nilai_akhir === null)
+                                <span class="score-verdict">Nilai akhir belum tersedia</span>
+                            @elseif($hasil->nilai_akhir >= 70)
                                 <span class="score-verdict verdict-lulus">&#10003; Lulus &mdash; Pemahaman materi sangat baik</span>
                             @else
                                 <span class="score-verdict verdict-gagal">&#10005; Perlu Peningkatan &mdash; Di bawah batas (70%)</span>

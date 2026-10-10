@@ -17,6 +17,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'siswa.verified' => \App\Http\Middleware\EnsureEmailIsVerifiedCustom::class,
             'siswa.password_changed' => \App\Http\Middleware\EnsurePasswordIsChanged::class,
+            'admin.utama' => \App\Http\Middleware\EnsureAdminUtama::class,
+            'admin.manage-verified' => \App\Http\Middleware\EnsureAdminManageVerified::class,
         ]);
 
         $middleware->web(append: [

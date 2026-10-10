@@ -51,6 +51,6 @@ class SesiLatihan extends Model
 
     public function hasil_latihan()
     {
-        return $this->hasOne(HasilLatihan::class, 'id_sesi', 'id_sesi');
+        return $this->hasOne(HasilLatihan::class, 'id_sesi', 'id_sesi')->latestOfMany('id_hasil');
     }
 }
