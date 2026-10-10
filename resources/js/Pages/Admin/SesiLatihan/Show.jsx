@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import ContainerWhite from '@/Components/ContainerWhite';
+import FirstIcon from '@/Components/FirstIcon';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import SearchBar from '@/Components/SearchBar';
@@ -9,6 +10,8 @@ import SelectInput from '@/Components/SelectInput';
 import Pagination from '@/Components/Pagination';
 import PopupModal from '@/Components/PopupModal';
 import CustomScrollbar from '@/Components/CustomScrollbar';
+import ChartTooltipPortal from '@/Components/ChartTooltipPortal';
+import mapSubtestCode from '@/utils/mapSubtestCode';
 import {
     ArrowLeft,
     Download,
@@ -287,6 +290,8 @@ export default function Show({
 
     // ── Chart Visibility Toggle ───────────────────────────────
     const [showChart, setShowChart] = useState(true);
+    const [hoveredChartQuestionId, setHoveredChartQuestionId] = useState(null);
+    const [hoveredChartAnchor, setHoveredChartAnchor] = useState(null);
 
     const allPeserta = participants.data || [];
     const totalPeserta = summary.total || 0;
@@ -655,7 +660,7 @@ export default function Show({
                 {/* ─────────────────────────────────────────────────────────────
                     1. HEADER SESI & METADATA
                 ───────────────────────────────────────────────────────────── */}
-                <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm p-6 sm:p-7">
+                <ContainerWhite className="!p-6 sm:!p-7">
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
                         <div className="space-y-2">
                             <div className="flex flex-wrap items-center gap-2.5">
@@ -729,33 +734,29 @@ export default function Show({
                             </div>
                         )}
                     </div>
-                </div>
+                </ContainerWhite>
 
                 {/* ─────────────────────────────────────────────────────────────
                     2. RINGKASAN STATISTIK (5 METRIC CARDS)
                 ───────────────────────────────────────────────────────────── */}
                 <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
                     {/* 1. Total Peserta */}
-                    <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-100 shadow-sm flex flex-col justify-between">
+                    <ContainerWhite className="!p-4 sm:!p-5 flex flex-col justify-between">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-xs font-semibold text-slate-500">Total Peserta</span>
-                            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#1b5e20] flex items-center justify-center">
-                                <Users size={16} />
-                            </div>
+                            <FirstIcon icon={Users} className="!w-9 !h-9 !rounded-xl" iconSize={16} />
                         </div>
                         <div>
                             <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">{totalPeserta}</p>
                             <p className="text-[11px] text-slate-400 mt-1">Siswa terdaftar</p>
                         </div>
-                    </div>
+                    </ContainerWhite>
 
                     {/* 2. Selesai Mengerjakan */}
-                    <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-100 shadow-sm flex flex-col justify-between">
+                    <ContainerWhite className="!p-4 sm:!p-5 flex flex-col justify-between">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-xs font-semibold text-slate-500">Selesai</span>
-                            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                                <CheckCircle2 size={16} />
-                            </div>
+                            <FirstIcon icon={CheckCircle2} className="!w-9 !h-9 !rounded-xl" iconSize={16} />
                         </div>
                         <div>
                             <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">{selesaiCount}</p>
@@ -766,43 +767,37 @@ export default function Show({
                                 <span className="text-[11px] text-slate-400">selesai</span>
                             </div>
                         </div>
-                    </div>
+                    </ContainerWhite>
 
                     {/* 3. Sedang Mengerjakan */}
-                    <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-100 shadow-sm flex flex-col justify-between">
+                    <ContainerWhite className="!p-4 sm:!p-5 flex flex-col justify-between">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-xs font-semibold text-slate-500">Sedang Mengerjakan</span>
-                            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                                <Clock size={16} />
-                            </div>
+                            <FirstIcon icon={Clock} className="!w-9 !h-9 !rounded-xl" iconSize={16} />
                         </div>
                         <div>
                             <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">{sedangCount}</p>
                             <p className="text-[11px] text-slate-400 mt-1">Sesi berjalan</p>
                         </div>
-                    </div>
+                    </ContainerWhite>
 
                     {/* 4. Belum Mulai */}
-                    <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-100 shadow-sm flex flex-col justify-between">
+                    <ContainerWhite className="!p-4 sm:!p-5 flex flex-col justify-between">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-xs font-semibold text-slate-500">Belum Mulai</span>
-                            <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center">
-                                <Users size={16} />
-                            </div>
+                            <FirstIcon icon={Users} className="!w-9 !h-9 !rounded-xl" iconSize={16} />
                         </div>
                         <div>
                             <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">{belumCount}</p>
                             <p className="text-[11px] text-slate-400 mt-1">Belum mengakses</p>
                         </div>
-                    </div>
+                    </ContainerWhite>
 
                     {/* 5. Rata-rata Nilai */}
-                    <div className="col-span-2 lg:col-span-1 p-4 sm:p-5 rounded-2xl bg-white border border-slate-100 shadow-sm flex flex-col justify-between">
+                    <ContainerWhite className="col-span-2 lg:col-span-1 !p-4 sm:!p-5 flex flex-col justify-between">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-xs font-semibold text-slate-500">Rata-rata Nilai</span>
-                            <div className="w-8 h-8 rounded-xl bg-[#fef8e7] text-[#d99b00] flex items-center justify-center">
-                                <Award size={16} />
-                            </div>
+                            <FirstIcon icon={Award} className="!w-9 !h-9 !rounded-xl" iconSize={16} />
                         </div>
                         <div>
                             <p className="text-2xl sm:text-3xl font-extrabold text-[#1b5e20]">
@@ -812,7 +807,7 @@ export default function Show({
                                 {selesaiCount > 0 ? `Dari ${selesaiCount} peserta` : 'Belum ada data'}
                             </p>
                         </div>
-                    </div>
+                    </ContainerWhite>
                 </div>
 
                 {/* ─────────────────────────────────────────────────────────────
@@ -1057,31 +1052,31 @@ export default function Show({
                     <div className="space-y-6">
                         {/* Sub-Metrics Ringkasan Analisis Soal */}
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-                            <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                            <ContainerWhite className="!p-4">
                                 <p className="text-xs font-semibold text-slate-500">Total Butir Soal</p>
                                 <p className="text-2xl font-bold text-slate-900 mt-1">{totalSoalCount}</p>
                                 <p className="text-[11px] text-slate-400 mt-0.5">Soal aktif dalam paket</p>
-                            </div>
+                            </ContainerWhite>
 
-                            <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                            <ContainerWhite className="!p-4">
                                 <p className="text-xs font-semibold text-slate-500">Rata-rata Akurasi</p>
                                 <p className="text-2xl font-bold text-[#1b5e20] mt-1">
                                     {avgSoalAccuracy === null ? '-' : `${avgSoalAccuracy}%`}
                                 </p>
                                 <p className="text-[11px] text-slate-400 mt-0.5">Tingkat keberhasilan siswa</p>
-                            </div>
+                            </ContainerWhite>
 
-                            <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                            <ContainerWhite className="!p-4">
                                 <p className="text-xs font-semibold text-slate-500">Akurasi Rendah (&lt; 40%)</p>
                                 <p className="text-2xl font-bold text-rose-600 mt-1">{lowAccuracyCount}</p>
                                 <p className="text-[11px] text-slate-400 mt-0.5">Perlu perhatian / evaluasi</p>
-                            </div>
+                            </ContainerWhite>
 
-                            <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                            <ContainerWhite className="!p-4">
                                 <p className="text-xs font-semibold text-slate-500">Tanpa Respons</p>
                                 <p className="text-2xl font-bold text-slate-700 mt-1">{noResponseCount}</p>
                                 <p className="text-[11px] text-slate-400 mt-0.5">Belum pernah dijawab</p>
-                            </div>
+                            </ContainerWhite>
                         </div>
 
                         {/* Performance Chart Card (Collapsible) */}
@@ -1093,7 +1088,7 @@ export default function Show({
                                         Grafik Akurasi Peserta per Nomor Soal
                                     </h3>
                                     <p className="text-xs text-slate-500 mt-0.5">
-                                        Persentase perbandingan jawaban benar dan salah pada setiap butir soal
+                                        Proporsi jawaban benar, kosong, dan salah pada setiap butir soal
                                     </p>
                                 </div>
                                 <button
@@ -1107,24 +1102,31 @@ export default function Show({
 
                             {showChart && (
                                 <div>
-                                    <div className="flex items-center gap-6 mb-6 text-xs font-semibold text-slate-500">
-                                        <div className="flex items-center gap-2">
-                                            <span className="w-3 h-3 rounded bg-emerald-500 block shadow-xs" />
-                                            <span>Persentase Benar</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="w-3 h-3 rounded bg-rose-500 block shadow-xs" />
-                                            <span>Persentase Salah</span>
-                                        </div>
+                                    <div className="flex flex-wrap items-center gap-5 mb-6 text-xs font-semibold text-slate-600">
+                                        {[
+                                            { color: 'bg-[#10B981]', label: 'Persentase Benar' },
+                                            { color: 'bg-[#94A3B8]', label: 'Persentase Tidak Mengisi' },
+                                            { color: 'bg-[#EF4444]', label: 'Persentase Salah' },
+                                        ].map((item) => (
+                                            <div key={item.label} className="flex items-center gap-2">
+                                                <span className={`w-3.5 h-3.5 rounded-md ${item.color} block shadow-xs`} />
+                                                <span>{item.label}</span>
+                                            </div>
+                                        ))}
                                     </div>
 
-                                    <div className="overflow-x-auto pb-4 pt-2">
-                                        <div className="h-64 relative min-w-[620px] px-2">
+                                    {enhancedQuestionStats.length === 0 ? (
+                                        <div className="py-12 text-center text-sm text-slate-400">
+                                            Belum ada data soal untuk ditampilkan.
+                                        </div>
+                                    ) : (
+                                        <div className="overflow-x-auto pb-4 pt-1">
+                                            <div className="h-64 sm:h-72 relative min-w-full px-4">
                                             {/* Grid lines background */}
-                                            <div className="absolute inset-x-0 top-0 bottom-8 flex flex-col justify-between pointer-events-none">
+                                            <div className="absolute inset-x-0 top-6 bottom-12 flex flex-col justify-between pointer-events-none">
                                                 {[100, 75, 50, 25, 0].map((val) => (
-                                                    <div key={val} className="w-full flex items-center gap-2">
-                                                        <span className="text-[10px] font-bold text-slate-400 w-8 text-right">
+                                                    <div key={val} className="w-full flex items-center gap-3">
+                                                        <span className="text-[11px] font-bold text-slate-400 w-8 text-right shrink-0">
                                                             {val}%
                                                         </span>
                                                         <div className="flex-1 border-t border-dashed border-slate-200/70" />
@@ -1133,62 +1135,120 @@ export default function Show({
                                             </div>
 
                                             {/* Bars Container */}
-                                            <div className="absolute inset-x-0 top-0 bottom-8 flex items-end justify-start gap-6 sm:gap-8 pl-10 pr-4">
+                                            <div className="absolute inset-x-0 top-6 bottom-12 flex items-end justify-start gap-8 sm:gap-10 pl-16 pr-8">
                                                 {enhancedQuestionStats.map((stat, i) => {
-                                                    const accuracy = stat.akurasi ?? 0;
-                                                    const total = stat.totalRespons;
+                                                    const jumlahBenar = Number(stat.jumlah_benar) || 0;
+                                                    const jumlahSalah = Number(stat.jumlah_salah) || 0;
+                                                    const jumlahKosong = Number(stat.jumlah_kosong) || 0;
+                                                    const total = jumlahBenar + jumlahSalah + jumlahKosong;
+                                                    const pctBenar = total > 0 ? (jumlahBenar / total) * 100 : 0;
+                                                    const pctKosong = total > 0 ? (jumlahKosong / total) * 100 : 0;
+                                                    const pctSalah = total > 0 ? (jumlahSalah / total) * 100 : 0;
+                                                    const isHovered = hoveredChartQuestionId === stat.id_soal;
+                                                    const kategori = mapSubtestCode(stat.kategori);
 
                                                     return (
                                                         <div
                                                             key={stat.id_soal}
                                                             onClick={() => openQuestionDetail(stat, i + 1)}
-                                                            className="flex flex-col items-center group relative w-10 sm:w-12 h-full cursor-pointer"
+                                                            onMouseEnter={(event) => {
+                                                                setHoveredChartQuestionId(stat.id_soal);
+                                                                setHoveredChartAnchor(event.currentTarget);
+                                                            }}
+                                                            onMouseLeave={() => {
+                                                                setHoveredChartQuestionId(null);
+                                                                setHoveredChartAnchor(null);
+                                                            }}
+                                                            className="flex flex-col items-center relative h-full w-12 sm:w-14 shrink-0 cursor-pointer group"
                                                         >
-                                                            {/* Tooltip */}
-                                                            <div className="absolute top-2 left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center pointer-events-none z-30 w-36 text-center">
-                                                                <div className="bg-slate-900/95 backdrop-blur-sm text-white text-xs rounded-xl p-2.5 shadow-xl border border-slate-700/50">
-                                                                    <p className="font-bold text-slate-200 mb-1">
-                                                                        Soal #{i + 1}
-                                                                    </p>
-                                                                    <p className="text-emerald-400 font-bold">
-                                                                        {stat.akurasi === null ? '-' : `${stat.akurasi}%`} Benar
-                                                                    </p>
-                                                                    <p className="text-slate-400 text-[10px] mt-0.5">
-                                                                        ({stat.jumlah_benar} B, {stat.jumlah_salah} S)
-                                                                    </p>
-                                                                </div>
-                                                            </div>
+                                                            {isHovered && (
+                                                                <ChartTooltipPortal anchor={hoveredChartAnchor}>
+                                                                    <div className="bg-white text-slate-800 rounded-2xl p-2.5 shadow-xl border border-slate-200 ring-4 ring-black/5">
+                                                                            <div className="flex items-center justify-between gap-1 mb-1 pb-1 border-b border-slate-100">
+                                                                                <div className="flex items-center gap-1.5">
+                                                                                    <span className="font-extrabold text-slate-900 text-xs">Soal #{i + 1}</span>
+                                                                                    <span className="text-[9px] font-bold text-white bg-[#fcc526] px-1.5 py-0.2 rounded shadow-2xs">
+                                                                                        {kategori}
+                                                                                    </span>
+                                                                                </div>
+                                                                                <span className="text-xs font-black text-[#10B981]">
+                                                                                    {stat.akurasi === null ? '-' : `${stat.akurasi}%`}
+                                                                                    <span className="text-[9px] font-medium text-slate-400"> Benar</span>
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="grid grid-cols-3 divide-x divide-slate-100 my-1 py-1 border-b border-slate-100 text-center">
+                                                                                <div className="px-0.5">
+                                                                                    <span className="text-xs font-black text-[#10B981] block leading-none">{jumlahBenar}</span>
+                                                                                    <span className="text-[9px] text-slate-500 font-medium">Benar</span>
+                                                                                </div>
+                                                                                <div className="px-0.5">
+                                                                                    <span className="text-xs font-black text-[#EF4444] block leading-none">{jumlahSalah}</span>
+                                                                                    <span className="text-[9px] text-slate-500 font-medium">Salah</span>
+                                                                                </div>
+                                                                                <div className="px-0.5">
+                                                                                    <span className="text-xs font-black text-[#94A3B8] block leading-none">{jumlahKosong}</span>
+                                                                                    <span className="text-[9px] text-slate-500 font-medium">Kosong</span>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="pt-0.5 text-[9.5px] text-slate-400 font-medium">
+                                                                                {total} peserta
+                                                                            </div>
+                                                                    </div>
+                                                                </ChartTooltipPortal>
+                                                            )}
 
                                                             {/* Bar Container */}
                                                             <div
-                                                                className={`w-8 sm:w-10 rounded-t-xl h-full flex items-end relative overflow-hidden shadow-inner border border-slate-200/50 ${
-                                                                    total > 0
-                                                                        ? 'bg-gradient-to-b from-rose-500 to-rose-400'
-                                                                        : 'bg-slate-100'
+                                                                className={`w-5 sm:w-6 rounded-full h-full flex flex-col justify-end relative overflow-hidden shadow-inner border border-slate-100 transition-all duration-200 bg-slate-100 ${
+                                                                    isHovered ? 'scale-105 ring-2 ring-slate-800/20 shadow-md brightness-105' : ''
                                                                 }`}
                                                             >
-                                                                <motion.div
-                                                                    initial={{ height: '0%' }}
-                                                                    animate={{ height: `${accuracy}%` }}
-                                                                    transition={{
-                                                                        duration: 0.6,
-                                                                        delay: i * 0.03,
-                                                                        ease: 'easeOut',
-                                                                    }}
-                                                                    className="w-full bg-gradient-to-t from-emerald-600 to-emerald-400 group-hover:from-emerald-500 group-hover:to-emerald-300 relative z-10"
-                                                                />
+                                                                {pctSalah > 0 && (
+                                                                    <motion.div
+                                                                        initial={{ height: '0%' }}
+                                                                        animate={{ height: `${pctSalah}%` }}
+                                                                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                                                                        className="w-full bg-[#EF4444] shrink-0"
+                                                                    />
+                                                                )}
+                                                                {pctKosong > 0 && (
+                                                                    <motion.div
+                                                                        initial={{ height: '0%' }}
+                                                                        animate={{ height: `${pctKosong}%` }}
+                                                                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                                                                        className="w-full bg-[#94A3B8] shrink-0"
+                                                                    />
+                                                                )}
+                                                                {pctBenar > 0 && (
+                                                                    <motion.div
+                                                                        initial={{ height: '0%' }}
+                                                                        animate={{ height: `${pctBenar}%` }}
+                                                                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                                                                        className="w-full bg-[#10B981] shrink-0"
+                                                                    />
+                                                                )}
                                                             </div>
 
                                                             {/* X-Label */}
-                                                            <span className="absolute top-full mt-2 text-xs font-bold text-slate-400 group-hover:text-slate-900 transition-colors">
-                                                                #{i + 1}
-                                                            </span>
+                                                            <div className={`absolute top-full mt-2 flex flex-col items-center text-center transition-all ${isHovered ? 'scale-110' : ''}`}>
+                                                                <span className={`text-xs font-black transition-colors ${isHovered ? 'text-slate-900' : 'text-slate-400'}`}>
+                                                                    #{i + 1}
+                                                                </span>
+                                                                <span className={`text-[10px] font-bold uppercase tracking-tight mt-0.5 px-1.5 py-0.5 rounded-md border transition-colors ${
+                                                                    isHovered
+                                                                        ? 'bg-[#fcc526] text-white border-[#fcc526]'
+                                                                        : 'bg-slate-100 text-slate-500 border-slate-100'
+                                                                }`}>
+                                                                    {kategori}
+                                                                </span>
+                                                            </div>
                                                         </div>
                                                     );
                                                 })}
                                             </div>
                                         </div>
-                                    </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </ContainerWhite>

@@ -4,6 +4,7 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import FirstIcon from '@/Components/FirstIcon';
 import { Head, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { Eye, EyeOff, KeyRound, LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
@@ -44,9 +45,7 @@ function SecretField({ id, label, value, onChange, error, numeric = false, autoC
 function SectionHeader({ icon: Icon, title, description }) {
     return (
         <div className="mb-6 flex items-start gap-3 border-b border-slate-100 pb-4">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-[#1b5e20]">
-                <Icon size={21} />
-            </span>
+            <FirstIcon icon={Icon} className="!h-11 !w-11 !rounded-xl !bg-[#fef8e7] !text-[#d99b00] group-hover:!bg-[#fcc526] group-hover:!text-white" iconSize={21} />
             <div>
                 <h2 className="font-['Poppins'] text-lg font-bold text-slate-800">{title}</h2>
                 <p className="mt-1 text-sm text-slate-500">{description}</p>

@@ -10,58 +10,7 @@ import ContainerWhite from '@/Components/ContainerWhite';
 import FirstIcon from '@/Components/FirstIcon';
 import NavigasiPembahasan from '../Latihan/Partials/NavigasiPembahasan';
 import PembahasanCard from '../Latihan/Partials/PembahasanCard';
-
-/**
- * Pemetaan kategori soal ke dalam tab UTBK standar:
- * PU, PPU, PBM, PK, LBI, LBE, PM
- */
-function mapKategoriToTab(kategori) {
-    const k = (kategori || '').trim();
-    const lower = k.toLowerCase();
-
-    if (k === 'PU' || lower === 'penalaran umum' || (lower.includes('penalaran') && lower.includes('umum'))) {
-        return 'PU';
-    }
-    if (
-        k === 'PPU' ||
-        (lower.includes('pemahaman') && lower.includes('umum')) ||
-        (lower.includes('pengetahuan') && lower.includes('umum'))
-    ) {
-        return 'PPU';
-    }
-    if (k === 'PBM' || (lower.includes('bacaan') && lower.includes('menulis'))) {
-        return 'PBM';
-    }
-    if (k === 'PK' || lower.includes('kuantitatif')) {
-        return 'PK';
-    }
-    if (
-        k === 'LBI' ||
-        lower === 'literasi bahasa indonesia' ||
-        (lower.includes('indonesia') && lower.includes('literasi')) ||
-        lower.includes('bahasa indonesia')
-    ) {
-        return 'LBI';
-    }
-    if (
-        k === 'LBE' ||
-        k === 'LBIng' ||
-        lower === 'literasi bahasa inggris' ||
-        lower.includes('inggris') ||
-        lower.includes('english') ||
-        lower.includes('bahasa inggris')
-    ) {
-        return 'LBE';
-    }
-    if (k === 'PM' || lower.includes('matematika')) {
-        return 'PM';
-    }
-    if (lower.includes('literasi')) {
-        return 'LBI';
-    }
-
-    return k || 'Umum';
-}
+import mapSubtestCode from '@/utils/mapSubtestCode';
 
 export default function Hasil({
     auth,
@@ -108,12 +57,12 @@ export default function Hasil({
         return (questionStats || []).map((stat, idx) => ({
             ...stat,
             globalIndex: idx,
-            kategoriCode: mapKategoriToTab(stat.kategori),
+            kategoriCode: mapSubtestCode(stat.kategori),
         }));
     }, [questionStats]);
 
     const chartTabs = useMemo(() => {
-        const STANDARD_TABS = ['PU', 'PPU', 'PBM', 'PK', 'LBI', 'LBE', 'PM'];
+        const STANDARD_TABS = ['PU', 'PPU', 'PBM', 'PK', 'LBI', 'LBING', 'PM'];
         const presentCodes = new Set(enrichedStats.map(s => s.kategoriCode));
         const ordered = STANDARD_TABS.filter(t => presentCodes.has(t));
         presentCodes.forEach(t => {
