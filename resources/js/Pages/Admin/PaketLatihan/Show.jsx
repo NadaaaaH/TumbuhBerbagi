@@ -1,54 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { ArrowLeft, Plus, Edit, Trash2, CheckCircle, XCircle, Search, BookOpen, X, CheckSquare, Clock, Shuffle, PauseCircle, CheckCircle2, AlertTriangle } from 'lucide-react';
 import PrimaryButton from '@/Components/PrimaryButton';
+import SecondaryButton from '@/Components/SecondaryButton';
+import ContainerWhite from '@/Components/ContainerWhite';
+import Pagination from '@/Components/Pagination';
 import PopupModal from '@/Components/PopupModal';
 
 // ─── Konstanta Subtes UTBK ────────────────────────────────────────────────────
 const SUBTES_LIST = [
-    { kode: 'PU',    nama: 'Penalaran Umum',               color: 'blue'   },
-    { kode: 'PPU',   nama: 'Penget. & Pemahaman Umum',     color: 'purple' },
-    { kode: 'PK',    nama: 'Pengetahuan Kuantitatif',      color: 'orange' },
-    { kode: 'PBM',   nama: 'Pemahaman Bacaan & Menulis',   color: 'teal'   },
-    { kode: 'LBI',   nama: 'Literasi Bhs. Indonesia',      color: 'rose'   },
-    { kode: 'LBIng', nama: 'Literasi Bhs. Inggris',        color: 'indigo' },
-    { kode: 'PM',    nama: 'Penalaran Matematika',         color: 'amber'  },
+    { kode: 'PU',    nama: 'Penalaran Umum'               },
+    { kode: 'PPU',   nama: 'Penget. & Pemahaman Umum'     },
+    { kode: 'PK',    nama: 'Pengetahuan Kuantitatif'      },
+    { kode: 'PBM',   nama: 'Pemahaman Bacaan & Menulis'   },
+    { kode: 'LBI',   nama: 'Literasi Bhs. Indonesia'      },
+    { kode: 'LBIng', nama: 'Literasi Bhs. Inggris'        },
+    { kode: 'PM',    nama: 'Penalaran Matematika'         },
 ];
 
-const SUBTES_STYLE = {
-    blue:   'bg-blue-100 text-blue-800 border-blue-200',
-    purple: 'bg-purple-100 text-purple-800 border-purple-200',
-    orange: 'bg-orange-100 text-orange-800 border-orange-200',
-    teal:   'bg-teal-100 text-teal-800 border-teal-200',
-    rose:   'bg-rose-100 text-rose-800 border-rose-200',
-    indigo: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-    amber:  'bg-amber-100 text-amber-800 border-amber-200',
-    slate:  'bg-slate-100 text-slate-600 border-slate-200',
-};
+const subtesInfo = (kode) => SUBTES_LIST.find((s) => s.kode?.toLowerCase() === kode?.toLowerCase());
 
-const ACTIVE_TAB_STYLE = {
-    blue:   'bg-blue-600 border-blue-600 text-white',
-    purple: 'bg-purple-600 border-purple-600 text-white',
-    orange: 'bg-orange-500 border-orange-500 text-white',
-    teal:   'bg-teal-600 border-teal-600 text-white',
-    rose:   'bg-rose-600 border-rose-600 text-white',
-    indigo: 'bg-indigo-600 border-indigo-600 text-white',
-    amber:  'bg-amber-500 border-amber-500 text-white',
-    slate:  'bg-slate-700 border-slate-700 text-white',
-};
-
-const subtesInfo = (kode) => SUBTES_LIST.find((s) => s.kode === kode);
-
-function SubtesBadge({ kode, size = 'sm' }) {
+function SubtesBadge({ kode }) {
     if (!kode) return <span className="text-[10px] text-slate-400 italic">–</span>;
-    const info  = subtesInfo(kode);
-    const color = info?.color || 'slate';
     return (
-        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border ${SUBTES_STYLE[color]}`}>
+        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#fcc526] text-white uppercase tracking-wider shadow-2xs">
             {kode}
         </span>
     );
+}
+
+// ── Helper mapping subtes / kategori ke kode standar UTBK ─────────────────
+function getSubtes(soal) {
+    if (!soal) return null;
+    if (soal.pivot?.subtes) {
+        const p = String(soal.pivot.subtes).toUpperCase().trim();
+        const found = SUBTES_LIST.find((s) => s.kode.toUpperCase() === p);
+        if (found) return found.kode;
+    }
+    const val = String(soal.kategori || '').toLowerCase().trim();
+    if (val === 'pu' || val.includes('penalaran umum')) return 'PU';
+    if (val === 'ppu' || val.includes('pengetahuan & pemahaman') || val.includes('pengetahuan umum')) return 'PPU';
+    if (val === 'pbm' || val.includes('pemahaman bacaan') || val.includes('bacaan & menulis') || val.includes('bacaan')) return 'PBM';
+    if (val === 'pk' || val.includes('pengetahuan kuantitatif') || val.includes('kuantitatif')) return 'PK';
+    if (val === 'lbi' || val.includes('literasi bahasa indonesia') || val.includes('bahasa indonesia')) return 'LBI';
+    if (val === 'lbing' || val.includes('literasi bahasa inggris') || val.includes('bahasa inggris') || val.includes('english')) return 'LBIng';
+    if (val === 'pm' || val.includes('penalaran matematika') || val.includes('matematika')) return 'PM';
+    return null;
 }
 
 export default function Show({ auth, paket, soals = [], bankSoals = [], filters }) {
@@ -62,10 +60,7 @@ export default function Show({ auth, paket, soals = [], bankSoals = [], filters 
     const [bankSearch, setBankSearch]              = useState('');
     const [selectedIds, setSelectedIds]            = useState([]);
     const [submittingBank, setSubmittingBank]      = useState(false);
-    // Tab aktif untuk tryout (null = "Semua")
-    const [activeSubtes, setActiveSubtes]          = useState(isTryout ? 'PU' : null);
-    // Subtes yang dipilih untuk modal bank soal / tambah soal baru
-    const [bankSubtes, setBankSubtes]              = useState('PU');
+    const [bankFilterSubtes, setBankFilterSubtes]  = useState('');
 
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [soalToRemove, setSoalToRemove] = useState(null);
@@ -74,51 +69,102 @@ export default function Show({ auth, paket, soals = [], bankSoals = [], filters 
     const [warningModalMessage, setWarningModalMessage] = useState('');
     const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
 
-    const categories = ['PU', 'PPU', 'PK', 'PBM', 'Literasi Bahasa Indonesia', 'Literasi Bahasa Inggris', 'Penalaran Matematika'];
+    const categories = ['PU', 'PPU', 'PK', 'PBM', 'LBI', 'LBing', 'PM'];
 
-    // ── Soal yang ditampilkan berdasarkan tab aktif ───────────────────────────
-    const displaySoals = isTryout && activeSubtes
-        ? soals.filter((s) => s.pivot?.subtes === activeSubtes)
-        : soals.filter((s) => {
-            const matchSearch   = !searchQuery   || s.konten_soal?.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchKategori = !selectedKategori || s.kategori === selectedKategori;
-            return matchSearch && matchKategori;
+    // ── Soal yang ditampilkan berdasarkan pencarian & kategori ────────────────
+    const displaySoals = useMemo(() => {
+        return soals.filter((s) => {
+            const matchSearch = !searchQuery || s.konten_soal?.toLowerCase().includes(searchQuery.toLowerCase());
+            if (!matchSearch) return false;
+
+            if (!selectedKategori) return true;
+
+            const sub = getSubtes(s);
+            const kat = (s.kategori || '').toLowerCase();
+            const piv = (s.pivot?.subtes || '').toLowerCase();
+            const target = selectedKategori.toLowerCase();
+
+            return (
+                (sub && sub.toLowerCase() === target) ||
+                kat === target ||
+                kat.includes(target) ||
+                piv === target
+            );
         });
+    }, [soals, searchQuery, selectedKategori]);
+
+    // ── Pagination (10 soal per halaman) ──────────────────────────────────────
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [selectedKategori, searchQuery]);
+
+    const totalItems = displaySoals.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [totalPages, currentPage]);
+
+    const paginatedSoals = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return displaySoals.slice(startIndex, startIndex + itemsPerPage);
+    }, [displaySoals, currentPage, itemsPerPage]);
+
+    const fromIndex = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+    const toIndex   = Math.min(currentPage * itemsPerPage, totalItems);
 
     // ── Count soal per subtes ─────────────────────────────────────────────────
-    const countBySubtes = (kode) => soals.filter((s) => s.pivot?.subtes === kode).length;
-    const countUncategorized = soals.filter((s) => !s.pivot?.subtes).length;
+    const countBySubtes = (kode) => soals.filter((s) => getSubtes(s) === kode).length;
+    const countUncategorized = soals.filter((s) => !getSubtes(s)).length;
 
     // ── Bank Soal filter ──────────────────────────────────────────────────────
-    const filteredBank = bankSoals.filter((s) =>
-        s.konten_soal?.toLowerCase().includes(bankSearch.toLowerCase()) ||
-        s.kategori?.toLowerCase().includes(bankSearch.toLowerCase()) ||
-        s.materi?.toLowerCase().includes(bankSearch.toLowerCase())
-    );
+    const filteredBank = useMemo(() => {
+        return bankSoals.filter((s) => {
+            const matchSearch = !bankSearch ||
+                s.konten_soal?.toLowerCase().includes(bankSearch.toLowerCase()) ||
+                s.kategori?.toLowerCase().includes(bankSearch.toLowerCase()) ||
+                s.materi?.toLowerCase().includes(bankSearch.toLowerCase());
+
+            if (!matchSearch) return false;
+
+            if (isTryout && bankFilterSubtes) {
+                const sub = getSubtes(s);
+                const kat = (s.kategori || '').toLowerCase();
+                const target = bankFilterSubtes.toLowerCase();
+                return (sub && sub.toLowerCase() === target) || kat === target || kat.includes(target);
+            }
+
+            return true;
+        });
+    }, [bankSoals, bankSearch, bankFilterSubtes, isTryout]);
 
     const toggleSelect = (id) =>
         setSelectedIds((prev) =>
             prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
         );
 
-    const toggleAll = () =>
-        setSelectedIds(
-            selectedIds.length === filteredBank.length
-                ? []
-                : filteredBank.map((s) => s.id_soal)
-        );
+    const toggleAll = () => {
+        const filteredIds = filteredBank.map((s) => s.id_soal);
+        const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selectedIds.includes(id));
+
+        if (allFilteredSelected) {
+            setSelectedIds((prev) => prev.filter((id) => !filteredIds.includes(id)));
+        } else {
+            setSelectedIds((prev) => Array.from(new Set([...prev, ...filteredIds])));
+        }
+    };
 
     const handleAddFromBank = () => {
         if (selectedIds.length === 0) return;
-        if (isTryout && !bankSubtes) {
-            setWarningModalMessage('Pilih subtes untuk soal yang akan ditambahkan.');
-            setIsWarningModalOpen(true);
-            return;
-        }
         setSubmittingBank(true);
         router.post(
             route('paket-latihan.add-soal', paket.id_paket),
-            { soal_ids: selectedIds, subtes: isTryout ? bankSubtes : null },
+            { soal_ids: selectedIds, subtes: bankFilterSubtes || null },
             {
                 preserveScroll: true,
                 onSuccess: () => {
@@ -163,25 +209,38 @@ export default function Show({ auth, paket, soals = [], bankSoals = [], filters 
 
     const diffBadge = (val) => {
         if (!val) return null;
-        const map = { mudah: ['bg-emerald-50 text-emerald-700', 'Mudah'], sulit: ['bg-rose-50 text-rose-700', 'Sulit'] };
-        const [cls, label] = map[val] || ['bg-amber-50 text-amber-700', 'Sedang'];
-        return <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${cls}`}>{label}</span>;
+        const v = String(val).toLowerCase();
+        const map = {
+            mudah: ['bg-emerald-50 text-emerald-700 border-emerald-200/80', 'Mudah'],
+            sulit: ['bg-rose-50 text-rose-700 border-rose-200/80', 'Sulit'],
+        };
+        const [cls, label] = map[v] || ['bg-amber-50 text-amber-700 border-amber-200/80', 'Sedang'];
+        return <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${cls}`}>{label}</span>;
     };
 
-    // ── Tambah Soal Baru: untuk tryout buka subtes-aware link ─────────────────
+    // ── Tambah Soal Baru: untuk tryout buka subtes-aware link jika kategori dipilih ─────
     const tambahSoalRoute = isTryout
-        ? route('soal.create', { paket_id: paket.id_paket, subtes: activeSubtes || 'PU' })
+        ? route('soal.create', { paket_id: paket.id_paket, ...(selectedKategori ? { subtes: getSubtes({ kategori: selectedKategori, pivot: { subtes: selectedKategori } }) || selectedKategori } : {}) })
         : route('soal.create', { paket_id: paket.id_paket });
 
     const openBankModal = () => {
-        if (isTryout && activeSubtes) setBankSubtes(activeSubtes);
+        if (isTryout) {
+            const shortKode = selectedKategori
+                ? (getSubtes({ kategori: selectedKategori, pivot: { subtes: selectedKategori } }) || selectedKategori)
+                : '';
+            setBankFilterSubtes(shortKode);
+        } else {
+            setBankFilterSubtes('');
+        }
         setShowBankModal(true);
         setSelectedIds([]);
         setBankSearch('');
     };
 
     // ── Info Paket Try Out ────────────────────────────────────────────────────
+    // ── Info Paket Try Out ────────────────────────────────────────────────────
     const fmtDate = (d) => d ? new Date(d).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+    const durasiUjian = Number(paket?.waktu_ujian) > 0 ? Number(paket.waktu_ujian) : (isTryout ? 195 : 0);
 
     return (
         <AdminLayout
@@ -203,23 +262,9 @@ export default function Show({ auth, paket, soals = [], bankSoals = [], filters 
             {/* ===== 2-COLUMN LAYOUT ===== */}
             <div className="flex flex-col lg:flex-row gap-6 items-start">
 
-                {/* ---- KIRI: Info Paket ---- */}
-                <div className="w-full lg:w-[300px] shrink-0">
-                    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 sticky top-4 space-y-5">
-
-                        {/* Badges */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`text-xs font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider border ${
-                                isTryout ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                            }`}>
-                                {isTryout ? '🎯 Try Out' : '📚 Latihan Soal'}
-                            </span>
-                            <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg border ${
-                                paket?.status === 'aktif' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-slate-50 text-slate-500 border-slate-200'
-                            }`}>
-                                {paket?.status === 'aktif' ? '✓ Aktif' : 'Nonaktif'}
-                            </span>
-                        </div>
+                {/* ---- KIRI: Info Paket (Sticky / Fixed di layar saat scroll) ---- */}
+                <div className="w-full lg:w-[300px] shrink-0 lg:sticky lg:top-24 lg:self-start">
+                    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
 
                         {/* Nama & Deskripsi */}
                         <div>
@@ -229,69 +274,79 @@ export default function Show({ auth, paket, soals = [], bankSoals = [], filters 
 
                         {/* Stats */}
                         <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
-                            <div className="bg-slate-50 rounded-xl p-3">
+                            {/* Total Soal: Tanpa Container */}
+                            <div className="flex flex-col justify-center py-1">
                                 <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Total Soal</p>
-                                <p className="text-2xl font-bold text-slate-800">{soals.length}</p>
+                                <p className="text-3xl font-extrabold text-slate-800">{soals.length}</p>
                             </div>
-                            {isTryout ? (
-                                <div className="bg-amber-50 rounded-xl p-3">
-                                    <p className="text-xs text-amber-600 font-semibold uppercase tracking-wider mb-1">Durasi</p>
-                                    <p className="text-lg font-bold text-amber-800">265 mnt</p>
-                                    <p className="text-[10px] text-amber-600">standar UTBK</p>
-                                </div>
-                            ) : (
-                                <div className="bg-slate-50 rounded-xl p-3">
-                                    <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Waktu</p>
-                                    <p className="text-2xl font-bold text-slate-800">{paket?.waktu_ujian > 0 ? paket.waktu_ujian : '∞'}</p>
-                                    <p className="text-[10px] text-slate-400">{paket?.waktu_ujian > 0 ? 'menit' : 'tidak dibatasi'}</p>
-                                </div>
-                            )}
+
+                            {/* Durasi: Container Kuning #fffbeb Tanpa Border, Teks Durasi Hitam, Angka #f59e0b */}
+                            <div className="bg-[#fffbeb] rounded-xl p-3 flex flex-col justify-center">
+                                <p className="text-xs text-slate-900 font-bold uppercase tracking-wider mb-1">
+                                    {isTryout ? 'Durasi' : 'Waktu'}
+                                </p>
+                                <p className="text-xl font-extrabold text-[#f59e0b]">
+                                    {durasiUjian > 0 ? `${durasiUjian} mnt` : '∞'}
+                                </p>
+                            </div>
                         </div>
 
-                        {/* Info khusus Try Out */}
-                        {isTryout && (
-                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs space-y-2">
-                                <p className="font-bold text-amber-800">📊 Konfigurasi Try Out</p>
-                                {paket.tanggal_mulai && (
-                                    <div className="flex items-start gap-1.5 text-amber-700">
-                                        <Clock size={12} className="mt-0.5 shrink-0" />
-                                        <div>
-                                            <span className="font-semibold">Mulai:</span> {fmtDate(paket.tanggal_mulai)}<br/>
-                                            <span className="font-semibold">Selesai:</span> {fmtDate(paket.tanggal_selesai)}
-                                        </div>
-                                    </div>
-                                )}
-                                <div className="flex gap-3 text-amber-700">
-                                    <span className={`flex items-center gap-1 ${paket.is_random ? 'text-amber-700' : 'text-amber-400 line-through'}`}>
-                                        <Shuffle size={11}/> Random
-                                    </span>
-                                    <span className={`flex items-center gap-1 ${paket.bisa_pause ? 'text-amber-700' : 'text-amber-400 line-through'}`}>
-                                        <PauseCircle size={11}/> Pause
-                                    </span>
-                                </div>
-                                {/* Progress per subtes */}
-                                <div className="pt-1 border-t border-amber-200 space-y-1">
-                                    {SUBTES_LIST.map((s) => (
-                                        <div key={s.kode} className="flex items-center justify-between">
-                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${SUBTES_STYLE[s.color]}`}>{s.kode}</span>
-                                            <span className="text-[10px] text-amber-700 font-semibold">{countBySubtes(s.kode)} soal</span>
-                                        </div>
-                                    ))}
-                                    {countUncategorized > 0 && (
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-slate-100 text-slate-500">–</span>
-                                            <span className="text-[10px] text-slate-500 font-semibold">{countUncategorized} belum dikategorikan</span>
+                        {/* Info Konfigurasi & Rincian Subtes: Tanpa bg & border, nama subtes teks biasa warna gelap */}
+                        <div className="pt-3 border-t border-slate-100 text-xs space-y-2.5">
+                            <p className="font-bold text-slate-900">
+                                {isTryout ? 'Konfigurasi Try Out' : 'Rincian Subtes'}
+                            </p>
+
+                            {isTryout && (
+                                <>
+                                    {paket.tanggal_mulai && (
+                                        <div className="flex items-start gap-1.5 text-slate-700">
+                                            <Clock size={12} className="mt-0.5 shrink-0 text-slate-400" />
+                                            <div>
+                                                <span className="font-semibold text-slate-900">Mulai:</span> {fmtDate(paket.tanggal_mulai)}<br/>
+                                                <span className="font-semibold text-slate-900">Selesai:</span> {fmtDate(paket.tanggal_selesai)}
+                                            </div>
                                         </div>
                                     )}
-                                </div>
-                            </div>
-                        )}
+                                    <div className="flex gap-3 text-slate-700">
+                                        <span className={`flex items-center gap-1 ${paket.is_random ? 'text-slate-800 font-medium' : 'text-slate-400 line-through'}`}>
+                                            <Shuffle size={11} className={paket.is_random ? 'text-slate-600' : 'text-slate-400'}/> Random
+                                        </span>
+                                        <span className={`flex items-center gap-1 ${paket.bisa_pause ? 'text-slate-800 font-medium' : 'text-slate-400 line-through'}`}>
+                                            <PauseCircle size={11} className={paket.bisa_pause ? 'text-slate-600' : 'text-slate-400'}/> Pause
+                                        </span>
+                                    </div>
+                                </>
+                            )}
 
-                        {/* Edit Paket */}
-                        <Link href={route('paket-latihan.edit', paket.id_paket)}
-                            className="w-full flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-medium transition-colors text-sm">
-                            <Edit size={15} />
-                            Edit Paket
+                            {/* Breakdown per subtes: teks biasa warna gelap sama dengan isi teks */}
+                            <div className={`${isTryout ? 'pt-2 border-t border-slate-100' : ''} space-y-1.5`}>
+                                {SUBTES_LIST.map((s) => (
+                                    <div key={s.kode} className="flex items-center justify-between">
+                                        <span className="text-xs font-medium text-slate-700">
+                                            {s.kode}
+                                        </span>
+                                        <span className="text-xs text-slate-900 font-semibold">{countBySubtes(s.kode)} soal</span>
+                                    </div>
+                                ))}
+                                {countUncategorized > 0 && (
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-medium text-slate-400">Lainnya</span>
+                                        <span className="text-xs text-slate-500 font-semibold">{countUncategorized} belum dikategorikan</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Edit Paket: PrimaryButton warna abu-abu */}
+                        <Link href={route('paket-latihan.edit', paket.id_paket)} className="block w-full">
+                            <PrimaryButton
+                                type="button"
+                                className="w-full justify-center gap-2 !bg-slate-100 hover:!bg-slate-200 !text-slate-700 !border-0 shadow-none !py-2.5 !rounded-xl font-medium text-sm transition-colors cursor-pointer"
+                            >
+                                <Edit size={15} />
+                                Edit Paket
+                            </PrimaryButton>
                         </Link>
                     </div>
                 </div>
@@ -299,132 +354,72 @@ export default function Show({ auth, paket, soals = [], bankSoals = [], filters 
                 {/* ---- KANAN: Daftar Soal ---- */}
                 <div className="flex-1 min-w-0">
 
-                    {/* ══ TAB NAVIGASI SUBTES (hanya tryout) ══ */}
-                    {isTryout && (
-                        <div className="mb-4 overflow-x-auto">
-                            <div className="flex items-center gap-1.5 min-w-max pb-1">
-                                {/* Tab "Semua" */}
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveSubtes(null)}
-                                    className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                                        activeSubtes === null
-                                            ? ACTIVE_TAB_STYLE['slate']
-                                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                                    }`}
-                                >
-                                    Semua
-                                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${activeSubtes === null ? 'bg-white/20' : 'bg-slate-100 text-slate-500'}`}>
-                                        {soals.length}
-                                    </span>
-                                </button>
-
-                                {/* Tab per subtes */}
-                                {SUBTES_LIST.map((s) => {
-                                    const count   = countBySubtes(s.kode);
-                                    const isActive = activeSubtes === s.kode;
-                                    return (
-                                        <button
-                                            key={s.kode}
-                                            type="button"
-                                            onClick={() => setActiveSubtes(s.kode)}
-                                            className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                                                isActive ? ACTIVE_TAB_STYLE[s.color] : `bg-white border-slate-200 text-slate-600 hover:bg-slate-50`
-                                            }`}
-                                        >
-                                            {s.kode}
-                                            <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${isActive ? 'bg-white/25' : count > 0 ? `${SUBTES_STYLE[s.color]}` : 'bg-slate-100 text-slate-400'}`}>
-                                                {count}
-                                            </span>
-                                        </button>
-                                    );
-                                })}
-
-                                {/* Tab "Belum Dikategorikan" jika ada */}
-                                {countUncategorized > 0 && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setActiveSubtes('_uncategorized')}
-                                        className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                                            activeSubtes === '_uncategorized' ? ACTIVE_TAB_STYLE['slate'] : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
-                                        }`}
-                                    >
-                                        Belum Dikategorikan
-                                        <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${activeSubtes === '_uncategorized' ? 'bg-white/20' : 'bg-slate-100 text-slate-500'}`}>
-                                            {countUncategorized}
-                                        </span>
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
                     {/* Toolbar */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                         <div>
                             <h3 className="text-base font-semibold text-slate-800">
-                                {isTryout && activeSubtes && activeSubtes !== '_uncategorized'
-                                    ? `Soal — ${SUBTES_LIST.find(s => s.kode === activeSubtes)?.nama || activeSubtes}`
-                                    : 'Daftar Soal'
-                                }
+                                Daftar Soal
                                 <span className="ml-2 text-xs font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">
                                     {displaySoals.length}
                                 </span>
                             </h3>
-                            {isTryout && activeSubtes && activeSubtes !== '_uncategorized' && (
+                            {selectedKategori && (
                                 <p className="text-xs text-slate-400 mt-0.5">
-                                    {SUBTES_LIST.find(s => s.kode === activeSubtes)?.nama}
+                                    Filter: {selectedKategori}
                                 </p>
                             )}
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                            {/* Filter kategori hanya tampil kalau bukan tryout */}
-                            {!isTryout && (
-                                <>
-                                    <select
-                                        value={selectedKategori}
-                                        onChange={(e) => handleFilterChange(e.target.value, searchQuery)}
-                                        className="bg-white border border-slate-200 text-slate-600 rounded-xl px-3 py-2 text-sm font-medium focus:border-[#1b5e20] focus:ring-[#1b5e20] focus:ring-1 focus:outline-none transition-colors"
-                                    >
-                                        <option value="">Semua Kategori</option>
-                                        {categories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
-                                    </select>
-                                    <form onSubmit={handleSearch} className="flex items-center bg-white border border-slate-200 rounded-xl px-3 py-2 focus-within:border-[#1b5e20] focus-within:ring-1 focus-within:ring-[#1b5e20] transition-colors">
-                                        <Search size={15} className="text-slate-400 mr-2 shrink-0" />
-                                        <input type="text" placeholder="Cari soal..." value={searchQuery}
-                                            className="bg-transparent border-none p-0 focus:ring-0 text-sm text-slate-600 w-36 placeholder-slate-400"
-                                            onChange={(e) => setSearchQuery(e.target.value)} />
-                                    </form>
-                                </>
-                            )}
-
-                            {/* Tombol Tambah Soal (Baru) */}
-                            <Link
-                                href={tambahSoalRoute}
-                                className={`inline-flex items-center gap-1.5 text-white px-4 py-2 rounded-xl font-medium transition-colors text-sm shrink-0 ${
-                                    isTryout ? 'bg-amber-500 hover:bg-amber-600' : 'bg-[#1b5e20] hover:bg-[#508953]'
-                                }`}
+                            {/* Filter kategori / subtes */}
+                            <select
+                                value={selectedKategori}
+                                onChange={(e) => {
+                                    setSelectedKategori(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="bg-white border border-slate-200 text-slate-600 rounded-xl px-3 py-2 text-sm font-medium focus:border-[#1b5e20] focus:ring-[#1b5e20] focus:ring-1 focus:outline-none transition-colors cursor-pointer"
                             >
-                                <Plus size={15} />
-                                {isTryout ? `Soal ${activeSubtes || 'Baru'}` : 'Tambah Soal'}
+                                <option value="">Semua Kategori</option>
+                                {categories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+                            </select>
+
+                            {/* Search bar */}
+                            <form onSubmit={(e) => e.preventDefault()} className="flex items-center bg-white border border-slate-200 rounded-xl px-3 py-2 focus-within:border-[#1b5e20] focus-within:ring-1 focus-within:ring-[#1b5e20] transition-colors">
+                                <Search size={15} className="text-slate-400 mr-2 shrink-0" />
+                                <input
+                                    type="text"
+                                    placeholder="Cari soal..."
+                                    value={searchQuery}
+                                    className="bg-transparent border-none p-0 focus:ring-0 text-sm text-slate-600 w-36 placeholder-slate-400 outline-none"
+                                    onChange={(e) => {
+                                        setSearchQuery(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
+                                />
+                            </form>
+
+                            {/* Tombol Tambah Soal (PrimaryButton) */}
+                            <Link href={tambahSoalRoute}>
+                                <PrimaryButton className="gap-1.5 !py-2.5 !px-4 text-sm font-semibold shadow-sm cursor-pointer">
+                                    <Plus size={15} />
+                                    Tambah Soal
+                                </PrimaryButton>
                             </Link>
 
-                            {/* Tombol Dari Bank Soal */}
-                            <button type="button" onClick={openBankModal}
-                                className={`inline-flex items-center gap-1.5 border px-4 py-2 rounded-xl font-medium transition-colors text-sm shrink-0 ${
-                                    isTryout
-                                        ? 'border-amber-400 text-amber-700 hover:bg-amber-50'
-                                        : 'border-[#1b5e20] text-[#1b5e20] hover:bg-[#e8f5e9]'
-                                }`}
+                            {/* Tombol Dari Bank Soal (SecondaryButton) */}
+                            <SecondaryButton
+                                type="button"
+                                onClick={openBankModal}
+                                className="gap-1.5 !py-2.5 !px-4 text-sm font-semibold !rounded-xl !bg-white hover:!bg-[#e8f5e9] !text-[#1b5e20] !border-[#1b5e20] shadow-sm cursor-pointer"
                             >
                                 <BookOpen size={15} />
                                 Dari Bank Soal
-                            </button>
+                            </SecondaryButton>
                         </div>
                     </div>
 
-                    {/* Tabel Soal */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    {/* Tabel Soal (ContainerWhite sama dengan modul admin lainnya) */}
+                    <ContainerWhite className="!p-0 overflow-hidden shadow-sm">
                         <div className="overflow-x-auto">
                             {displaySoals.length > 0 ? (
                                 <table className="w-full text-left border-collapse">
@@ -440,11 +435,11 @@ export default function Show({ auth, paket, soals = [], bankSoals = [], filters 
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {displaySoals.map((soal, index) => (
+                                        {paginatedSoals.map((soal, index) => (
                                             <tr key={soal.id_soal} className="hover:bg-slate-50/50 transition-colors">
                                                 <td className="px-5 py-3.5 whitespace-nowrap">
                                                     <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 text-slate-600 font-bold text-xs">
-                                                        {index + 1}
+                                                        {fromIndex + index}
                                                     </span>
                                                 </td>
                                                 <td className="px-5 py-3.5 max-w-xs">
@@ -452,7 +447,6 @@ export default function Show({ auth, paket, soals = [], bankSoals = [], filters 
                                                         {soal.konten_soal?.replace(/<[^>]+>/g, '') || '(Soal tanpa teks)'}
                                                     </p>
                                                     {soal.materi && <span className="text-xs text-slate-400 mt-0.5 block">{soal.materi}</span>}
-                                                    <div className="mt-1">{diffBadge(soal.tingkat_kesulitan)}</div>
                                                 </td>
                                                 {isTryout && (
                                                     <td className="px-5 py-3.5 whitespace-nowrap">
@@ -493,32 +487,41 @@ export default function Show({ auth, paket, soals = [], bankSoals = [], filters 
                                 </table>
                             ) : (
                                 <div className="text-center py-16 px-6">
-                                    <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${isTryout ? 'bg-amber-50 text-amber-400' : 'bg-slate-100 text-slate-400'}`}>
+                                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 bg-emerald-50 text-[#1b5e20]">
                                         <Plus size={32} />
                                     </div>
                                     <h4 className="text-lg font-bold text-slate-800 mb-2">
-                                        {isTryout && activeSubtes && activeSubtes !== '_uncategorized'
-                                            ? `Belum Ada Soal untuk ${activeSubtes}`
-                                            : 'Belum Ada Soal'
-                                        }
+                                        Belum Ada Soal
                                     </h4>
                                     <p className="text-slate-500 max-w-md mx-auto mb-6">
-                                        {isTryout
-                                            ? `Tambahkan soal untuk subtes ${activeSubtes || ''}.`
+                                        {selectedKategori || searchQuery
+                                            ? 'Tidak ada soal yang cocok dengan filter atau pencarian saat ini.'
                                             : 'Paket ini belum memiliki soal. Silakan tambahkan soal untuk memulai.'
                                         }
                                     </p>
-                                    <Link href={tambahSoalRoute}
-                                        className={`inline-flex items-center gap-2 text-white px-6 py-3 rounded-xl font-medium transition-colors shadow-sm ${
-                                            isTryout ? 'bg-amber-500 hover:bg-amber-600' : 'bg-[#1b5e20] hover:bg-[#508953]'
-                                        }`}>
-                                        <Plus size={18} />
-                                        Tambah Soal {isTryout && activeSubtes ? activeSubtes : 'Pertama'}
+                                    <Link href={tambahSoalRoute}>
+                                        <PrimaryButton className="gap-2 !py-2.5 !px-5 text-sm font-semibold shadow-sm">
+                                            <Plus size={18} />
+                                            Tambah Soal
+                                        </PrimaryButton>
                                     </Link>
                                 </div>
                             )}
                         </div>
-                    </div>
+
+                        {/* Pagination (Batas 10 soal per halaman) */}
+                        {totalItems > 0 && (
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                onPageChange={(page) => setCurrentPage(page)}
+                                from={fromIndex}
+                                to={toIndex}
+                                total={totalItems}
+                                itemName="soal"
+                            />
+                        )}
+                    </ContainerWhite>
 
                 </div>{/* end kolom kanan */}
             </div>{/* end 2-col layout */}
@@ -538,20 +541,58 @@ export default function Show({ auth, paket, soals = [], bankSoals = [], filters 
                             <button onClick={() => setShowBankModal(false)} className="text-slate-400 hover:text-slate-700 p-1"><X size={20} /></button>
                         </div>
 
-                        {/* Pilih Subtes (hanya untuk tryout) */}
+                        {/* Filter Subtes (hanya untuk tryout) */}
                         {isTryout && (
-                            <div className="px-6 py-3 border-b border-slate-100 bg-amber-50/50">
-                                <p className="text-xs font-semibold text-slate-600 mb-2">Masukkan soal ke subtes:</p>
-                                <div className="flex flex-wrap gap-1.5">
-                                    {SUBTES_LIST.map((s) => (
-                                        <button key={s.kode} type="button" onClick={() => setBankSubtes(s.kode)}
-                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
-                                                bankSubtes === s.kode ? ACTIVE_TAB_STYLE[s.color] : `${SUBTES_STYLE[s.color]} hover:opacity-80`
-                                            }`}
+                            <div className="px-6 py-3 border-b border-slate-100 bg-slate-50/70">
+                                <div className="flex items-center justify-between mb-2">
+                                    <p className="text-xs font-semibold text-slate-700">Filter Berdasarkan Subtes:</p>
+                                    {bankFilterSubtes && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setBankFilterSubtes('')}
+                                            className="text-[11px] text-[#1b5e20] hover:underline font-semibold cursor-pointer"
                                         >
-                                            {s.kode}
+                                            Reset Filter
                                         </button>
-                                    ))}
+                                    )}
+                                </div>
+                                <div className="flex flex-wrap gap-1.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => setBankFilterSubtes('')}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                                            !bankFilterSubtes
+                                                ? 'bg-[#1b5e20] border-[#1b5e20] text-white shadow-xs'
+                                                : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                                        }`}
+                                    >
+                                        Semua ({bankSoals.length})
+                                    </button>
+                                    {SUBTES_LIST.map((s) => {
+                                        const countInSubtes = bankSoals.filter((b) => {
+                                            const sub = getSubtes(b);
+                                            const kat = (b.kategori || '').toLowerCase();
+                                            return (sub && sub.toLowerCase() === s.kode.toLowerCase()) || kat === s.kode.toLowerCase();
+                                        }).length;
+                                        const isCurrent = bankFilterSubtes?.toUpperCase() === s.kode.toUpperCase();
+                                        return (
+                                            <button
+                                                key={s.kode}
+                                                type="button"
+                                                onClick={() => setBankFilterSubtes(s.kode)}
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                                                    isCurrent
+                                                        ? 'bg-[#fcc526] border-[#fcc526] text-white shadow-xs'
+                                                        : 'bg-white border-slate-200 text-slate-600 hover:border-[#fcc526]/50'
+                                                }`}
+                                            >
+                                                <span>{s.kode}</span>
+                                                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold ${isCurrent ? 'bg-black/15 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                                                    {countInSubtes}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}
@@ -560,47 +601,71 @@ export default function Show({ auth, paket, soals = [], bankSoals = [], filters 
                         <div className="px-6 py-3 border-b border-slate-100 flex items-center gap-3">
                             <div className="flex-1 flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus-within:border-[#1b5e20] focus-within:ring-1 focus-within:ring-[#1b5e20] transition-colors">
                                 <Search size={15} className="text-slate-400 mr-2 shrink-0" />
-                                <input type="text" placeholder="Cari soal..." autoFocus
+                                <input type="text" placeholder="Cari isi soal, kategori, atau materi..." autoFocus
                                     className="bg-transparent border-none p-0 focus:ring-0 text-sm w-full outline-none text-slate-700 placeholder-slate-400"
                                     value={bankSearch} onChange={(e) => setBankSearch(e.target.value)} />
                             </div>
                             {filteredBank.length > 0 && (
                                 <button type="button" onClick={toggleAll}
-                                    className="flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-[#1b5e20] whitespace-nowrap transition-colors">
+                                    className="flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-[#1b5e20] whitespace-nowrap transition-colors cursor-pointer">
                                     <CheckSquare size={14} />
-                                    {selectedIds.length === filteredBank.length ? 'Batal Semua' : 'Pilih Semua'}
+                                    {filteredBank.length > 0 && filteredBank.every((s) => selectedIds.includes(s.id_soal)) ? 'Batal Semua' : 'Pilih Semua'}
                                 </button>
                             )}
                         </div>
 
                         {/* List Soal */}
-                        <div className="flex-1 overflow-y-auto px-6 py-3 space-y-1.5">
+                        <div className="flex-1 overflow-y-auto px-6 py-3 space-y-2">
                             {filteredBank.length > 0 ? filteredBank.map((soal) => {
                                 const isSelected = selectedIds.includes(soal.id_soal);
+                                const soalSubtes = getSubtes(soal);
                                 return (
                                     <label key={soal.id_soal}
-                                        className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                                            isSelected ? 'border-[#1b5e20] bg-[#f0faf0]' : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50'
+                                        className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                                            isSelected ? 'border-[#1b5e20] bg-[#f0faf0]' : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50/80'
                                         }`}
                                     >
-                                        <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(soal.id_soal)} className="mt-0.5 shrink-0 accent-[#1b5e20]" />
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm text-slate-700 line-clamp-2 leading-snug">
+                                        {/* Kolom 1: Checkbox */}
+                                        <input
+                                            type="checkbox"
+                                            checked={isSelected}
+                                            onChange={() => toggleSelect(soal.id_soal)}
+                                            className="w-4 h-4 rounded shrink-0 accent-[#1b5e20] cursor-pointer"
+                                        />
+
+                                        {/* Subtes Badge (untuk tryout atau jika punya subtes) */}
+                                        {isTryout && (
+                                            <div className="shrink-0">
+                                                <SubtesBadge kode={soalSubtes || soal.kategori} />
+                                            </div>
+                                        )}
+
+                                        {/* Kolom 2: Soal (Panjang) */}
+                                        <div className="flex-1 min-w-0 pr-2">
+                                            <p className="text-sm text-slate-700 line-clamp-2 leading-relaxed" title={soal.konten_soal?.replace(/<[^>]+>/g, '')}>
                                                 {soal.konten_soal?.replace(/<[^>]+>/g, '') || '(Soal tanpa teks)'}
                                             </p>
-                                            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                                                {soal.kategori && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#e8f5e9] text-[#1b5e20]">{soal.kategori}</span>}
-                                                <span className="text-[10px] text-slate-400 uppercase font-medium">
-                                                    {soal.jenis_soal === 'pilihan_ganda' ? 'PG' : 'Isian'}
+                                            {soal.materi && (
+                                                <span className="text-[11px] text-slate-400 mt-0.5 inline-block truncate max-w-full">
+                                                    Materi: {soal.materi}
                                                 </span>
-                                                {diffBadge(soal.tingkat_kesulitan)}
-                                            </div>
+                                            )}
+                                        </div>
+
+                                        {/* Kolom 3: PG/Isian & Tingkat Kesulitan */}
+                                        <div className="flex items-center gap-1.5 shrink-0">
+                                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 uppercase border border-slate-200/80">
+                                                {soal.jenis_soal === 'pilihan_ganda' ? 'PG' : 'Isian'}
+                                            </span>
+                                            {diffBadge(soal.tingkat_kesulitan)}
                                         </div>
                                     </label>
                                 );
                             }) : (
                                 <div className="text-center py-10 text-slate-400 text-sm">
-                                    {bankSearch ? `Tidak ada soal yang cocok dengan "${bankSearch}".` : 'Semua soal sudah ada di paket ini.'}
+                                    {bankSearch || bankFilterSubtes
+                                        ? 'Tidak ada soal yang cocok dengan filter yang dipilih.'
+                                        : 'Semua soal sudah ada di paket ini.'}
                                 </div>
                             )}
                         </div>
@@ -608,30 +673,30 @@ export default function Show({ auth, paket, soals = [], bankSoals = [], filters 
                         {/* Footer */}
                         <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between gap-3">
                             <div>
-                                {isTryout && bankSubtes && (
-                                    <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg border ${SUBTES_STYLE[subtesInfo(bankSubtes)?.color || 'slate']}`}>
-                                        Subtes: {bankSubtes}
-                                    </span>
-                                )}
-                                {!isTryout && (
-                                    <span className="text-xs text-slate-400">
-                                        {selectedIds.length > 0 ? `${selectedIds.length} soal dipilih` : 'Belum ada soal yang dipilih'}
-                                    </span>
-                                )}
+                                <span className="text-xs text-slate-500 font-medium">
+                                    {selectedIds.length > 0 ? (
+                                        <span className="text-[#1b5e20] font-semibold">
+                                            {selectedIds.length} soal dipilih {isTryout ? '(otomatis masuk ke subtes masing-masing)' : ''}
+                                        </span>
+                                    ) : (
+                                        'Belum ada soal yang dipilih'
+                                    )}
+                                </span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <button type="button" onClick={() => setShowBankModal(false)}
-                                    className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+                                    className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
                                     Batal
                                 </button>
                                 <button type="button" onClick={handleAddFromBank}
-                                    disabled={selectedIds.length === 0 || submittingBank || (isTryout && !bankSubtes)}
-                                    className={`px-5 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5 ${
-                                        isTryout ? 'bg-amber-500 hover:bg-amber-600' : 'bg-[#1b5e20] hover:bg-[#144718]'
-                                    }`}
+                                    disabled={selectedIds.length === 0 || submittingBank}
+                                    className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5 bg-[#1b5e20] hover:bg-[#144718] shadow-sm cursor-pointer"
                                 >
                                     <Plus size={14} />
-                                    {submittingBank ? 'Menambahkan...' : `Tambahkan ${selectedIds.length > 0 ? `(${selectedIds.length})` : ''} ke ${isTryout ? bankSubtes : 'Paket'}`}
+                                    {submittingBank
+                                        ? 'Menambahkan...'
+                                        : `Tambahkan ${selectedIds.length > 0 ? `(${selectedIds.length}) Soal` : ''} ke Paket`
+                                    }
                                 </button>
                             </div>
                         </div>

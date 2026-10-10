@@ -4,7 +4,7 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
-import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, Info } from 'lucide-react';
 import RichTextEditor from '@/Components/RichTextEditor';
 import SelectInput from '@/Components/SelectInput';
 import MultiSelect from '@/Components/MultiSelect';
@@ -164,9 +164,9 @@ export default function Create({ auth, pakets, defaultPaketId }) {
                                     <option value="medium">Medium (Sedang)</option>
                                     <option value="sulit">Sulit</option>
                                 </SelectInput>
-                                <p className="mt-1.5 text-[11px] text-slate-400 flex items-center gap-1">
-                                    <span>ℹ️</span>
-                                    Setelah soal dipakai di Try Out, tingkat kesulitan akan dihitung ulang otomatis berdasarkan indeks (P-value) hasil pengerjaan siswa dan akan menggantikan pilihan ini.
+                                <p className="mt-1.5 text-[11px] text-slate-400 flex items-center gap-1.5">
+                                    <Info size={14} className="shrink-0 text-slate-400" />
+                                    <span>Setelah soal dipakai di Try Out, tingkat kesulitan akan dihitung ulang otomatis berdasarkan indeks (P-value) hasil pengerjaan siswa dan akan menggantikan pilihan ini.</span>
                                 </p>
                                 <InputError message={errors.tingkat_kesulitan} className="mt-2" />
                             </div>

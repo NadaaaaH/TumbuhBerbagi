@@ -4,43 +4,83 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
-import { ArrowLeft, Save, Trash2, Plus, Search, Clock, Calendar, Shuffle, PauseCircle, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
+import SecondIcon from '@/Components/SecondIcon';
+import FirstIcon from '@/Components/FirstIcon';
+import { ArrowLeft, Save, Trash2, Plus, Clock, Calendar, Shuffle, PauseCircle, BookOpen, ChevronDown, ChevronUp, Info, RotateCcw } from 'lucide-react';
 import PopupModal from '@/Components/PopupModal';
 import ContainerWhite from '@/Components/ContainerWhite';
+import ContainerGreen from '@/Components/ContainerGreen';
 import PrimaryButton from '@/Components/PrimaryButton';
+import SearchBar from '@/Components/SearchBar';
+
+// ─── Konstanta Durasi Standar UTBK (Resmi 195 Menit / 3 Jam 15 Menit) ─────────
+const DEFAULT_UTBK_SUBTESTS = [
+    { kode: 'PU',    nama: 'Penalaran Umum',               menit: 30 },
+    { kode: 'PPU',   nama: 'Pengetahuan & Pemahaman Umum',  menit: 15 },
+    { kode: 'PBM',   nama: 'Pemahaman Bacaan & Menulis',    menit: 25 },
+    { kode: 'PK',    nama: 'Pengetahuan Kuantitatif',       menit: 20 },
+    { kode: 'LBI',   nama: 'Literasi Bahasa Indonesia',     menit: 45 },
+    { kode: 'LBING', nama: 'Literasi Bahasa Inggris',       menit: 20 },
+    { kode: 'PM',    nama: 'Penalaran Matematika',          menit: 40 },
+];
+const STORAGE_KEY_SUBTESTS = 'tb_admin_utbk_subtests';
+
+const getInitialSubtests = () => {
+    if (typeof window !== 'undefined') {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY_SUBTESTS);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed) && parsed.length === DEFAULT_UTBK_SUBTESTS.length) {
+                    return parsed;
+                }
+            }
+        } catch (e) {
+            console.error('Error reading saved subtests:', e);
+        }
+    }
+    return DEFAULT_UTBK_SUBTESTS;
+};
+
+// Helper mapping nama subtes ke kode singkat
+const getSubtesKode = (kategori, subtes) => {
+    const val = (subtes || kategori || '').toLowerCase().trim();
+    if (val.includes('kuantitatif') || val === 'pk') return 'PK';
+    if (val.includes('matematik') || val === 'pm') return 'PM';
+    if (val.includes('inggris') || val.includes('english') || val === 'lbing' || val === 'lbe') return 'LBING';
+    if (val.includes('indonesia') || val === 'lbi') return 'LBI';
+    if (val.includes('bacaan') || val.includes('menulis') || val === 'pbm') return 'PBM';
+    if (val.includes('pemahaman') || val.includes('pengetahuan umum') || val === 'ppu') return 'PPU';
+    if (val.includes('penalaran') || val === 'pu') return 'PU';
+    return (subtes || kategori || 'SOAL').toUpperCase().slice(0, 5);
+};
 
 export default function Edit({ auth, paket, soals = [] }) {
     const [searchQuery, setSearchQuery] = useState('');
-    const [showDurasi, setShowDurasi]   = useState(false);
+    const [showDurasi, setShowDurasi]   = useState(true);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+    const [subtests, setSubtests] = useState(getInitialSubtests);
+    const totalMenitSubtest       = subtests.reduce((acc, curr) => acc + (parseInt(curr.menit, 10) || 0), 0);
 
     const isTryout = paket?.tipe === 'tryout';
 
     // Tentukan mode awal untuk Try Out
     const toDateTime = (val) => val ? new Date(val).toISOString().slice(0, 16) : '';
+    const minDateTime = new Date(Date.now() + 60000).toISOString().slice(0, 16);
 
     const getInitialTryoutMode = () => {
-        if (!isTryout) return { mode: 'manual', subMode: 'aktif_sekarang' };
-        
-        // Jika tanggal_aktif sama dengan tanggal_mulai
+        if (!isTryout) return 'sesuai_mulai';
         if (paket?.tanggal_aktif && paket?.tanggal_mulai && toDateTime(paket.tanggal_aktif) === toDateTime(paket.tanggal_mulai)) {
-            return { mode: 'sesuai_mulai', subMode: 'aktif_sekarang' };
+            return 'sesuai_mulai';
         }
-        // Jika status aktif dan tanpa tanggal_aktif (atau sudah lewat)
-        if ((paket?.status === 'aktif' || paket?.status === 'Aktif') && !paket?.tanggal_aktif) {
-            return { mode: 'manual', subMode: 'aktif_sekarang' };
-        }
-        // Jika ada tanggal_aktif tersendiri
         if (paket?.tanggal_aktif) {
-            return { mode: 'manual', subMode: 'jadwal_kustom' };
+            return 'terjadwal';
         }
-        // Default nonaktif
-        return { mode: 'manual', subMode: 'nonaktif' };
+        return 'sesuai_mulai';
     };
 
-    const initialTryout = getInitialTryoutMode();
-    const [tryoutActMode, setTryoutActMode] = useState(initialTryout.mode); // 'sesuai_mulai' | 'manual'
-    const [manualSubMode, setManualSubMode] = useState(initialTryout.subMode); // 'aktif_sekarang' | 'jadwal_kustom' | 'nonaktif'
+    const [tryoutActMode, setTryoutActMode] = useState(getInitialTryoutMode);
 
     // Mode aktivasi untuk Latihan Soal
     const getInitialLatMode = () => {
@@ -56,13 +96,12 @@ export default function Edit({ auth, paket, soals = [] }) {
         s.materi?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-
     const { data, setData, put, processing, errors } = useForm({
         nama_paket:           paket?.nama_paket  || '',
         deskripsi:            paket?.deskripsi   || '',
         tipe:                 paket?.tipe        || 'latihan',
         status:               paket?.status      || 'aktif',
-        waktu_ujian:          paket?.waktu_ujian || 0,
+        waktu_ujian:          paket?.waktu_ujian || (isTryout ? totalMenitSubtest : 0),
         tanggal_aktif:        toDateTime(paket?.tanggal_aktif),
         // Tryout fields
         tanggal_mulai:        toDateTime(paket?.tanggal_mulai),
@@ -73,22 +112,35 @@ export default function Edit({ auth, paket, soals = [] }) {
         tanggal_tampil_hasil: toDateTime(paket?.tanggal_tampil_hasil),
     });
 
-    // Konstanta Durasi Standar UTBK (Resmi 195 Menit / 3 Jam 15 Menit)
-    const UTBK_SUBTESTS = [
-        { kode: 'PU',    nama: 'Penalaran Umum',               menit: 30 },
-        { kode: 'PPU',   nama: 'Pengetahuan & Pemahaman Umum',  menit: 15 },
-        { kode: 'PBM',   nama: 'Pemahaman Bacaan & Menulis',    menit: 25 },
-        { kode: 'PK',    nama: 'Pengetahuan Kuantitatif',       menit: 20 },
-        { kode: 'LBI',   nama: 'Literasi Bahasa Indonesia',     menit: 45 },
-        { kode: 'LBIng', nama: 'Literasi Bahasa Inggris',       menit: 20 },
-        { kode: 'PM',    nama: 'Penalaran Matematika',          menit: 40 },
-    ];
-    const TOTAL_MENIT = 195;
+    const handleSubtestChange = (kode, valStr) => {
+        const val = valStr === '' ? '' : Math.max(0, parseInt(valStr, 10) || 0);
+        const updated = subtests.map(s => s.kode === kode ? { ...s, menit: val } : s);
+        setSubtests(updated);
+        const newTotal = updated.reduce((acc, curr) => acc + (parseInt(curr.menit, 10) || 0), 0);
+        setData('waktu_ujian', newTotal);
+
+        try {
+            localStorage.setItem(STORAGE_KEY_SUBTESTS, JSON.stringify(updated));
+        } catch (e) {
+            console.error('Failed to save subtests to localStorage:', e);
+        }
+    };
+
+    const handleResetDefaultDurasi = () => {
+        setSubtests(DEFAULT_UTBK_SUBTESTS);
+        const defTotal = DEFAULT_UTBK_SUBTESTS.reduce((acc, curr) => acc + (parseInt(curr.menit, 10) || 0), 0);
+        setData('waktu_ujian', defTotal);
+        try {
+            localStorage.setItem(STORAGE_KEY_SUBTESTS, JSON.stringify(DEFAULT_UTBK_SUBTESTS));
+        } catch (e) {
+            console.error('Failed to reset subtests in localStorage:', e);
+        }
+    };
 
     const latMode = [
         { value: 'aktif',     label: 'Aktif Sekarang' },
         { value: 'nonaktif',  label: 'Nonaktif'        },
-        { value: 'terjadwal', label: '⏰ Jadwalkan'    },
+        { value: 'terjadwal', label: 'Jadwalkan'       },
     ];
 
     const handleTryoutActMode = (mode) => {
@@ -100,7 +152,11 @@ export default function Edit({ auth, paket, soals = [] }) {
                 tanggal_aktif: d.tanggal_mulai || '',
             }));
         } else {
-            handleManualSubMode(manualSubMode);
+            setData(d => ({
+                ...d,
+                status: 'nonaktif',
+                tanggal_aktif: d.tanggal_aktif || minDateTime,
+            }));
         }
     };
 
@@ -231,26 +287,24 @@ export default function Edit({ auth, paket, soals = [] }) {
                                 <InputError message={errors.nama_paket} className="mt-2" />
                             </div>
 
-                            {/* Tipe — hanya tampil sebagai label read-only di edit */}
-                            <div>
-                                <InputLabel value="Tipe Paket" />
-                                <div className={`mt-1.5 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold border ${
-                                    isTryout
-                                        ? 'bg-amber-50 border-amber-200 text-amber-700'
-                                        : 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                                }`}>
-                                    {isTryout ? '🎯 Try Out UTBK' : '📚 Latihan Soal'}
+                            {/* Tipe — hanya untuk latihan jika bukan tryout */}
+                            {!isTryout && (
+                                <div>
+                                    <InputLabel value="Tipe Paket" />
+                                    <div className="mt-1.5 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold border bg-emerald-50 border-emerald-200 text-emerald-700">
+                                        Latihan Soal
+                                    </div>
+                                    <p className="text-xs text-slate-400 mt-1">Tipe tidak bisa diubah setelah paket dibuat.</p>
                                 </div>
-                                <p className="text-xs text-slate-400 mt-1">Tipe tidak bisa diubah setelah paket dibuat.</p>
-                                <input type="hidden" name="tipe" value={data.tipe} />
-                            </div>
+                            )}
+                            <input type="hidden" name="tipe" value={data.tipe} />
 
                             {/* Deskripsi */}
                             <div>
                                 <InputLabel htmlFor="deskripsi" value="Deskripsi" />
                                 <textarea
                                     id="deskripsi"
-                                    className="border-gray-300 focus:border-[#1b5e20] focus:ring-[#1b5e20] rounded-md shadow-sm mt-1 block w-full"
+                                    className="rounded-xl border-slate-300 focus:border-[#1b5e20] focus:ring-[#1b5e20] shadow-sm mt-1 block w-full text-sm"
                                     rows={3}
                                     value={data.deskripsi}
                                     onChange={(e) => setData('deskripsi', e.target.value)}
@@ -262,14 +316,25 @@ export default function Edit({ auth, paket, soals = [] }) {
                             {isTryout ? (
                                 <>
                                     {/* Tanggal Mulai & Selesai */}
-                                    <SectionCard icon={Calendar} title="Jadwal Pengerjaan" accent="blue">
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-3">
+                                            <SecondIcon icon={Calendar} iconSize={18} />
+                                            <div>
+                                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
+                                                    Jadwal Pengerjaan
+                                                </h3>
+                                                <p className="text-xs text-slate-500">
+                                                    Siswa hanya bisa mengerjakan try out dalam rentang waktu ini.
+                                                </p>
+                                            </div>
+                                        </div>
                                         <div className="grid md:grid-cols-2 gap-4">
                                             <div>
                                                 <InputLabel htmlFor="tanggal_mulai" value="Tanggal & Jam Mulai" />
                                                 <TextInput
                                                     id="tanggal_mulai"
                                                     type="datetime-local"
-                                                    className="mt-1 block w-full"
+                                                    className="mt-1 block w-full text-sm"
                                                     value={data.tanggal_mulai}
                                                     onChange={(e) => {
                                                         const val = e.target.value;
@@ -288,7 +353,7 @@ export default function Edit({ auth, paket, soals = [] }) {
                                                 <TextInput
                                                     id="tanggal_selesai"
                                                     type="datetime-local"
-                                                    className="mt-1 block w-full"
+                                                    className="mt-1 block w-full text-sm"
                                                     value={data.tanggal_selesai}
                                                     min={data.tanggal_mulai}
                                                     onChange={(e) => setData('tanggal_selesai', e.target.value)}
@@ -297,84 +362,167 @@ export default function Edit({ auth, paket, soals = [] }) {
                                                 <InputError message={errors.tanggal_selesai} className="mt-2" />
                                             </div>
                                         </div>
-                                    </SectionCard>
+                                    </div>
 
-                                    {/* Durasi (info saja) */}
-                                    <SectionCard icon={Clock} title="Durasi Pengerjaan" accent="slate">
-                                        <div className="flex items-center justify-between -mt-2">
-                                            <p className="text-xs text-slate-500">
-                                                Standar UTBK — <span className="font-semibold text-slate-700">Total {TOTAL_MENIT} menit</span>
-                                            </p>
-                                            <button type="button" onClick={() => setShowDurasi(!showDurasi)}
-                                                className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1">
-                                                {showDurasi ? 'Sembunyikan' : 'Lihat detail'}
-                                                {showDurasi ? <ChevronUp size={13}/> : <ChevronDown size={13}/>}
-                                            </button>
+                                    {/* Durasi Pengerjaan */}
+                                    <ContainerGreen className="cursor-default hover:translate-y-0 !p-6 sm:!p-6 !rounded-2xl">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-3">
+                                                <FirstIcon
+                                                    icon={Clock}
+                                                    iconSize={18}
+                                                    className="!w-9 !h-9 !rounded-xl !bg-[#fcc526] !text-slate-900 shadow-md group-hover:!bg-[#eab522] group-hover:!text-slate-950"
+                                                />
+                                                <h3 className="text-sm font-bold text-white uppercase tracking-wide">
+                                                    Durasi Pengerjaan
+                                                </h3>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <PrimaryButton
+                                                    type="button"
+                                                    onClick={handleResetDefaultDurasi}
+                                                    title="Kembalikan durasi ke standar UTBK (195 Menit)"
+                                                    className="gap-1.5 !py-1.5 !px-3.5 !text-xs font-semibold !rounded-xl !bg-[#144718] hover:!bg-[#0d2e0f] !border-0 text-white shadow-xs cursor-pointer"
+                                                >
+                                                    <RotateCcw size={12} />
+                                                    Reset Standar
+                                                </PrimaryButton>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowDurasi(!showDurasi)}
+                                                    className="text-xs text-emerald-100 hover:text-white flex items-center gap-1 transition-colors cursor-pointer font-medium ml-1"
+                                                >
+                                                    {showDurasi ? 'Sembunyikan' : 'Sesuaikan'}
+                                                    {showDurasi ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                                                </button>
+                                            </div>
                                         </div>
+
+                                        <div className="mb-4">
+                                            <p className="text-xs text-emerald-100">
+                                                Total Durasi: <span className="font-bold text-white">{data.waktu_ujian || totalMenitSubtest} Menit</span>
+                                                <span className="text-[11px] text-emerald-200/80 ml-1.5">
+                                                    ({Math.floor((data.waktu_ujian || totalMenitSubtest) / 60)}j {(data.waktu_ujian || totalMenitSubtest) % 60}m)
+                                                </span>
+                                            </p>
+                                        </div>
+
                                         {showDurasi && (
-                                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-1">
-                                                {UTBK_SUBTESTS.map(s => (
-                                                    <div key={s.kode} className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-center">
-                                                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{s.kode}</div>
-                                                        <div className="text-xs text-slate-600 mt-0.5 leading-snug">{s.nama}</div>
-                                                        <div className="text-sm font-bold text-[#1b5e20] mt-1">{s.menit} mnt</div>
-                                                    </div>
-                                                ))}
+                                            <div className="space-y-4">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-3.5">
+                                                    {subtests.map(s => (
+                                                        <ContainerWhite
+                                                            key={s.kode}
+                                                            className="!p-3.5 !rounded-xl flex items-center justify-between hover:border-[#1b5e20]/40 transition-colors shadow-sm"
+                                                        >
+                                                            <div className="min-w-0 pr-2">
+                                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#fcc526] text-white uppercase tracking-wider shadow-2xs">
+                                                                    {s.kode}
+                                                                </span>
+                                                                <p className="text-xs font-medium text-slate-700 mt-1.5 truncate" title={s.nama}>
+                                                                    {s.nama}
+                                                                </p>
+                                                            </div>
+                                                            <div className="flex items-center gap-1 shrink-0">
+                                                                <TextInput
+                                                                    type="number"
+                                                                    min="1"
+                                                                    max="240"
+                                                                    value={s.menit}
+                                                                    onChange={(e) => handleSubtestChange(s.kode, e.target.value)}
+                                                                    className="!w-16 !h-8 !text-center !text-xs font-bold text-[#1b5e20] !py-1 !px-1.5 shadow-xs"
+                                                                />
+                                                                <span className="text-xs text-slate-400 font-medium">mnt</span>
+                                                            </div>
+                                                        </ContainerWhite>
+                                                    ))}
+                                                </div>
+
+                                                <div className="flex items-start gap-2 text-xs text-white/90 pt-1">
+                                                    <Info size={15} className="shrink-0 text-[#fcc526] mt-0.5" />
+                                                    <span className="leading-relaxed">
+                                                        Durasi per subtes dapat disesuaikan. Nilai terakhir yang Anda gunakan akan <strong className="text-white font-bold">otomatis tersimpan</strong> dan digunakan kembali untuk paket Try Out berikutnya.
+                                                    </span>
+                                                </div>
                                             </div>
                                         )}
-                                        <p className="text-[11px] text-slate-400">ℹ️ Durasi per subtes tidak bisa diubah karena mengikuti standar resmi SNPMB/UTBK.</p>
-                                    </SectionCard>
+                                        <InputError message={errors.waktu_ujian} className="mt-2 !text-amber-200" />
+                                    </ContainerGreen>
 
                                     {/* Randomisasi */}
-                                    <SectionCard icon={Shuffle} title="Pengaturan Soal" accent="slate">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <p className="text-sm font-medium text-slate-700">Randomisasi Soal</p>
-                                                <p className="text-xs text-slate-500 mt-0.5">Urutan soal dan subtes diacak untuk setiap siswa</p>
+                                    <div>
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div className="flex items-center gap-3">
+                                                <SecondIcon icon={Shuffle} iconSize={18} />
+                                                <div>
+                                                    <p className="text-sm font-bold text-slate-800">Randomisasi Soal</p>
+                                                    <p className="text-xs text-slate-500 mt-0.5">Urutan soal dan subtes diacak untuk setiap siswa</p>
+                                                </div>
                                             </div>
                                             <ToggleSwitch id="is_random" checked={data.is_random} onChange={(v) => setData('is_random', v)} />
                                         </div>
                                         <InputError message={errors.is_random} className="mt-1" />
-                                    </SectionCard>
+                                    </div>
 
                                     {/* Bisa Pause */}
-                                    <SectionCard icon={PauseCircle} title="Aturan Pengerjaan" accent="slate">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <p className="text-sm font-medium text-slate-700">Siswa Bisa Pause?</p>
-                                                <p className="text-xs text-slate-500 mt-0.5">Jika diaktifkan, siswa bisa menjeda pengerjaan dan melanjutkan nanti</p>
+                                    <div>
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div className="flex items-center gap-3">
+                                                <SecondIcon icon={PauseCircle} iconSize={18} />
+                                                <div>
+                                                    <p className="text-sm font-bold text-slate-800">Siswa Bisa Pause?</p>
+                                                    <p className="text-xs text-slate-500 mt-0.5">Jika diaktifkan, siswa bisa menjeda pengerjaan dan melanjutkan nanti</p>
+                                                </div>
                                             </div>
                                             <ToggleSwitch id="bisa_pause" checked={data.bisa_pause} onChange={(v) => setData('bisa_pause', v)} />
                                         </div>
                                         <InputError message={errors.bisa_pause} className="mt-1" />
-                                    </SectionCard>
+                                    </div>
 
                                     {/* Hasil & Pembahasan */}
-                                    <SectionCard icon={BookOpen} title="Hasil & Pembahasan" accent="green">
-                                        <p className="text-xs text-slate-500 -mt-2">Kapan hasil skor dan pembahasan soal ditampilkan ke siswa?</p>
-                                        <div className="flex flex-col sm:flex-row gap-3">
-                                            {[
-                                                { value: 'setelah_selesai', label: 'Setelah Siswa Selesai', desc: 'Langsung muncul begitu siswa submit jawaban' },
-                                                { value: 'terjadwal',       label: '📅 Terjadwal (Bareng-bareng)', desc: 'Semua siswa bisa lihat hasil di waktu yang sama' },
-                                            ].map(opt => (
-                                                <button key={opt.value} type="button" onClick={() => setData('tampil_hasil', opt.value)}
-                                                    className={`flex-1 text-left px-4 py-3 rounded-xl border-2 transition-all ${
-                                                        data.tampil_hasil === opt.value
-                                                            ? 'border-emerald-500 bg-emerald-50 shadow-sm'
-                                                            : 'border-slate-200 bg-white hover:border-slate-300'
-                                                    }`}>
-                                                    <div className="font-semibold text-sm text-slate-800">{opt.label}</div>
-                                                    <div className="text-xs text-slate-500 mt-0.5">{opt.desc}</div>
-                                                </button>
-                                            ))}
+                                    <div className="space-y-4 pt-3">
+                                        <div className="flex items-center gap-3">
+                                            <SecondIcon icon={BookOpen} iconSize={18} />
+                                            <div>
+                                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
+                                                    Hasil &amp; Pembahasan
+                                                </h3>
+                                                <p className="text-xs text-slate-500">
+                                                    Kapan hasil skor dan pembahasan soal ditampilkan ke siswa?
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col sm:flex-row gap-6 pt-1">
+                                            <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                                                <input
+                                                    type="radio"
+                                                    name="tampil_hasil"
+                                                    value="setelah_selesai"
+                                                    checked={data.tampil_hasil === 'setelah_selesai'}
+                                                    onChange={() => setData('tampil_hasil', 'setelah_selesai')}
+                                                    className="w-4 h-4 text-[#1b5e20] border-slate-300 focus:ring-[#1b5e20] focus:ring-offset-0 cursor-pointer"
+                                                />
+                                                <span className="text-sm font-medium text-slate-700">Setelah Siswa Selesai</span>
+                                            </label>
+                                            <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                                                <input
+                                                    type="radio"
+                                                    name="tampil_hasil"
+                                                    value="terjadwal"
+                                                    checked={data.tampil_hasil === 'terjadwal'}
+                                                    onChange={() => setData('tampil_hasil', 'terjadwal')}
+                                                    className="w-4 h-4 text-[#1b5e20] border-slate-300 focus:ring-[#1b5e20] focus:ring-offset-0 cursor-pointer"
+                                                />
+                                                <span className="text-sm font-medium text-slate-700">Terjadwal (Bersamaan)</span>
+                                            </label>
                                         </div>
                                         {data.tampil_hasil === 'terjadwal' && (
-                                            <div className="mt-3 p-4 bg-white border border-emerald-200 rounded-xl">
+                                            <div className="pt-1">
                                                 <InputLabel htmlFor="tanggal_tampil_hasil" value="Jadwal Tampil Hasil" />
                                                 <TextInput
                                                     id="tanggal_tampil_hasil"
                                                     type="datetime-local"
-                                                    className="mt-1 block w-full sm:w-72"
+                                                    className="mt-1 block w-full sm:w-72 text-sm"
                                                     value={data.tanggal_tampil_hasil}
                                                     min={data.tanggal_selesai}
                                                     onChange={(e) => setData('tanggal_tampil_hasil', e.target.value)}
@@ -384,138 +532,82 @@ export default function Edit({ auth, paket, soals = [] }) {
                                             </div>
                                         )}
                                         <InputError message={errors.tampil_hasil} className="mt-1" />
-                                    </SectionCard>
+                                    </div>
 
                                     {/* Status Aktivasi (tryout) */}
-                                    <SectionCard icon={Clock} title="Status Aktivasi" accent="amber">
-                                        <p className="text-xs text-slate-500 -mt-2">
-                                            Kapan paket Try Out ini mulai terlihat oleh siswa di antarmukanya?
-                                        </p>
-
-                                        <div className="flex gap-3 flex-wrap">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleTryoutActMode('sesuai_mulai')}
-                                                className={`px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all flex items-center gap-2 ${
-                                                    tryoutActMode === 'sesuai_mulai'
-                                                        ? 'bg-amber-500 border-amber-500 text-white shadow-sm'
-                                                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                                                }`}
-                                            >
-                                                <Calendar size={15} /> Sesuai Awal Pembukaan TO
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                onClick={() => handleTryoutActMode('manual')}
-                                                className={`px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all flex items-center gap-2 ${
-                                                    tryoutActMode === 'manual'
-                                                        ? 'bg-amber-500 border-amber-500 text-white shadow-sm'
-                                                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                                                }`}
-                                            >
-                                                <Clock size={15} /> Manual (Atur Sendiri)
-                                            </button>
+                                    <div className="space-y-4 pt-3">
+                                        <div className="flex items-center gap-3">
+                                            <SecondIcon icon={Clock} iconSize={18} />
+                                            <div>
+                                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
+                                                    Status Aktivasi
+                                                </h3>
+                                                <p className="text-xs text-slate-500">
+                                                    Kapan paket Try Out ini mulai terlihat oleh siswa di antarmukanya?
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col sm:flex-row gap-6 pt-1">
+                                            <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                                                <input
+                                                    type="radio"
+                                                    name="tryout_act_mode"
+                                                    value="sesuai_mulai"
+                                                    checked={tryoutActMode === 'sesuai_mulai'}
+                                                    onChange={() => handleTryoutActMode('sesuai_mulai')}
+                                                    className="w-4 h-4 text-[#1b5e20] border-slate-300 focus:ring-[#1b5e20] focus:ring-offset-0 cursor-pointer"
+                                                />
+                                                <span className="text-sm font-medium text-slate-700">
+                                                    Sesuai Jadwal Pengerjaan TO
+                                                </span>
+                                            </label>
+                                            <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                                                <input
+                                                    type="radio"
+                                                    name="tryout_act_mode"
+                                                    value="terjadwal"
+                                                    checked={tryoutActMode === 'terjadwal'}
+                                                    onChange={() => handleTryoutActMode('terjadwal')}
+                                                    className="w-4 h-4 text-[#1b5e20] border-slate-300 focus:ring-[#1b5e20] focus:ring-offset-0 cursor-pointer"
+                                                />
+                                                <span className="text-sm font-medium text-slate-700">
+                                                    Terjadwal
+                                                </span>
+                                            </label>
                                         </div>
 
-                                        {/* Penjelasan jika Sesuai Awal Pembukaan TO */}
                                         {tryoutActMode === 'sesuai_mulai' && (
-                                            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs space-y-1">
-                                                <p className="font-bold text-amber-900">
-                                                    Otomatis Aktif Saat Pembukaan Try Out
-                                                </p>
-                                                <p className="text-amber-800 leading-relaxed">
-                                                    Paket ini akan otomatis mulai terlihat oleh siswa pada tanggal & jam mulai pengerjaan:{' '}
-                                                    <strong>
-                                                        {data.tanggal_mulai
-                                                            ? new Date(data.tanggal_mulai).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' }) + ' WIB'
-                                                            : '(Sesuai Tanggal & Jam Mulai di atas)'}
-                                                    </strong>
-                                                    . Sebelum waktu tersebut, paket belum muncul di daftar Try Out siswa.
-                                                </p>
+                                            <div className="pt-1">
+                                                <InputLabel htmlFor="tanggal_aktif_preview" value="Jadwal Paket Terlihat Siswa" />
+                                                <TextInput
+                                                    id="tanggal_aktif_preview"
+                                                    type="datetime-local"
+                                                    className="mt-1 block w-full sm:w-72 text-sm bg-slate-100/70 text-slate-500 cursor-not-allowed border-slate-200"
+                                                    value={data.tanggal_mulai || ''}
+                                                    disabled
+                                                    readOnly
+                                                />
                                             </div>
                                         )}
 
-                                        {/* Opsi jika Manual */}
-                                        {tryoutActMode === 'manual' && (
-                                            <div className="mt-3 p-4 bg-white border border-amber-200 rounded-xl space-y-3">
-                                                <div>
-                                                    <p className="text-xs font-semibold text-slate-700 mb-2">
-                                                        Pilihan Aktivasi Manual:
-                                                    </p>
-                                                    <div className="flex gap-2 flex-wrap">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleManualSubMode('aktif_sekarang')}
-                                                            className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all ${
-                                                                manualSubMode === 'aktif_sekarang'
-                                                                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
-                                                                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                                                            }`}
-                                                        >
-                                                            ✓ Aktifkan Sekarang
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleManualSubMode('jadwal_kustom')}
-                                                            className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all ${
-                                                                manualSubMode === 'jadwal_kustom'
-                                                                    ? 'bg-amber-500 border-amber-500 text-white shadow-sm'
-                                                                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                                                            }`}
-                                                        >
-                                                            ⏰ Jadwalkan Tanggal Khusus
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleManualSubMode('nonaktif')}
-                                                            className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all ${
-                                                                manualSubMode === 'nonaktif'
-                                                                    ? 'bg-slate-600 border-slate-600 text-white shadow-sm'
-                                                                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                                                            }`}
-                                                        >
-                                                            Nonaktif (Draft)
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                {manualSubMode === 'aktif_sekarang' && (
-                                                    <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 leading-relaxed">
-                                                        ✓ <strong>Paket langsung aktif dan terlihat oleh siswa dari sekarang.</strong>
-                                                        <br />
-                                                        Jika tanggal mulai ujian ({data.tanggal_mulai ? new Date(data.tanggal_mulai).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) + ' WIB' : 'yang ditentukan'}) masih di masa mendatang, di antarmuka siswa card akan otomatis menampilkan status tombol <strong>"Belum Dimulai"</strong>.
-                                                    </div>
-                                                )}
-
-                                                {manualSubMode === 'jadwal_kustom' && (
-                                                    <div className="space-y-2 pt-1">
-                                                        <InputLabel htmlFor="tanggal_aktif" value="Jadwal Paket Mulai Terlihat Siswa" />
-                                                        <TextInput
-                                                            id="tanggal_aktif"
-                                                            type="datetime-local"
-                                                            className="block w-full sm:w-72 text-sm"
-                                                            value={data.tanggal_aktif}
-                                                            onChange={(e) => setData('tanggal_aktif', e.target.value)}
-                                                            required
-                                                        />
-                                                        <p className="text-[11px] text-slate-500">
-                                                            Disarankan diatur sebelum tanggal mulai pengerjaan agar siswa dapat melihat jadwal Try Out lebih awal dengan status "Belum Dimulai".
-                                                        </p>
-                                                        <InputError message={errors.tanggal_aktif} className="mt-1" />
-                                                    </div>
-                                                )}
-
-                                                {manualSubMode === 'nonaktif' && (
-                                                    <p className="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl p-3">
-                                                        Paket tersimpan sebagai draft dan belum terlihat sama sekali oleh siswa.
-                                                    </p>
-                                                )}
+                                        {tryoutActMode === 'terjadwal' && (
+                                            <div className="pt-1">
+                                                <InputLabel htmlFor="tanggal_aktif" value="Jadwal Paket Terlihat Siswa" />
+                                                <TextInput
+                                                    id="tanggal_aktif"
+                                                    type="datetime-local"
+                                                    className="mt-1 block w-full sm:w-72 text-sm"
+                                                    value={data.tanggal_aktif}
+                                                    min={minDateTime}
+                                                    max={data.tanggal_mulai || undefined}
+                                                    onChange={(e) => setData('tanggal_aktif', e.target.value)}
+                                                    required
+                                                />
+                                                <InputError message={errors.tanggal_aktif} className="mt-2" />
                                             </div>
                                         )}
-
                                         <InputError message={errors.status} className="mt-1" />
-                                    </SectionCard>
+                                    </div>
                                 </>
                             ) : (
                                 /* ══ LATIHAN SOAL FIELDS ══ */
@@ -569,7 +661,7 @@ export default function Edit({ auth, paket, soals = [] }) {
                                         )}
                                         {statusMode === 'aktif' && (
                                             <p className="mt-3 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 inline-block">
-                                                ✓ Paket langsung aktif dan bisa diakses siswa.
+                                                Paket langsung aktif dan bisa diakses siswa.
                                             </p>
                                         )}
                                         {statusMode === 'nonaktif' && (
@@ -599,16 +691,14 @@ export default function Edit({ auth, paket, soals = [] }) {
                                     >
                                         Batal
                                     </Link>
-                                    <button
+                                    <PrimaryButton
                                         type="submit"
                                         disabled={processing}
-                                        className={`text-white px-8 py-2.5 rounded-xl font-medium transition-colors flex items-center gap-2 disabled:opacity-50 ${
-                                            isTryout ? 'bg-amber-500 hover:bg-amber-600' : 'bg-[#1b5e20] hover:bg-[#508953]'
-                                        }`}
+                                        className="gap-2 !py-2.5 !px-6 text-sm font-semibold !rounded-xl shadow-sm hover:shadow"
                                     >
                                         <Save size={18} />
                                         Simpan Perubahan
-                                    </button>
+                                    </PrimaryButton>
                                 </div>
                             </div>
                         </form>
@@ -635,14 +725,12 @@ export default function Edit({ auth, paket, soals = [] }) {
                         </div>
 
                         {/* Search */}
-                        <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 mb-4 focus-within:border-[#1b5e20] focus-within:ring-1 focus-within:ring-[#1b5e20] transition-colors">
-                            <Search size={16} className="text-slate-400 mr-2 shrink-0" />
-                            <input
-                                type="text"
-                                placeholder="Cari soal..."
-                                className="bg-transparent border-none p-0 focus:ring-0 text-sm text-slate-700 w-full placeholder-slate-400 outline-none"
+                        <div className="mb-4">
+                            <SearchBar
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Cari soal..."
+                                className="w-full"
                             />
                         </div>
 
@@ -652,46 +740,36 @@ export default function Edit({ auth, paket, soals = [] }) {
                                 filteredSoals.map((soal, idx) => (
                                     <div
                                         key={soal.id_soal}
-                                        className="flex items-start gap-3 p-3 rounded-xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-all group"
+                                        className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50/80 transition-all group"
                                     >
-                                        {/* Nomor */}
-                                        <span className="text-xs font-bold text-slate-400 w-5 shrink-0 pt-0.5">
+                                        {/* Kolom 1: Nomor */}
+                                        <span className="text-xs font-bold text-slate-400 w-5 shrink-0">
                                             {idx + 1}.
                                         </span>
 
-                                        {/* Konten */}
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm text-slate-700 line-clamp-2 leading-snug">
+                                        {/* Kolom 2: Soal (Panjang) */}
+                                        <div className="flex-1 min-w-0 pr-2">
+                                            <p className="text-sm text-slate-700 line-clamp-2 leading-relaxed" title={soal.konten_soal?.replace(/<[^>]+>/g, '')}>
                                                 {soal.konten_soal?.replace(/<[^>]+>/g, '') || '(Soal tanpa teks)'}
                                             </p>
-                                            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                                                {soal.kategori && (
-                                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#e8f5e9] text-[#1b5e20]">
-                                                        {soal.kategori}
-                                                    </span>
-                                                )}
-                                                <span className="text-[10px] text-slate-400 uppercase font-medium">
-                                                    {soal.jenis_soal === 'pilihan_ganda' ? 'PG' : 'Isian'}
-                                                </span>
-                                                {soal.tingkat_kesulitan && (
-                                                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${soal.tingkat_kesulitan === 'mudah' ? 'bg-emerald-50 text-emerald-700' :
-                                                        soal.tingkat_kesulitan === 'sulit' ? 'bg-rose-50 text-rose-700' :
-                                                            'bg-amber-50 text-amber-700'
-                                                        }`}>
-                                                        {soal.tingkat_kesulitan === 'mudah' ? 'Mudah' : soal.tingkat_kesulitan === 'sulit' ? 'Sulit' : 'Sedang'}
-                                                    </span>
-                                                )}
-                                            </div>
                                         </div>
 
-                                        {/* Edit link */}
-                                        <Link
-                                            href={route('soal.edit', soal.id_soal)}
-                                            className="shrink-0 text-slate-300 hover:text-[#1b5e20] transition-colors opacity-0 group-hover:opacity-100"
-                                            title="Edit soal"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                                        </Link>
+                                        {/* Kolom 3: Nama Subtes (Kuning Putih) & PG/Isian */}
+                                        <div className="flex items-center gap-1.5 shrink-0">
+                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#fcc526] text-white uppercase tracking-wider shadow-2xs">
+                                                {getSubtesKode(soal.kategori, soal.pivot?.subtes)}
+                                            </span>
+                                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 uppercase border border-slate-200/80">
+                                                {soal.jenis_soal === 'pilihan_ganda' ? 'PG' : 'Isian'}
+                                            </span>
+                                            <Link
+                                                href={route('soal.edit', soal.id_soal)}
+                                                className="shrink-0 text-slate-300 hover:text-[#1b5e20] transition-colors ml-1 p-0.5 opacity-0 group-hover:opacity-100"
+                                                title="Edit soal"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                                            </Link>
+                                        </div>
                                     </div>
                                 ))
                             ) : (

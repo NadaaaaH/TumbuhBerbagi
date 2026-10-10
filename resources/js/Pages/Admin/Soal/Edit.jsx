@@ -4,7 +4,7 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
-import { ArrowLeft, Save, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Save, AlertCircle, Info } from 'lucide-react';
 import RichTextEditor from '@/Components/RichTextEditor';
 import SelectInput from '@/Components/SelectInput';
 import MultiSelect from '@/Components/MultiSelect';
@@ -202,9 +202,9 @@ export default function Edit({ auth, soal, pakets, referrer }) {
                                         </div>
                                     </div>
                                 ) : (
-                                    <p className="mt-1.5 text-[11px] text-slate-400 flex items-center gap-1">
-                                        <span>ℹ️</span>
-                                        Setelah soal dipakai di Try Out, tingkat kesulitan akan dihitung ulang otomatis (P-value) dan menggantikan pilihan manual di atas.
+                                    <p className="mt-1.5 text-[11px] text-slate-400 flex items-center gap-1.5">
+                                        <Info size={14} className="shrink-0 text-slate-400" />
+                                        <span>Setelah soal dipakai di Try Out, tingkat kesulitan akan dihitung ulang otomatis (P-value) dan menggantikan pilihan manual di atas.</span>
                                     </p>
                                 )}
                                 <InputError message={errors.tingkat_kesulitan} className="mt-2" />

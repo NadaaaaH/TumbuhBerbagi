@@ -130,9 +130,12 @@ class PaketLatihanController extends Controller
             $validated['tanggal_aktif'] = null;
         }
 
-        // Bersihkan field tryout jika tipe = latihan, set standar 195 menit untuk tryout
+        // Bersihkan field tryout jika tipe = latihan, atau gunakan durasi tryout dari input
         if ($isTryout) {
-            $validated['waktu_ujian'] = 195;
+            $validated['waktu_ujian'] = (int) ($request->input('waktu_ujian') ?: 195);
+            if ($validated['waktu_ujian'] <= 0) {
+                $validated['waktu_ujian'] = 195;
+            }
         } else {
             $validated['tanggal_mulai']        = null;
             $validated['tanggal_selesai']      = null;
@@ -222,9 +225,12 @@ class PaketLatihanController extends Controller
             $validated['tanggal_aktif'] = null;
         }
 
-        // Bersihkan field tryout jika tipe = latihan, set standar 195 menit untuk tryout
+        // Bersihkan field tryout jika tipe = latihan, atau gunakan durasi tryout dari input
         if ($isTryout) {
-            $validated['waktu_ujian'] = 195;
+            $validated['waktu_ujian'] = (int) ($request->input('waktu_ujian') ?: 195);
+            if ($validated['waktu_ujian'] <= 0) {
+                $validated['waktu_ujian'] = 195;
+            }
         } else {
             $validated['tanggal_mulai']        = null;
             $validated['tanggal_selesai']      = null;
@@ -287,10 +293,10 @@ class PaketLatihanController extends Controller
         $request->validate([
             'soal_ids'   => 'required|array|min:1',
             'soal_ids.*' => 'exists:soal,id_soal',
-            'subtes'     => ($isTryout ? 'required' : 'nullable') . '|string|in:' . implode(',', $validSubtes),
+            'subtes'     => 'nullable|string|in:' . implode(',', $validSubtes),
         ]);
 
-        $subtes = $request->input('subtes'); // null untuk latihan soal
+        $subtes = $request->input('subtes'); // opsional / null untuk latihan soal
 
         // Buat array pivot: setiap id_soal disertai subtes (otomatis sinkron dengan kategori asli soal)
         $soals = \App\Models\Soal::whereIn('id_soal', $request->soal_ids)->get()->keyBy('id_soal');
@@ -301,7 +307,7 @@ class PaketLatihanController extends Controller
                 }
                 $soal = $soals->get($id);
                 $mapped = $soal ? \App\Http\Controllers\Siswa\TryoutController::mapKategoriToSubtes($soal->kategori) : null;
-                return [$id => ['subtes' => $mapped ?: $subtes]];
+                return [$id => ['subtes' => $mapped ?: ($subtes ?: 'PU')]];
             })
             ->all();
 
