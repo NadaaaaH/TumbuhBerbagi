@@ -16,10 +16,16 @@ use App\Http\Controllers\Siswa\KegiatanController as SiswaKegiatanController;
 use App\Http\Controllers\Siswa\LatihanController as SiswaLatihanController;
 use App\Http\Controllers\Siswa\TryoutController as SiswaTryoutController;
 use App\Http\Controllers\Siswa\NotificationController as SiswaNotificationController;
+use App\Http\Controllers\MediaController;
 use App\Models\Kegiatan;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+// Media storage route — bypass ISP blocking on *.r2.dev
+Route::get('/media/{path}', [MediaController::class, 'show'])
+    ->where('path', '.*')
+    ->name('media.show');
 
 // Public route — accessible without login
 Route::get('/kegiatan/{id}', [KegiatanPublikController::class, 'show'])->name('siswa.kegiatan.show');
