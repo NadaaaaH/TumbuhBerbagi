@@ -110,7 +110,7 @@ export default function AdminLayout({ user, header, children, recentActivities: 
         { name: 'Paket Try Out', href: route('paket-tryout.index'), icon: Trophy, active: isTryoutActive },
         { name: 'Paket Latihan', href: route('paket-latihan.index'), icon: BookOpen, active: isLatihanActive },
         { name: 'Bank Soal', href: route('soal.index'), icon: FileQuestion, active: url.startsWith('/admin/soal') },
-        { name: 'Hasil Latihan', href: route('sesi-latihan.index'), icon: Award, active: url.startsWith('/admin/sesi-latihan') },
+        { name: 'Hasil', href: route('sesi-latihan.index'), icon: Award, active: url.startsWith('/admin/sesi-latihan') },
         { name: 'Kelola Admin', href: route('admin.manage-admin.index'), icon: ShieldCheck, active: url.startsWith('/admin/kelola-admin') },
     ];
 

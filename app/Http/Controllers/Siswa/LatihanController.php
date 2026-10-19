@@ -41,7 +41,7 @@ class LatihanController extends Controller
 
         $completedSessions = SesiLatihan::where('id_siswa', $siswa->id_siswa)
             ->whereHas('hasil_latihan')
-            ->with('hasil_latihan:id_sesi,nilai_akhir')
+            ->with('hasil_latihan')
             ->get();
             
         $completedPackages = [];
